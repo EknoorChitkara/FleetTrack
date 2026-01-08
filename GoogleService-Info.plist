@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.fleettrack.FleetTrack</string>
+	<string>ios.FleetTrack</string>
 	<key>PROJECT_ID</key>
 	<string>fleettrack-f72af</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:190738620498:ios:19e1fe27b88a748bf2ff8b</string>
+	<string>1:190738620498:ios:a4795409093d413ff2ff8b</string>
 </dict>
 </plist>
