@@ -119,10 +119,10 @@ extension MaintenanceRecord {
         scheduledDate: Calendar.current.date(byAdding: .day, value: -23, to: Date())!,
         startedDate: Calendar.current.date(byAdding: .day, value: -23, to: Date())!,
         completedDate: Calendar.current.date(byAdding: .day, value: -23, to: Date())!,
-        performedBy: User.mockMaintenancePersonnel.id,
+        performedBy: UUID(), // Mock maintenance personnel ID
         laborCost: 1500.00,
         partsUsed: [
-            PartUsage(partId: Part.mockPart1.id, quantity: 1, unitPrice: 450.00)
+            PartUsage(partId: UUID(), quantity: 1, unitPrice: 450.00)
         ],
         mileageAtService: 45000,
         workNotes: "Changed engine oil and oil filter. All systems checked and working properly.",
@@ -137,10 +137,10 @@ extension MaintenanceRecord {
         description: "Replace worn brake pads and rotors",
         scheduledDate: Date(),
         startedDate: Date(),
-        performedBy: User.mockMaintenancePersonnel.id,
+        performedBy: UUID(), // Mock maintenance personnel ID
         laborCost: 2000.00,
         partsUsed: [
-            PartUsage(partId: Part.mockPart2.id, quantity: 2, unitPrice: 2500.00)
+            PartUsage(partId: UUID(), quantity: 2, unitPrice: 2500.00)
         ],
         mileageAtService: 125000,
         workNotes: "Front brake pads worn beyond safe limits. Replacing with new parts."

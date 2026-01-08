@@ -89,7 +89,7 @@ struct Trip: Identifiable, Codable, Hashable {
 extension Trip {
     static let mockOngoingTrip = Trip(
         vehicleId: Vehicle.mockVehicle1.id,
-        driverId: User.mockDriver.id,
+        driverId: UUID(), // Mock driver ID
         status: .ongoing,
         startLocation: Location(
             latitude: 28.7041,
@@ -104,12 +104,12 @@ extension Trip {
         startTime: Calendar.current.date(byAdding: .hour, value: -1, to: Date()),
         distance: 24.5,
         purpose: "Delivery",
-        createdBy: User.mockFleetManager.id
+        createdBy: UUID() // Mock fleet manager ID
     )
     
     static let mockCompletedTrip = Trip(
         vehicleId: Vehicle.mockVehicle1.id,
-        driverId: User.mockDriver.id,
+        driverId: UUID(), // Mock driver ID
         status: .completed,
         startLocation: Location(
             latitude: 28.7041,
@@ -125,12 +125,12 @@ extension Trip {
         endTime: Calendar.current.date(byAdding: .hour, value: -22, to: Date()),
         distance: 28.2,
         purpose: "Pickup",
-        createdBy: User.mockFleetManager.id
+        createdBy: UUID() // Mock fleet manager ID
     )
     
     static let mockScheduledTrip = Trip(
         vehicleId: Vehicle.mockVehicle3.id,
-        driverId: User.mockDriver.id,
+        driverId: UUID(), // Mock driver ID
         status: .scheduled,
         startLocation: Location(
             latitude: 28.5355,
@@ -143,7 +143,7 @@ extension Trip {
             address: "Gurgaon Sector 29"
         ),
         purpose: "Passenger Transport",
-        createdBy: User.mockFleetManager.id
+        createdBy: UUID() // Mock fleet manager ID
     )
     
     static let mockTrips: [Trip] = [
