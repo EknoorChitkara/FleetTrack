@@ -156,36 +156,84 @@ struct FleetTrackApp: App {
 3. Enter email: `admin@fleettrack.com`
 4. Enter password: `Admin@123`
 5. Click **"Add user"**
-6. Manually add user metadata in Firestore:
+6. **Copy the UID** (you'll need this for Firestore)
+7. Manually add user metadata in Firestore:
    - Go to **Firestore Database**
-   - Create collection: `users`
-   - Create document with ID: (copy the UID from Authentication)
-   - Add fields:
-     ```
-     id: <UID>
-     role: "Fleet Manager"
-     email: "admin@fleettrack.com"
-     isActive: true
-     isVerified: true
-     createdAt: <current timestamp>
-     twoFactorEnabled: false
-     ```
+   - Click **"Start collection"**
+   - Collection ID: `users`
+   - Document ID: **Paste the UID from step 6**
+   - Add these fields (click "+ Add field" for each):
+
+| Field | Type | Value |
+|-------|------|-------|
+| `id` | string | (paste the UID again) |
+| `role` | string | `Fleet Manager` |
+| `email` | string | `admin@fleettrack.com` |
+| `phoneNumber` | string | `null` (leave empty) |
+| `employeeID` | string | `null` (leave empty) |
+| `passwordHash` | string | (auto-set by Firebase Auth) |
+| `passwordSetAt` | timestamp | (current date/time) |
+| `isActive` | boolean | `true` |
+| `isVerified` | boolean | `true` |
+| `createdAt` | timestamp | (current date/time) |
+| `lastLogin` | timestamp | `null` (leave empty) |
+| `failedLoginAttempts` | number | `0` |
+| `accountLockedUntil` | timestamp | `null` (leave empty) |
+| `twoFactorEnabled` | boolean | `false` |
+
+8. Click **"Save"**
 
 **Create Driver User:**
 1. In **Authentication**, click **"Add user"**
-2. Use phone number: `+15551234567`
-3. Set password (temporary)
-4. Add to Firestore `users` collection:
-   ```
-   id: <UID>
-   role: "Driver"
-   phoneNumber: "+15551234567"
-   employeeID: "DRV001"
-   isActive: true
-   isVerified: true
-   createdAt: <current timestamp>
-   twoFactorEnabled: true
-   ```
+2. Use phone number as email: `driver@fleettrack.com` (temporary - we'll use phone for login)
+3. Set password: `Driver@123`
+4. Click **"Add user"** and **copy the UID**
+5. Add to Firestore `users` collection:
+   - Document ID: **Paste the UID**
+   - Add these fields:
+
+| Field | Type | Value |
+|-------|------|-------|
+| `id` | string | (paste the UID) |
+| `role` | string | `Driver` |
+| `email` | string | `null` (leave empty) |
+| `phoneNumber` | string | `+15551234567` |
+| `employeeID` | string | `DRV001` |
+| `passwordHash` | string | (auto-set by Firebase Auth) |
+| `passwordSetAt` | timestamp | (current date/time) |
+| `isActive` | boolean | `true` |
+| `isVerified` | boolean | `true` |
+| `createdAt` | timestamp | (current date/time) |
+| `lastLogin` | timestamp | `null` (leave empty) |
+| `failedLoginAttempts` | number | `0` |
+| `accountLockedUntil` | timestamp | `null` (leave empty) |
+| `twoFactorEnabled` | boolean | `true` |
+
+**Create Maintenance Manager User:**
+1. In **Authentication**, click **"Add user"**
+2. Use email: `maintenance@fleettrack.com`
+3. Set password: `Maint@123`
+4. Click **"Add user"** and **copy the UID**
+5. Add to Firestore `users` collection:
+   - Document ID: **Paste the UID**
+   - Add these fields:
+
+| Field | Type | Value |
+|-------|------|-------|
+| `id` | string | (paste the UID) |
+| `role` | string | `Maintenance Manager` |
+| `email` | string | `maintenance@fleettrack.com` |
+| `phoneNumber` | string | `null` (leave empty) |
+| `employeeID` | string | `MNT001` |
+| `passwordHash` | string | (auto-set by Firebase Auth) |
+| `passwordSetAt` | timestamp | (current date/time) |
+| `isActive` | boolean | `true` |
+| `isVerified` | boolean | `true` |
+| `createdAt` | timestamp | (current date/time) |
+| `lastLogin` | timestamp | `null` (leave empty) |
+| `failedLoginAttempts` | number | `0` |
+| `accountLockedUntil` | timestamp | `null` (leave empty) |
+| `twoFactorEnabled` | boolean | `false` |
 
 ### Option 2: Via App (After Implementation)
 
