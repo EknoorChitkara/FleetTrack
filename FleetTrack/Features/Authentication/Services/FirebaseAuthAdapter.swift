@@ -364,7 +364,7 @@ class FirebaseAuthAdapter {
     }
     
     /// Fetch user by phone number
-    private func fetchUserMetadataByPhone(phoneNumber: String) async throws -> User {
+    func fetchUserMetadataByPhone(phoneNumber: String) async throws -> User {
         let query = db.collection("users")
             .whereField("phoneNumber", isEqualTo: phoneNumber)
             .limit(to: 1)
@@ -379,7 +379,7 @@ class FirebaseAuthAdapter {
     }
     
     /// Fetch user by employee ID
-    private func fetchUserMetadataByEmployeeID(_ employeeID: String) async throws -> User {
+    func fetchUserMetadataByEmployeeID(_ employeeID: String) async throws -> User {
         let query = db.collection("users")
             .whereField("employeeID", isEqualTo: employeeID.uppercased())
             .limit(to: 1)

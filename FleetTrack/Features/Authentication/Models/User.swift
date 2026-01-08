@@ -29,6 +29,30 @@ enum UserRole: String, Codable, CaseIterable {
     }
 }
 
+/// Two-factor authentication method
+enum TwoFactorMethod: String, Codable, CaseIterable {
+    case totp = "TOTP"
+    case sms = "SMS"
+    
+    var displayName: String {
+        switch self {
+        case .totp:
+            return "Authenticator App"
+        case .sms:
+            return "SMS Code"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .totp:
+            return "qrcode"
+        case .sms:
+            return "message.fill"
+        }
+    }
+}
+
 /// Main user model for authentication system
 struct User: Identifiable, Codable, Equatable {
     let id: UUID
