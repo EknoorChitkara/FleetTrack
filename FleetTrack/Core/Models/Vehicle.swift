@@ -148,13 +148,14 @@ extension Vehicle {
             longitude: 77.3910,
             address: "Sector 18, Noida"
         ),
-        assignedDriverId: User.mockDriver.id,
+        assignedDriverId: UUID(), // Mock driver ID
         nextServiceDue: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
         lastServiceDate: Calendar.current.date(byAdding: .day, value: -23, to: Date()),
         yearOfManufacture: 2022,
         color: "White",
         capacity: "1000 kg"
     )
+
     
     static let mockVehicle2 = Vehicle(
         registrationNumber: "DL-02-CD-5678",

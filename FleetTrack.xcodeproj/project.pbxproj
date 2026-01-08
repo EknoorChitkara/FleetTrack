@@ -12,6 +12,7 @@
 		B40B06BA2F0F79A000FB2859 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = B40B06B92F0F79A000FB2859 /* FirebaseAuth */; };
 		B40B06BC2F0F79A000FB2859 /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = B40B06BB2F0F79A000FB2859 /* FirebaseAuthCombine-Community */; };
 		B40B06BE2F0F79A000FB2859 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = B40B06BD2F0F79A000FB2859 /* FirebaseStorage */; };
+		B40B07772F0F800100FB2859 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = B40B07762F0F800100FB2859 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +36,7 @@
 				B40B06B82F0F79A000FB2859 /* FirebaseAnalytics in Frameworks */,
 				B40B06BE2F0F79A000FB2859 /* FirebaseStorage in Frameworks */,
 				B40B06BC2F0F79A000FB2859 /* FirebaseAuthCombine-Community in Frameworks */,
+				B40B07772F0F800100FB2859 /* FirebaseFirestore in Frameworks */,
 				B40B06BA2F0F79A000FB2859 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -42,11 +44,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B40B07752F0F800100FB2859 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		B4BAF9682F0E643C0083A19A = {
 			isa = PBXGroup;
 			children = (
 				B40B06B42F0F772A00FB2859 /* GoogleService-Info.plist */,
 				B4BAF9732F0E643C0083A19A /* FleetTrack */,
+				B40B07752F0F800100FB2859 /* Frameworks */,
 				B4BAF9722F0E643C0083A19A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -83,6 +93,7 @@
 				B40B06B92F0F79A000FB2859 /* FirebaseAuth */,
 				B40B06BB2F0F79A000FB2859 /* FirebaseAuthCombine-Community */,
 				B40B06BD2F0F79A000FB2859 /* FirebaseStorage */,
+				B40B07762F0F800100FB2859 /* FirebaseFirestore */,
 			);
 			productName = FleetTrack;
 			productReference = B4BAF9712F0E643C0083A19A /* FleetTrack.app */;
@@ -386,6 +397,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B40B06B62F0F799F00FB2859 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		B40B07762F0F800100FB2859 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B40B06B62F0F799F00FB2859 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
