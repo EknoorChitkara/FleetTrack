@@ -44,7 +44,7 @@ struct LoginView: View {
                         do {
                             // ⚠️ SECURITY: Never commit real emails to Git
                             // Replace this with your email when testing locally
-                            let testEmail = "eknoor1655.be23@chitkara.edu.in"// TODO: Replace locally for testing
+                            let testEmail = "admin@example.com" // TODO: Replace locally for testing
                             
                             // Direct call to adapter for seeding
                             let (user, tempPassword) = try await FirebaseAuthAdapter.shared.createAdminAccount(email: testEmail)

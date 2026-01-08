@@ -197,7 +197,7 @@ extension User {
         User(
             role: .admin,
             email: "admin@fleetms.com",
-            passwordHash: "hashed_Admin@123",
+            passwordHash: "hashed_password_placeholder",
             isVerified: true,
             twoFactorEnabled: true
         )
