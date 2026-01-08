@@ -151,7 +151,7 @@ struct MaintenancePersonnel: Identifiable, Codable, Hashable {
 // MARK: - Mock Data
 extension MaintenancePersonnel {
     static let mockPersonnel1 = MaintenancePersonnel(
-        userId: User.mockMaintenancePersonnel.id,
+        userId: UUID(), // Mock user ID
         employeeId: "EMP-M-001",
         status: .working,
         expertiseLevel: .senior,
@@ -161,14 +161,15 @@ extension MaintenancePersonnel {
         totalJobsCompleted: 487,
         averageJobCompletionTime: 3.5,
         customerRating: 4.8,
-        currentMaintenanceRecordId: MaintenanceRecord.mockRecord2.id,
-        currentVehicleId: Vehicle.mockVehicle2.id,
+        currentMaintenanceRecordId: UUID(), // Mock maintenance record ID
+        currentVehicleId: UUID(), // Mock vehicle ID
         shiftStartTime: "08:00",
         shiftEndTime: "17:00",
         workingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
         hourlyRate: 500.00,
         joinedDate: Calendar.current.date(byAdding: .year, value: -6, to: Date())!
     )
+
     
     static let mockPersonnel2 = MaintenancePersonnel(
         userId: UUID(),

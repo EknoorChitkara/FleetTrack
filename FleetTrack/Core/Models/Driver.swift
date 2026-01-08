@@ -140,7 +140,7 @@ struct Driver: Identifiable, Codable, Hashable {
 // MARK: - Mock Data
 extension Driver {
     static let mockDriver1 = Driver(
-        userId: User.mockDriver.id,
+        userId: UUID(), // Mock user ID
         driverLicenseNumber: "DL-1420110012345",
         licenseType: .transport,
         licenseExpiryDate: Calendar.current.date(byAdding: .year, value: 2, to: Date())!,
@@ -150,13 +150,14 @@ extension Driver {
         totalTrips: 342,
         totalDistanceDriven: 18750.5,
         currentVehicleId: Vehicle.mockVehicle1.id,
-        currentTripId: Trip.mockOngoingTrip.id,
+        currentTripId: UUID(), // Mock trip ID
         certifications: ["First Aid Certified", "Defensive Driving", "Hazmat Handling"],
         yearsOfExperience: 8,
         emergencyContactName: "Sunita Kumar",
         emergencyContactPhone: "+91 98765 43211",
         joinedDate: Calendar.current.date(byAdding: .year, value: -3, to: Date())!
     )
+
     
     static let mockDriver2 = Driver(
         userId: UUID(),
