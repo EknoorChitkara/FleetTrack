@@ -2,10 +2,12 @@
 //  Trip.swift
 //  FleetTrack
 //
-//  Created by FleetTrack on 08/01/26.
+//  Professional Fleet Management System
 //
 
 import Foundation
+
+// MARK: - Enums
 
 enum TripStatus: String, Codable, CaseIterable {
     case scheduled = "Scheduled"
@@ -13,6 +15,8 @@ enum TripStatus: String, Codable, CaseIterable {
     case completed = "Completed"
     case cancelled = "Cancelled"
 }
+
+// MARK: - Trip Model
 
 struct Trip: Identifiable, Codable, Hashable {
     let id: UUID
@@ -25,12 +29,14 @@ struct Trip: Identifiable, Codable, Hashable {
     var endLocation: Location?
     var startTime: Date?
     var endTime: Date?
-    var distance: Double? // in km
+    var distance: Double? // km
     
     // Trip metadata
     var purpose: String?
     var notes: String?
     var createdBy: UUID // Fleet Manager who created the trip
+    
+    // Timestamps
     var createdAt: Date
     var updatedAt: Date
     
@@ -66,7 +72,8 @@ struct Trip: Identifiable, Codable, Hashable {
         self.updatedAt = updatedAt
     }
     
-    // Computed properties
+    // MARK: - Computed Properties
+    
     var duration: TimeInterval? {
         guard let start = startTime, let end = endTime else { return nil }
         return end.timeIntervalSince(start)
@@ -83,72 +90,4 @@ struct Trip: Identifiable, Codable, Hashable {
         guard let distance = distance else { return nil }
         return String(format: "%.1f km", distance)
     }
-}
-
-// MARK: - Mock Data
-extension Trip {
-    static let mockOngoingTrip = Trip(
-        vehicleId: Vehicle.mockVehicle1.id,
-        driverId: UUID(), // Mock driver ID
-        status: .ongoing,
-        startLocation: Location(
-            latitude: 28.7041,
-            longitude: 77.1025,
-            address: "Delhi Hub"
-        ),
-        endLocation: Location(
-            latitude: 28.5355,
-            longitude: 77.3910,
-            address: "Noida Sector 62"
-        ),
-        startTime: Calendar.current.date(byAdding: .hour, value: -1, to: Date()),
-        distance: 24.5,
-        purpose: "Delivery",
-        createdBy: UUID() // Mock fleet manager ID
-    )
-    
-    static let mockCompletedTrip = Trip(
-        vehicleId: Vehicle.mockVehicle1.id,
-        driverId: UUID(), // Mock driver ID
-        status: .completed,
-        startLocation: Location(
-            latitude: 28.7041,
-            longitude: 77.1025,
-            address: "Delhi Hub"
-        ),
-        endLocation: Location(
-            latitude: 28.4595,
-            longitude: 77.0266,
-            address: "Ghaziabad"
-        ),
-        startTime: Calendar.current.date(byAdding: .day, value: -1, to: Date()),
-        endTime: Calendar.current.date(byAdding: .hour, value: -22, to: Date()),
-        distance: 28.2,
-        purpose: "Pickup",
-        createdBy: UUID() // Mock fleet manager ID
-    )
-    
-    static let mockScheduledTrip = Trip(
-        vehicleId: Vehicle.mockVehicle3.id,
-        driverId: UUID(), // Mock driver ID
-        status: .scheduled,
-        startLocation: Location(
-            latitude: 28.5355,
-            longitude: 77.3910,
-            address: "Noida Sector 18"
-        ),
-        endLocation: Location(
-            latitude: 28.4595,
-            longitude: 77.0266,
-            address: "Gurgaon Sector 29"
-        ),
-        purpose: "Passenger Transport",
-        createdBy: UUID() // Mock fleet manager ID
-    )
-    
-    static let mockTrips: [Trip] = [
-        mockOngoingTrip,
-        mockCompletedTrip,
-        mockScheduledTrip
-    ]
 }

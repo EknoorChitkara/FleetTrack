@@ -2,10 +2,12 @@
 //  Vehicle.swift
 //  FleetTrack
 //
-//  Created by FleetTrack on 08/01/26.
+//  Professional Fleet Management System
 //
 
 import Foundation
+
+// MARK: - Enums
 
 enum VehicleStatus: String, Codable, CaseIterable {
     case active = "Active"
@@ -21,6 +23,29 @@ enum VehicleType: String, Codable, CaseIterable {
     case specialized = "Specialized"
 }
 
+// MARK: - Location Model
+
+struct Location: Codable, Hashable {
+    var latitude: Double
+    var longitude: Double
+    var address: String
+    var timestamp: Date
+    
+    init(
+        latitude: Double,
+        longitude: Double,
+        address: String,
+        timestamp: Date = Date()
+    ) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.address = address
+        self.timestamp = timestamp
+    }
+}
+
+// MARK: - Vehicle Model
+
 struct Vehicle: Identifiable, Codable, Hashable {
     let id: UUID
     var registrationNumber: String
@@ -30,19 +55,19 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var status: VehicleStatus
     
     // Live tracking data
-    var currentSpeed: Double // in km/h
+    var currentSpeed: Double // km/h
     var fuelLevel: Double // percentage (0-100)
-    var totalMileage: Double // in km
+    var totalMileage: Double // km
     var averageFuelEfficiency: Double // km/l
     
-    // Location tracking
+    // Location
     var currentLocation: Location?
     var lastUpdated: Date
     
     // Assignment
     var assignedDriverId: UUID?
     
-    // Maintenance info
+    // Maintenance
     var nextServiceDue: Date?
     var lastServiceDate: Date?
     
@@ -50,8 +75,9 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var yearOfManufacture: Int?
     var vinNumber: String?
     var color: String?
-    var capacity: String? // e.g., "1000 kg", "15 passengers"
+    var capacity: String?
     
+    // Timestamps
     var createdAt: Date
     var updatedAt: Date
     
@@ -101,105 +127,18 @@ struct Vehicle: Identifiable, Codable, Hashable {
         self.updatedAt = updatedAt
     }
     
-    // Formatted mileage
+    // MARK: - Computed Properties
+    
     var formattedMileage: String {
         String(format: "%.1f km", totalMileage)
     }
     
-    // Formatted fuel efficiency
     var formattedEfficiency: String {
         String(format: "%.1f km/l", averageFuelEfficiency)
     }
-}
-
-struct Location: Codable, Hashable {
-    var latitude: Double
-    var longitude: Double
-    var address: String
-    var lastUpdated: Date
     
-    init(
-        latitude: Double,
-        longitude: Double,
-        address: String,
-        lastUpdated: Date = Date()
-    ) {
-        self.latitude = latitude
-        self.longitude = longitude
-        self.address = address
-        self.lastUpdated = lastUpdated
+    var isServiceDue: Bool {
+        guard let nextService = nextServiceDue else { return false }
+        return nextService <= Date()
     }
-}
-
-// MARK: - Mock Data
-extension Vehicle {
-    static let mockVehicle1 = Vehicle(
-        registrationNumber: "DL-01-AB-1234",
-        model: "Ace",
-        manufacturer: "Tata",
-        vehicleType: .lightCommercial,
-        status: .active,
-        currentSpeed: 45,
-        fuelLevel: 75,
-        totalMileage: 45230,
-        averageFuelEfficiency: 18.5,
-        currentLocation: Location(
-            latitude: 28.5355,
-            longitude: 77.3910,
-            address: "Sector 18, Noida"
-        ),
-        assignedDriverId: UUID(), // Mock driver ID
-        nextServiceDue: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
-        lastServiceDate: Calendar.current.date(byAdding: .day, value: -23, to: Date()),
-        yearOfManufacture: 2022,
-        color: "White",
-        capacity: "1000 kg"
-    )
-
-    
-    static let mockVehicle2 = Vehicle(
-        registrationNumber: "DL-02-CD-5678",
-        model: "Prima LX",
-        manufacturer: "Tata",
-        vehicleType: .heavyCommercial,
-        status: .inMaintenance,
-        currentSpeed: 0,
-        fuelLevel: 50,
-        totalMileage: 125000,
-        averageFuelEfficiency: 12.3,
-        assignedDriverId: nil,
-        nextServiceDue: Date(),
-        lastServiceDate: Calendar.current.date(byAdding: .month, value: -2, to: Date()),
-        yearOfManufacture: 2020,
-        color: "Blue",
-        capacity: "5000 kg"
-    )
-    
-    static let mockVehicle3 = Vehicle(
-        registrationNumber: "DL-03-EF-9101",
-        model: "Magic",
-        manufacturer: "Tata",
-        vehicleType: .passenger,
-        status: .active,
-        currentSpeed: 32,
-        fuelLevel: 90,
-        totalMileage: 67500,
-        averageFuelEfficiency: 15.2,
-        currentLocation: Location(
-            latitude: 28.4595,
-            longitude: 77.0266,
-            address: "Gurgaon Sector 29"
-        ),
-        nextServiceDue: Calendar.current.date(byAdding: .day, value: 30, to: Date()),
-        lastServiceDate: Calendar.current.date(byAdding: .day, value: -10, to: Date()),
-        yearOfManufacture: 2021,
-        color: "Yellow",
-        capacity: "12 passengers"
-    )
-    
-    static let mockVehicles: [Vehicle] = [
-        mockVehicle1,
-        mockVehicle2,
-        mockVehicle3
-    ]
 }

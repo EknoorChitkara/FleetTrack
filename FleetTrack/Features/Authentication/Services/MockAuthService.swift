@@ -210,7 +210,8 @@ class MockAuthService {
         }
         
         // Verify password
-        if !CryptoHelpers.verifyPassword(password, hash: user.passwordHash) {
+        guard let passwordHash = user.passwordHash,
+              CryptoHelpers.verifyPassword(password, hash: passwordHash) else {
             user.incrementFailedAttempts()
             dataStore.updateUser(user)
             throw AuthError.invalidCredentials

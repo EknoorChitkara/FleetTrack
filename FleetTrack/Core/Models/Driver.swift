@@ -2,10 +2,12 @@
 //  Driver.swift
 //  FleetTrack
 //
-//  Created by FleetTrack on 08/01/26.
+//  Professional Fleet Management System
 //
 
 import Foundation
+
+// MARK: - Enums
 
 enum DriverStatus: String, Codable, CaseIterable {
     case available = "Available"
@@ -21,6 +23,8 @@ enum LicenseType: String, Codable, CaseIterable {
     case hazardousMaterials = "Hazardous Materials"
 }
 
+// MARK: - Driver Model
+
 struct Driver: Identifiable, Codable, Hashable {
     let id: UUID
     var userId: UUID // Reference to User model
@@ -35,25 +39,26 @@ struct Driver: Identifiable, Codable, Hashable {
     var rating: Double // 0.0 to 5.0
     var safetyScore: Int // 0 to 100
     var totalTrips: Int
-    var totalDistanceDriven: Double // in km
+    var totalDistanceDriven: Double // km
     
-    // Assignment
+    // Current assignment
     var currentVehicleId: UUID?
     var currentTripId: UUID?
     
-    // Additional certifications
-    var certifications: [String] // e.g., "First Aid", "Defensive Driving"
+    // Certifications
+    var certifications: [String]
     var yearsOfExperience: Int
     
     // Emergency contact
     var emergencyContactName: String?
     var emergencyContactPhone: String?
     
-    // Availability
+    // Status
     var isActive: Bool
     var joinedDate: Date
     var lastActiveDate: Date
     
+    // Timestamps
     var createdAt: Date
     var updatedAt: Date
     
@@ -103,7 +108,8 @@ struct Driver: Identifiable, Codable, Hashable {
         self.updatedAt = updatedAt
     }
     
-    // Computed properties
+    // MARK: - Computed Properties
+    
     var formattedRating: String {
         String(format: "%.1f", rating)
     }
@@ -111,10 +117,6 @@ struct Driver: Identifiable, Codable, Hashable {
     var averageDistancePerTrip: Double {
         guard totalTrips > 0 else { return 0 }
         return totalDistanceDriven / Double(totalTrips)
-    }
-    
-    var formattedAverageDistance: String {
-        String(format: "%.1f km", averageDistancePerTrip)
     }
     
     var isLicenseExpiringSoon: Bool {
@@ -135,67 +137,4 @@ struct Driver: Identifiable, Codable, Hashable {
             return "Valid"
         }
     }
-}
-
-// MARK: - Mock Data
-extension Driver {
-    static let mockDriver1 = Driver(
-        userId: UUID(), // Mock user ID
-        driverLicenseNumber: "DL-1420110012345",
-        licenseType: .transport,
-        licenseExpiryDate: Calendar.current.date(byAdding: .year, value: 2, to: Date())!,
-        status: .onTrip,
-        rating: 4.7,
-        safetyScore: 92,
-        totalTrips: 342,
-        totalDistanceDriven: 18750.5,
-        currentVehicleId: Vehicle.mockVehicle1.id,
-        currentTripId: UUID(), // Mock trip ID
-        certifications: ["First Aid Certified", "Defensive Driving", "Hazmat Handling"],
-        yearsOfExperience: 8,
-        emergencyContactName: "Sunita Kumar",
-        emergencyContactPhone: "+91 98765 43211",
-        joinedDate: Calendar.current.date(byAdding: .year, value: -3, to: Date())!
-    )
-
-    
-    static let mockDriver2 = Driver(
-        userId: UUID(),
-        driverLicenseNumber: "DL-1420110067890",
-        licenseType: .heavyMotorVehicle,
-        licenseExpiryDate: Calendar.current.date(byAdding: .day, value: 25, to: Date())!,
-        status: .available,
-        rating: 4.9,
-        safetyScore: 98,
-        totalTrips: 567,
-        totalDistanceDriven: 45230.0,
-        certifications: ["Advanced Driving", "First Aid Certified"],
-        yearsOfExperience: 12,
-        emergencyContactName: "Anita Sharma",
-        emergencyContactPhone: "+91 98765 11111",
-        joinedDate: Calendar.current.date(byAdding: .year, value: -5, to: Date())!
-    )
-    
-    static let mockDriver3 = Driver(
-        userId: UUID(),
-        driverLicenseNumber: "DL-0720110034567",
-        licenseType: .lightMotorVehicle,
-        licenseExpiryDate: Calendar.current.date(byAdding: .month, value: 8, to: Date())!,
-        status: .offDuty,
-        rating: 4.3,
-        safetyScore: 85,
-        totalTrips: 128,
-        totalDistanceDriven: 6240.0,
-        certifications: ["First Aid Certified"],
-        yearsOfExperience: 3,
-        emergencyContactName: "Ravi Verma",
-        emergencyContactPhone: "+91 98765 22222",
-        joinedDate: Calendar.current.date(byAdding: .year, value: -1, to: Date())!
-    )
-    
-    static let mockDrivers: [Driver] = [
-        mockDriver1,
-        mockDriver2,
-        mockDriver3
-    ]
 }

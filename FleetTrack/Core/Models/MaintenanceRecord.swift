@@ -2,10 +2,12 @@
 //  MaintenanceRecord.swift
 //  FleetTrack
 //
-//  Created by FleetTrack on 08/01/26.
+//  Professional Fleet Management System
 //
 
 import Foundation
+
+// MARK: - Enums
 
 enum MaintenanceType: String, Codable, CaseIterable {
     case scheduledService = "Scheduled Service"
@@ -21,8 +23,11 @@ enum MaintenanceStatus: String, Codable, CaseIterable {
     case cancelled = "Cancelled"
 }
 
+// MARK: - Part Usage
+
 struct PartUsage: Codable, Hashable {
     var partId: UUID
+    var partName: String
     var quantity: Int
     var unitPrice: Double
     
@@ -30,6 +35,8 @@ struct PartUsage: Codable, Hashable {
         Double(quantity) * unitPrice
     }
 }
+
+// MARK: - Maintenance Record Model
 
 struct MaintenanceRecord: Identifiable, Codable, Hashable {
     let id: UUID
@@ -50,6 +57,7 @@ struct MaintenanceRecord: Identifiable, Codable, Hashable {
     // Costs
     var laborCost: Double
     var partsUsed: [PartUsage]
+    
     var totalCost: Double {
         let partsCost = partsUsed.reduce(0) { $0 + $1.totalCost }
         return laborCost + partsCost
@@ -62,6 +70,7 @@ struct MaintenanceRecord: Identifiable, Codable, Hashable {
     var workNotes: String?
     var recommendations: String?
     
+    // Timestamps
     var createdAt: Date
     var updatedAt: Date
     
@@ -103,63 +112,9 @@ struct MaintenanceRecord: Identifiable, Codable, Hashable {
         self.updatedAt = updatedAt
     }
     
+    // MARK: - Computed Properties
+    
     var formattedTotalCost: String {
         String(format: "₹%.2f", totalCost)
     }
-}
-
-// MARK: - Mock Data
-extension MaintenanceRecord {
-    static let mockRecord1 = MaintenanceRecord(
-        vehicleId: Vehicle.mockVehicle1.id,
-        type: .scheduledService,
-        status: .completed,
-        title: "Regular Service - 45,000 km",
-        description: "Routine maintenance service",
-        scheduledDate: Calendar.current.date(byAdding: .day, value: -23, to: Date())!,
-        startedDate: Calendar.current.date(byAdding: .day, value: -23, to: Date())!,
-        completedDate: Calendar.current.date(byAdding: .day, value: -23, to: Date())!,
-        performedBy: UUID(), // Mock maintenance personnel ID
-        laborCost: 1500.00,
-        partsUsed: [
-            PartUsage(partId: UUID(), quantity: 1, unitPrice: 450.00)
-        ],
-        mileageAtService: 45000,
-        workNotes: "Changed engine oil and oil filter. All systems checked and working properly.",
-        recommendations: "Next service due at 50,000 km"
-    )
-    
-    static let mockRecord2 = MaintenanceRecord(
-        vehicleId: Vehicle.mockVehicle2.id,
-        type: .repair,
-        status: .inProgress,
-        title: "Brake System Repair",
-        description: "Replace worn brake pads and rotors",
-        scheduledDate: Date(),
-        startedDate: Date(),
-        performedBy: UUID(), // Mock maintenance personnel ID
-        laborCost: 2000.00,
-        partsUsed: [
-            PartUsage(partId: UUID(), quantity: 2, unitPrice: 2500.00)
-        ],
-        mileageAtService: 125000,
-        workNotes: "Front brake pads worn beyond safe limits. Replacing with new parts."
-    )
-    
-    static let mockRecord3 = MaintenanceRecord(
-        vehicleId: Vehicle.mockVehicle1.id,
-        type: .scheduledService,
-        status: .scheduled,
-        title: "50,000 km Service",
-        description: "Major service checkpoint",
-        scheduledDate: Calendar.current.date(byAdding: .day, value: 7, to: Date())!,
-        laborCost: 2500.00,
-        mileageAtService: 50000
-    )
-    
-    static let mockRecords: [MaintenanceRecord] = [
-        mockRecord1,
-        mockRecord2,
-        mockRecord3
-    ]
 }
