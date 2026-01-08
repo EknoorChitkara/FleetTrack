@@ -72,20 +72,20 @@ struct Assignment: Identifiable, Codable, Hashable {
 extension Assignment {
     static let mockAssignment1 = Assignment(
         vehicleId: Vehicle.mockVehicle1.id,
-        driverId: User.mockDriver.id,
+        driverId: UUID(), // Mock driver ID
         status: .active,
         assignedDate: Calendar.current.date(byAdding: .month, value: -6, to: Date())!,
-        assignedBy: User.mockFleetManager.id,
+        assignedBy: UUID(), // Mock fleet manager ID
         notes: "Primary vehicle for delivery routes"
     )
     
     static let mockAssignment2 = Assignment(
         vehicleId: Vehicle.mockVehicle3.id,
-        driverId: User.mockDriver.id,
+        driverId: UUID(), // Mock driver ID
         status: .temporary,
         assignedDate: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
         endDate: Calendar.current.date(byAdding: .day, value: 5, to: Date())!,
-        assignedBy: User.mockFleetManager.id,
+        assignedBy: UUID(), // Mock fleet manager ID
         notes: "Temporary assignment while primary vehicle is in maintenance",
         isCurrentAssignment: false
     )

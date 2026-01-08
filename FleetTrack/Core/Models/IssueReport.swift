@@ -120,8 +120,8 @@ struct IssueReport: Identifiable, Codable, Hashable {
 extension IssueReport {
     static let mockIssue1 = IssueReport(
         vehicleId: Vehicle.mockVehicle1.id,
-        reportedBy: User.mockDriver.id,
-        assignedTo: User.mockMaintenancePersonnel.id,
+        reportedBy: UUID(), // Mock driver ID
+        assignedTo: UUID(), // Mock maintenance personnel ID
         title: "Engine Warning Light",
         description: "Check engine light came on during trip. Engine seems to be running normally but light is persistent.",
         category: .mechanical,
@@ -139,7 +139,7 @@ extension IssueReport {
     
     static let mockIssue2 = IssueReport(
         vehicleId: Vehicle.mockVehicle1.id,
-        reportedBy: User.mockDriver.id,
+        reportedBy: UUID(), // Mock driver ID
         title: "Unusual Brake Noise",
         description: "Hearing squeaking noise when applying brakes",
         category: .safety,
@@ -151,8 +151,8 @@ extension IssueReport {
     
     static let mockIssue3 = IssueReport(
         vehicleId: Vehicle.mockVehicle3.id,
-        reportedBy: User.mockDriver.id,
-        assignedTo: User.mockMaintenancePersonnel.id,
+        reportedBy: UUID(), // Mock driver ID
+        assignedTo: UUID(), // Mock maintenance personnel ID
         title: "Air Conditioning Not Working",
         description: "AC stopped blowing cold air. Only warm air coming out.",
         category: .mechanical,
