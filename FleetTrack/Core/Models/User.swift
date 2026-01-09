@@ -17,18 +17,30 @@ struct User: Identifiable, Codable, Hashable {
     let id: UUID
     var name: String
     var email: String
-    var phoneNumber: String
+    var phoneNumber: String?
     var role: UserRole
     var profileImageURL: String?
     var isActive: Bool
     var createdAt: Date
     var updatedAt: Date
     
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case email
+        case phoneNumber = "phone_number"
+        case role
+        case profileImageURL = "profile_image_url"
+        case isActive = "is_active"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+    
     init(
         id: UUID = UUID(),
         name: String,
         email: String,
-        phoneNumber: String,
+        phoneNumber: String? = nil,
         role: UserRole,
         profileImageURL: String? = nil,
         isActive: Bool = true,
