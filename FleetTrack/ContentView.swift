@@ -19,7 +19,7 @@ struct ContentView: View {
             Text("Hello, world!")
                 .font(.title)
             
-            Text("✅ You are logged in!")
+            Text("You are logged in!")
                 .foregroundColor(.green)
             
             // Logout button for testing

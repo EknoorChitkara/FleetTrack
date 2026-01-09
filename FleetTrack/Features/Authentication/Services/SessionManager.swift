@@ -32,23 +32,23 @@ class SessionManager: ObservableObject {
                 guard let self = self else { return }
                 
                 if let firebaseUser = firebaseUser {
-                    print("🔄 Firebase Auth State: Logged In (\(firebaseUser.uid))")
+                    print("Firebase Auth State: Logged In (\(firebaseUser.uid))")
                     do {
                         // Fetch full user profile from Firestore
                         // We use the adapter's method which determines if it uses cache or network
                         if let user = try? await self.adapter.getCurrentUser() {
                             self.currentUser = user
                             self.isAuthenticated = true
-                            print("✅ Session active for: \(user.displayName)")
+                            print("Session active for: \(user.displayName)")
                         } else {
                             // Valid Firebase User but no Firestore document?
                             // This might happen during creation before doc is written.
                             // We wait or let the explicit flow handle it.
-                            print("⚠️ Firebase User exists but Firestore metadata not found yet.")
+                            print("Firebase User exists but Firestore metadata not found yet.")
                         }
                     }
                 } else {
-                    print("🔄 Firebase Auth State: Logged Out")
+                    print("Firebase Auth State: Logged Out")
                     self.currentUser = nil
                     self.isAuthenticated = false
                 }

@@ -42,24 +42,24 @@ struct LoginView: View {
                 Button("Create Test Admin") {
                     Task {
                         do {
-                            // ⚠️ SECURITY: Never commit real emails to Git
+                            // SECURITY: Never commit real emails to Git
                             // Replace this with your email when testing locally
                             let testEmail = "admin@example.com" // TODO: Replace locally for testing
                             
                             // Direct call to adapter for seeding
                             let (user, tempPassword) = try await FirebaseAuthAdapter.shared.createAdminAccount(email: testEmail)
                             
-                            print("✅ Test Admin Created")
-                            print("📧 Email: \(testEmail)")
-                            print("🔑 Temporary Password: \(tempPassword)")
-                            print("📬 Password reset email sent to your inbox!")
-                            print("⚠️ Check your email and click the reset link to set your password")
+                            print("Test Admin Created")
+                            print("Email: \(testEmail)")
+                            print("Temporary Password: \(tempPassword)")
+                            print("Password reset email sent to your inbox!")
+                            print("Check your email and click the reset link to set your password")
                             
                             // Show alert to user
                             authViewModel.errorMessage = "Admin created! Check \(testEmail) for password reset email."
                             authViewModel.showError = true
                         } catch {
-                            print("❌ Error: \(error.localizedDescription)")
+                            print("Error: \(error.localizedDescription)")
                             authViewModel.errorMessage = error.localizedDescription
                             authViewModel.showError = true
                         }
@@ -70,7 +70,7 @@ struct LoginView: View {
                 
                 Button("Login as Admin") {
                     Task {
-                        // ⚠️ SECURITY: Never commit real passwords to Git
+                        // SECURITY: Never commit real passwords to Git
                         // Replace these when testing locally
                         await authViewModel.adminLogin(
                             email: "admin@example.com", // TODO: Replace locally

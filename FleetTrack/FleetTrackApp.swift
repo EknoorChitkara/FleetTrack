@@ -18,7 +18,7 @@ struct FleetTrackApp: App {
     init() {
         // Initialize Firebase
         FirebaseApp.configure()
-        print("✅ Firebase initialized")
+        print("Firebase initialized")
     }
     
     var body: some Scene {
@@ -50,15 +50,15 @@ struct FleetTrackApp: App {
         
         switch action {
         case .passwordReset(let oobCode):
-            print("🔗 Password reset deep link received")
+            print("Password reset deep link received")
             passwordResetCode = oobCode
             
         case .emailVerification(let oobCode):
-            print("🔗 Email verification deep link received")
+            print("Email verification deep link received")
             // Handle email verification if needed
             
         case .unknown:
-            print("⚠️ Unknown deep link: \(url)")
+            print("Unknown deep link: \(url)")
         }
     }
 }

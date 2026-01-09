@@ -68,8 +68,8 @@ class FirebaseAuthAdapter {
         // Store user metadata in Firestore
         try await saveUserMetadata(user, firebaseUID: firebaseUser.uid)
         
-        print("✅ Admin account created: \(email)")
-        print("📧 Password setup email sent to: \(email)")
+        print("Admin account created: \(email)")
+        print("Password setup email sent to: \(email)")
         
         // Return a mock setup token (Firebase handles this via email)
         let setupToken = "firebase_email_sent"
@@ -95,7 +95,7 @@ class FirebaseAuthAdapter {
             throw FirebaseAuthError.accountDeactivated
         }
         
-        print("✅ Admin logged in: \(email)")
+        print("Admin logged in: \(email)")
         return user
     }
     
@@ -136,7 +136,7 @@ class FirebaseAuthAdapter {
         // Store in Firestore
         try await saveUserMetadata(user, firebaseUID: user.id.uuidString)
         
-        print("✅ Driver account created: \(phoneNumber)")
+        print("Driver account created: \(phoneNumber)")
         return user
     }
     
@@ -152,7 +152,7 @@ class FirebaseAuthAdapter {
         // Store verification ID for later use
         currentVerificationID = verificationID
         
-        print("✅ SMS sent to: \(phoneNumber)")
+        print("SMS sent to: \(phoneNumber)")
         return verificationID
     }
     
@@ -191,7 +191,7 @@ class FirebaseAuthAdapter {
         // Link the Firestore document to Firebase UID
         try await linkUserToFirebaseUID(user.id, firebaseUID: firebaseUser.uid)
         
-        print("✅ Driver logged in: \(phoneNumber)")
+        print("Driver logged in: \(phoneNumber)")
         return updatedUser
     }
     
@@ -231,7 +231,7 @@ class FirebaseAuthAdapter {
         // Store metadata
         try await saveUserMetadata(user, firebaseUID: firebaseUser.uid)
         
-        print("✅ Maintenance account created: \(employeeID)")
+        print("Maintenance account created: \(employeeID)")
         return user
     }
     
@@ -253,7 +253,7 @@ class FirebaseAuthAdapter {
             throw FirebaseAuthError.invalidRole
         }
         
-        print("✅ Maintenance logged in: \(employeeID)")
+        print("Maintenance logged in: \(employeeID)")
         return user
     }
     
@@ -280,7 +280,7 @@ class FirebaseAuthAdapter {
     func logout() throws {
         try auth.signOut()
         currentVerificationID = nil
-        print("✅ User logged out")
+        print("User logged out")
     }
     
     /// Check if user is authenticated
@@ -293,7 +293,7 @@ class FirebaseAuthAdapter {
     /// Send password reset email
     func sendPasswordResetEmail(email: String) async throws {
         try await auth.sendPasswordReset(withEmail: email)
-        print("✅ Password reset email sent to: \(email)")
+        print("Password reset email sent to: \(email)")
     }
     
     /// Update password (user must be authenticated)
@@ -307,7 +307,7 @@ class FirebaseAuthAdapter {
         }
         
         try await user.updatePassword(to: newPassword)
-        print("✅ Password updated")
+        print("Password updated")
     }
     
     // MARK: - Email Verification
@@ -319,7 +319,7 @@ class FirebaseAuthAdapter {
         }
         
         try await user.sendEmailVerification()
-        print("✅ Verification email sent")
+        print("Verification email sent")
     }
     
     // MARK: - Firestore User Metadata Management
