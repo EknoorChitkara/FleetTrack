@@ -24,6 +24,8 @@ struct User: Identifiable, Codable, Hashable {
     var createdAt: Date
     var updatedAt: Date
     
+    var employeeID: String? // Added for Driver Auth
+    
     enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -34,6 +36,7 @@ struct User: Identifiable, Codable, Hashable {
         case isActive = "is_active"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case employeeID = "employee_id"
     }
     
     init(
@@ -45,7 +48,8 @@ struct User: Identifiable, Codable, Hashable {
         profileImageURL: String? = nil,
         isActive: Bool = true,
         createdAt: Date = Date(),
-        updatedAt: Date = Date()
+        updatedAt: Date = Date(),
+        employeeID: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -56,6 +60,7 @@ struct User: Identifiable, Codable, Hashable {
         self.isActive = isActive
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.employeeID = employeeID
     }
     
     // Computed property for initials (for avatar display)

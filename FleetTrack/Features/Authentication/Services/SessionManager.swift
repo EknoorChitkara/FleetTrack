@@ -7,10 +7,9 @@
 
 import Foundation
 import Combine
-import FirebaseAuth
 
-/// Session manager that observes Firebase Auth state
-/// Maintains the current User (metadata from Firestore)
+/// Session manager that observes Supabase Auth state
+/// Maintains the current User (metadata from Supabase/Database)
 class SessionManager: ObservableObject {
     
     static let shared = SessionManager()
@@ -18,40 +17,29 @@ class SessionManager: ObservableObject {
     @Published private(set) var currentUser: User?
     @Published private(set) var isAuthenticated: Bool = false
     
-    private let adapter = FirebaseAuthAdapter.shared
-    private var authStateListener: AuthStateDidChangeListenerHandle?
+    private let authService = SupabaseAuthService.shared
     
     private init() {
         startSessionMonitoring()
     }
     
-    /// Start listening to Firebase Auth changes
+    /// Start checking session
     private func startSessionMonitoring() {
-        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
-            Task { @MainActor [weak self] in
-                guard let self = self else { return }
-                
-                if let firebaseUser = firebaseUser {
-                    print("🔄 Firebase Auth State: Logged In (\(firebaseUser.uid))")
-                    do {
-                        // Fetch full user profile from Firestore
-                        // We use the adapter's method which determines if it uses cache or network
-                        if let user = try? await self.adapter.getCurrentUser() {
-                            self.currentUser = user
-                            self.isAuthenticated = true
-                            print("✅ Session active for: \(user.displayName)")
-                        } else {
-                            // Valid Firebase User but no Firestore document?
-                            // This might happen during creation before doc is written.
-                            // We wait or let the explicit flow handle it.
-                            print("⚠️ Firebase User exists but Firestore metadata not found yet.")
-                        }
-                    }
+        Task { @MainActor in
+            do {
+                if let user = try await authService.getCurrentUser() {
+                    self.currentUser = user
+                    self.isAuthenticated = true
+                    print("✅ Session active for: \(user.name)") // Assuming name is available in Core.User
                 } else {
-                    print("🔄 Firebase Auth State: Logged Out")
                     self.currentUser = nil
                     self.isAuthenticated = false
+                    print("🔄 No active session")
                 }
+            } catch {
+                print("⚠️ Session check failed: \(error.localizedDescription)")
+                self.currentUser = nil
+                self.isAuthenticated = false
             }
         }
     }
@@ -68,11 +56,5 @@ class SessionManager: ObservableObject {
     func clearSession() {
         self.currentUser = nil
         self.isAuthenticated = false
-    }
-    
-    deinit {
-        if let listener = authStateListener {
-            Auth.auth().removeStateDidChangeListener(listener)
-        }
     }
 }

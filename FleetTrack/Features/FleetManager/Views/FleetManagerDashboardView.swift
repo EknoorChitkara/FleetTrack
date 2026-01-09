@@ -9,47 +9,114 @@ import SwiftUI
 
 struct FleetManagerDashboardView: View {
     let user: User
+    @StateObject private var fleetVM = FleetViewModel.shared
+    
+    // Tab State
+    @State private var selectedTab: Tab = .dashboard
+    
+    // Sheet State
+    @State private var showCreateTrip = false
+    @State private var showAddVehicle = false
+    @State private var showAddDriver = false
+    @State private var showProfile = false
+    
+    // Enums for Tabs
+    enum Tab {
+        case dashboard
+        case vehicles
+        case alerts
+    }
     
     var body: some View {
-        ZStack {
-            Color.appBackground.ignoresSafeArea()
-            
-            VStack(spacing: 24) {
-                Image(systemName: "chart.bar.doc.horizontal.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.appEmerald)
-                    .shadow(color: .appEmerald.opacity(0.3), radius: 10)
+        NavigationView {
+            ZStack {
+                Color.appBackground.ignoresSafeArea()
                 
-                Text("Fleet Manager Portal")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-                
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Image(systemName: "person.fill")
-                            .foregroundColor(.appEmerald)
-                        Text("Name: \(user.name)")
-                            .foregroundColor(.white)
-                    }
-                    
-                    HStack {
-                        Image(systemName: "briefcase.fill")
-                            .foregroundColor(.appEmerald)
-                        Text("Role: \(user.role.rawValue)")
-                            .foregroundColor(.white)
+                // Main Content
+                Group {
+                    switch selectedTab {
+                    case .dashboard:
+                        FleetManagerHomeView(
+                            user: user,
+                            showCreateTrip: $showCreateTrip,
+                            showAddVehicle: $showAddVehicle,
+                            showAddDriver: $showAddDriver,
+                            showProfile: $showProfile
+                        )
+                        .environmentObject(fleetVM)
+                    case .vehicles:
+                        FleetManagerVehiclesView()
+                            .environmentObject(fleetVM)
+                    case .alerts:
+                        FleetManagerAlertsView()
                     }
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.appCardBackground)
-                .cornerRadius(16)
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.appEmerald.opacity(0.2), lineWidth: 1))
-                .padding(.horizontal)
                 
-                Spacer()
+                // Custom Bottom Tab Bar (Overlay)
+                VStack {
+                    Spacer()
+                    CustomTabBar(selectedTab: $selectedTab)
+                }
             }
-            .padding(.top, 40)
+            .navigationBarHidden(true)
+            .sheet(isPresented: $showCreateTrip) {
+                PlanTripView().environmentObject(fleetVM)
+            }
+            .sheet(isPresented: $showAddVehicle) {
+                AddVehicleView().environmentObject(fleetVM)
+            }
+            .sheet(isPresented: $showAddDriver) {
+                AddDriverView().environmentObject(fleetVM)
+            }
+            .sheet(isPresented: $showProfile) {
+                FleetManagerProfileView(user: user).environmentObject(fleetVM)
+            }
         }
-        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct CustomTabBar: View {
+    @Binding var selectedTab: FleetManagerDashboardView.Tab
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            TabBarItem(icon: "house.fill", title: "Dashboard", isSelected: selectedTab == .dashboard) {
+                selectedTab = .dashboard
+            }
+            TabBarItem(icon: "car.fill", title: "Vehicles", isSelected: selectedTab == .vehicles) {
+                selectedTab = .vehicles
+            }
+            TabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == .alerts) {
+                selectedTab = .alerts
+            }
+        }
+        .padding(.vertical, 14)
+        .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+        .clipShape(Capsule())
+        .padding(.horizontal, 40)
+        .padding(.bottom, 8)
+        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+    }
+}
+
+struct TabBarItem: View {
+    let icon: String
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundColor(isSelected ? .appEmerald : .gray)
+                
+                Text(title)
+                    .font(.system(size: 10))
+                    .foregroundColor(isSelected ? .appEmerald : .gray)
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 }

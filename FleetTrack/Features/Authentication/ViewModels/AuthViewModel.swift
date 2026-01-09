@@ -31,7 +31,7 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Services
     
-    private let authService: AuthServiceProtocol = FirebaseAuthService.shared
+    private let authService: AuthServiceProtocol = SupabaseAuthService.shared
     private let sessionManager = SessionManager.shared
     private var cancellables = Set<AnyCancellable>()
     
@@ -52,11 +52,7 @@ class AuthViewModel: ObservableObject {
         
         do {
             let user = try await authService.adminLogin(email: email, password: password)
-            
-            // Check if 2FA is enabled (For Admin, likely not used in prototype logic yet unless MFA)
-            // If we have custom 2FA logic, insert here. For now, trust the adapter.
             await completeLogin(user: user, rememberMe: false)
-            
             isLoading = false
         } catch {
             isLoading = false
@@ -104,10 +100,7 @@ class AuthViewModel: ObservableObject {
                 employeeID: employeeID,
                 password: password
             )
-            
-            // Maintenance currently doesn't use 2FA in prototype flow
             await completeLogin(user: user, rememberMe: false)
-            
             isLoading = false
         } catch {
             isLoading = false
@@ -120,7 +113,7 @@ class AuthViewModel: ObservableObject {
     /// Verify 2FA code (SMS only for now)
     func verifyTwoFactorCode(_ code: String, rememberMe: Bool = false) async {
         guard let user = currentLoginUser else {
-            handleError(FirebaseAuthError.userNotFound)
+            handleError(AuthError.userNotFound)
             return
         }
         
@@ -131,7 +124,7 @@ class AuthViewModel: ObservableObject {
             // Verify based on method
             if twoFactorMethod == .sms {
                 guard let employeeID = user.employeeID, let vid = verificationID else {
-                   throw FirebaseAuthError.invalidCredentials
+                   throw AuthError.invalidCredentials
                 }
                 
                 // Login via SMS verification
@@ -142,8 +135,7 @@ class AuthViewModel: ObservableObject {
                 )
                 await completeLogin(user: verifiedUser, rememberMe: rememberMe)
             } else {
-                // Fallback or other methods (TOTP not implemented in Firebase Adapter)
-                throw FirebaseAuthError.invalidCredentials
+                throw AuthError.invalidCredentials
             }
             
             isLoading = false
@@ -177,7 +169,6 @@ class AuthViewModel: ObservableObject {
     
     /// Complete login and update session
     private func completeLogin(user: User, rememberMe: Bool) async {
-        // Firebase handles session automatically, we just update local state
         sessionManager.setUser(user)
         
         // Reset state
@@ -192,7 +183,7 @@ class AuthViewModel: ObservableObject {
     func logout() async {
         isLoading = true
         try? await authService.logout()
-        sessionManager.clearSession() // Ensure session manager clears
+        sessionManager.clearSession()
         isLoading = false
         resetState()
     }
@@ -222,4 +213,23 @@ class AuthViewModel: ObservableObject {
         errorMessage = nil
         showError = false
     }
+}
+
+enum AuthError: LocalizedError {
+    case userNotFound
+    case invalidCredentials
+    
+    var errorDescription: String? {
+        switch self {
+        case .userNotFound:
+            return "User not found"
+        case .invalidCredentials:
+            return "Invalid credentials"
+        }
+    }
+}
+
+enum TwoFactorMethod: String, Codable, CaseIterable {
+    case sms
+    case email
 }

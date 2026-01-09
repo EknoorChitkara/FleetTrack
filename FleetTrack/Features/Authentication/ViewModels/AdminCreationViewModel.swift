@@ -33,7 +33,7 @@ class AdminCreationViewModel: ObservableObject {
     
     // MARK: - Services
     
-    private let authService: AuthServiceProtocol = FirebaseAuthService.shared
+    private let authService: AuthServiceProtocol = SupabaseAuthService.shared
     
     // MARK: - Validation
     

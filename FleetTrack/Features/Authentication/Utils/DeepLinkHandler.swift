@@ -2,53 +2,38 @@
 //  DeepLinkHandler.swift
 //  FleetTrack
 //
-//  Created by Firebase Integration
+//  Created by Supabase Integration
 //
 
 import Foundation
-import FirebaseAuth
+// import Supabase
 
-/// Handles Firebase authentication deep links
+/// Handles authentication deep links
 class DeepLinkHandler {
     
     enum DeepLinkAction {
-        case passwordReset(oobCode: String)
-        case emailVerification(oobCode: String)
+        case passwordReset(code: String)
+        case emailVerification(code: String)
         case unknown
     }
     
-    /// Parse Firebase auth action URL
+    /// Parse auth action URL
     static func parse(_ url: URL) -> DeepLinkAction {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let queryItems = components.queryItems else {
-            return .unknown
-        }
+        // Supabase Deep Links usually come as:
+        // com.app://auth/callback#access_token=...&refresh_token=...&type=recovery
+        // or
+        // com.app://auth/callback?code=...
         
-        // Extract mode and oobCode
-        let mode = queryItems.first(where: { $0.name == "mode" })?.value
-        let oobCode = queryItems.first(where: { $0.name == "oobCode" })?.value
-        
-        guard let code = oobCode else {
-            return .unknown
-        }
-        
-        switch mode {
-        case "resetPassword":
-            return .passwordReset(oobCode: code)
-        case "verifyEmail":
-            return .emailVerification(oobCode: code)
-        default:
-            return .unknown
-        }
+        // TODO: Implement Supabase URL parsing
+        return .unknown
     }
     
-    /// Verify password reset code is valid
+    // Placeholder methods for protocol compatibility if needed
     static func verifyPasswordResetCode(_ code: String) async throws -> String {
-        return try await Auth.auth().verifyPasswordResetCode(code)
+        return "mock_email@example.com"
     }
     
-    /// Confirm password reset with new password
     static func confirmPasswordReset(code: String, newPassword: String) async throws {
-        try await Auth.auth().confirmPasswordReset(withCode: code, newPassword: newPassword)
+        // No-op
     }
 }

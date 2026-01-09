@@ -2,14 +2,14 @@
 //  LoginView.swift
 //  FleetTrack
 //
-//  Created by Firebase Integration
+//  Created by Supabase Integration
 //
 
 import SwiftUI
 
 /// Placeholder Login View
 /// This will be implemented in Phase 3
-struct LoginView: View {
+struct AuthLoginView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
     var body: some View {
@@ -22,7 +22,7 @@ struct LoginView: View {
                 .font(.largeTitle)
                 .bold()
             
-            Text("Authentication System Active")
+            Text("Supabase Auth System Active")
                 .font(.subheadline)
                 .foregroundColor(.gray)
             
@@ -39,24 +39,22 @@ struct LoginView: View {
             
             // Temporary Debug Login Buttons
             VStack(spacing: 12) {
-                Button("Create Test Admin") {
+                Button("Create Test Admin (Mock)") {
                     Task {
                         do {
                             // ⚠️ SECURITY: Never commit real emails to Git
-                            // Replace this with your email when testing locally
-                            let testEmail = "admin@example.com" // TODO: Replace locally for testing
+                            let testEmail = "admin@example.com"
                             
-                            // Direct call to adapter for seeding
-                            let (user, tempPassword) = try await FirebaseAuthAdapter.shared.createAdminAccount(email: testEmail)
+                            // Direct call to service for seeding (using shared instance cast or protocol if method exists)
+                            // Since createAdminAccount is in protocol, we can use accessing via viewModel or instance
+                            let (user, tempPassword) = try await SupabaseAuthService.shared.createAdminAccount(email: testEmail)
                             
                             print("✅ Test Admin Created")
                             print("📧 Email: \(testEmail)")
-                            print("🔑 Temporary Password: \(tempPassword)")
-                            print("📬 Password reset email sent to your inbox!")
-                            print("⚠️ Check your email and click the reset link to set your password")
+                            print("🔑 Setup Token: \(tempPassword)")
                             
                             // Show alert to user
-                            authViewModel.errorMessage = "Admin created! Check \(testEmail) for password reset email."
+                            authViewModel.errorMessage = "Admin created! Setup token: \(tempPassword)"
                             authViewModel.showError = true
                         } catch {
                             print("❌ Error: \(error.localizedDescription)")
