@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 struct ResetPasswordView: View {
     @Environment(\.dismiss) private var dismiss
@@ -189,14 +190,14 @@ struct ResetPasswordView: View {
     }
     
     private func updatePassword() async {
-        guard newPassword == confirmPassword else { message = "❌ Match error"; return }
+        guard newPassword == confirmPassword else { message = "❌ Passwords do not match"; return }
         
         let currentSession = try? await supabase.auth.session
         print("👤 Current session before update: \(currentSession?.user.email ?? "NIL")")
         
         isLoading = true
         do {
-            try await supabase.auth.update(user: .init(password: newPassword))
+            try await supabase.auth.update(user: UserAttributes(password: newPassword))
             message = "✅ Updated!"; try? await Task.sleep(for: .seconds(1))
             dismiss()
         } catch {
@@ -205,3 +206,4 @@ struct ResetPasswordView: View {
         isLoading = false
     }
 }
+

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 struct VerificationView: View {
     let email: String
@@ -111,12 +112,16 @@ struct VerificationView: View {
         let fullCode = otpCode.joined().trimmingCharacters(in: .whitespaces)
         
         do {
-            try await supabase.auth.verifyOTP(email: email, token: fullCode, type: .magiclink)
+            try await supabase.auth.verifyOTP(
+                email: email,
+                token: fullCode,
+                type: .magiclink
+            )
             print("✅ 2FA Success for \(email)")
             
             // Fetch User profile after verification
             let session = try await supabase.auth.session
-            let userProfile: User = try await supabase.database
+            let userProfile: User = try await supabase
                 .from("users")
                 .select()
                 .eq("id", value: session.user.id)
