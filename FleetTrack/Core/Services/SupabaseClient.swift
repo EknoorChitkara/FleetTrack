@@ -12,7 +12,10 @@ import Supabase
 /// ⚠️ IMPORTANT: Must be outside any View or class for early initialization
 let supabase = SupabaseClient(
     supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
-    supabaseKey: SupabaseConfig.supabaseAnonKey
+    supabaseKey: SupabaseConfig.supabaseAnonKey,
+    options: SupabaseClientOptions(
+        auth: .init(emitLocalSessionAsInitialSession: true)
+    )
 )
 
 /// Singleton wrapper for accessing the global Supabase client

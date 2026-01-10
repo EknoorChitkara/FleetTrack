@@ -142,3 +142,43 @@ struct Vehicle: Identifiable, Codable, Hashable {
         return nextService <= Date()
     }
 }
+
+// MARK: - Mock Data
+extension Vehicle {
+    static let mockVehicle1 = Vehicle(
+        registrationNumber: "MH-01-AB-1234",
+        model: "Bolero",
+        manufacturer: "Mahindra",
+        vehicleType: .lightCommercial,
+        status: .active,
+        currentSpeed: 45.0,
+        fuelLevel: 75.0,
+        totalMileage: 12500.5,
+        averageFuelEfficiency: 12.5,
+        currentLocation: Location(latitude: 19.0760, longitude: 72.8777, address: "Mumbai, Maharashtra"),
+        yearOfManufacture: 2021,
+        color: "White",
+        capacity: "1.5 Ton"
+    )
+    
+    static let mockVehicle2 = Vehicle(
+        registrationNumber: "DL-01-XY-5678",
+        model: "LPT 1613",
+        manufacturer: "Tata",
+        vehicleType: .heavyCommercial,
+        status: .inMaintenance,
+        currentSpeed: 0.0,
+        fuelLevel: 45.0,
+        totalMileage: 45000.0,
+        averageFuelEfficiency: 6.5,
+        currentLocation: Location(latitude: 28.6139, longitude: 77.2090, address: "Delhi"),
+        yearOfManufacture: 2019,
+        color: "Yellow",
+        capacity: "10 Ton"
+    )
+    
+    static let mockVehicles: [Vehicle] = [
+        mockVehicle1,
+        mockVehicle2
+    ]
+}
