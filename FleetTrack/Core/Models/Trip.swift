@@ -91,3 +91,36 @@ struct Trip: Identifiable, Codable, Hashable {
         return String(format: "%.1f km", distance)
     }
 }
+
+// MARK: - Mock Data
+extension Trip {
+    static let mockOngoingTrip = Trip(
+        vehicleId: Vehicle.mockVehicle1.id,
+        driverId: User.mockDriver.id,
+        status: .ongoing,
+        startLocation: Location(latitude: 19.0760, longitude: 72.8777, address: "Mumbai"),
+        endLocation: Location(latitude: 18.5204, longitude: 73.8567, address: "Pune"),
+        startTime: Calendar.current.date(byAdding: .hour, value: -2, to: Date()),
+        distance: 148.5,
+        purpose: "Urgent Delivery",
+        createdBy: User.mockFleetManager.id
+    )
+    
+    static let mockCompletedTrip = Trip(
+        vehicleId: Vehicle.mockVehicle2.id,
+        driverId: User.mockDriver.id,
+        status: .completed,
+        startLocation: Location(latitude: 28.6139, longitude: 77.2090, address: "Delhi"),
+        endLocation: Location(latitude: 26.9124, longitude: 75.7873, address: "Jaipur"),
+        startTime: Calendar.current.date(byAdding: .day, value: -1, to: Date()),
+        endTime: Calendar.current.date(byAdding: .day, value: -1, to: Date())?.addingTimeInterval(3600 * 6),
+        distance: 280.0,
+        purpose: "Retail Stock",
+        createdBy: User.mockFleetManager.id
+    )
+    
+    static let mockTrips: [Trip] = [
+        mockOngoingTrip,
+        mockCompletedTrip
+    ]
+}

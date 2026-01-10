@@ -13,7 +13,7 @@ struct VerificationView: View {
     @Binding var currentUser: User?
     
     @Environment(\.dismiss) var dismiss
-    @State private var otpCode: [String] = Array(repeating: "", count: 8)
+    @State private var otpCode: [String] = Array(repeating: "", count: 6)
     @FocusState private var focusedIndex: Int?
     @State private var isLoading = false
     @State private var message = ""
@@ -35,21 +35,21 @@ struct VerificationView: View {
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     
-                    Text("Enter the 8-digit code sent to\n\(email)")
+                    Text("Enter the 6-digit code sent to\n\(email)")
                         .font(.subheadline)
                         .foregroundColor(.appSecondaryText)
                         .multilineTextAlignment(.center)
                 }
                 
                 HStack(spacing: 8) {
-                    ForEach(0..<8, id: \.self) { index in
+                    ForEach(0..<6, id: \.self) { index in
                         OTPInputBox(text: $otpCode[index], isFocused: focusedIndex == index)
                             .focused($focusedIndex, equals: index)
                             .onChange(of: otpCode[index]) { newValue in
                                 if newValue.count > 1 {
                                     otpCode[index] = String(newValue.prefix(1))
                                 }
-                                if !newValue.isEmpty && index < 7 {
+                                if !newValue.isEmpty && index < 5 {
                                     focusedIndex = index + 1
                                 }
                             }
@@ -138,7 +138,7 @@ struct VerificationView: View {
             await MainActor.run {
                 message = "❌ Invalid or expired code"
                 // Clear boxes on failure to allow fresh entry
-                otpCode = Array(repeating: "", count: 8)
+                otpCode = Array(repeating: "", count: 6)
                 focusedIndex = 0
                 isLoading = false
             }
