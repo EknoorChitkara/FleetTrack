@@ -13,6 +13,18 @@ extension Color {
     static let appSecondaryText = Color(hex: "8E8E93")
 }
 
+struct AppTheme {
+    static let primary = Color.appEmerald
+    static let background = Color.appBackground
+    static let cardBackground = Color.appCardBackground
+    static let textPrimary = Color.white
+    static let textSecondary = Color.appSecondaryText
+    static let textTertiary = Color.appSecondaryText.opacity(0.7)
+    static let border = Color.white.opacity(0.1)
+    static let surfaceHighlight = Color.white.opacity(0.1)
+    static let iconDefault = Color.appEmerald
+}
+
 extension Color {
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)

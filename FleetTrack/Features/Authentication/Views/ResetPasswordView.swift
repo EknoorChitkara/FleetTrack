@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Supabase
-
 struct ResetPasswordView: View {
     @Environment(\.dismiss) private var dismiss
     let url: URL?

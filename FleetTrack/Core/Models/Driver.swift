@@ -39,7 +39,9 @@ struct Driver: Identifiable, Codable, Hashable {
     var rating: Double // 0.0 to 5.0
     var safetyScore: Int // 0 to 100
     var totalTrips: Int
-    var totalDistanceDriven: Double // km
+    var totalDistanceDriven: Double // in km
+    var onTimeDeliveryRate: Double // 0.0 to 100.0
+    var fuelEfficiency: Double // L/100km or km/L
     
     // Current assignment
     var currentVehicleId: UUID?
@@ -73,6 +75,8 @@ struct Driver: Identifiable, Codable, Hashable {
         safetyScore: Int = 100,
         totalTrips: Int = 0,
         totalDistanceDriven: Double = 0,
+        onTimeDeliveryRate: Double = 0,
+        fuelEfficiency: Double = 0,
         currentVehicleId: UUID? = nil,
         currentTripId: UUID? = nil,
         certifications: [String] = [],
@@ -95,6 +99,8 @@ struct Driver: Identifiable, Codable, Hashable {
         self.safetyScore = safetyScore
         self.totalTrips = totalTrips
         self.totalDistanceDriven = totalDistanceDriven
+        self.onTimeDeliveryRate = onTimeDeliveryRate
+        self.fuelEfficiency = fuelEfficiency
         self.currentVehicleId = currentVehicleId
         self.currentTripId = currentTripId
         self.certifications = certifications
@@ -137,4 +143,72 @@ struct Driver: Identifiable, Codable, Hashable {
             return "Valid"
         }
     }
+}
+
+// MARK: - Mock Data
+extension Driver {
+    static let mockDriver1 = Driver(
+        userId: User.mockDriver.id,
+        driverLicenseNumber: "DL-1420110012345",
+        licenseType: .transport,
+        licenseExpiryDate: Calendar.current.date(byAdding: .year, value: 2, to: Date())!,
+        status: .onTrip,
+        rating: 4.7,
+        safetyScore: 92,
+        totalTrips: 342,
+        totalDistanceDriven: 18750.5,
+        onTimeDeliveryRate: 98.5,
+        fuelEfficiency: 7.2,
+        currentVehicleId: Vehicle.mockVehicle1.id,
+        currentTripId: Trip.mockOngoingTrip.id,
+        certifications: ["First Aid Certified", "Defensive Driving", "Hazmat Handling"],
+        yearsOfExperience: 8,
+        emergencyContactName: "Sunita Kumar",
+        emergencyContactPhone: "+91 98765 43211",
+        joinedDate: Calendar.current.date(byAdding: .year, value: -3, to: Date())!
+    )
+    
+    static let mockDriver2 = Driver(
+        userId: UUID(),
+        driverLicenseNumber: "DL-1420110067890",
+        licenseType: .heavyMotorVehicle,
+        licenseExpiryDate: Calendar.current.date(byAdding: .day, value: 25, to: Date())!,
+        status: .available,
+        rating: 4.9,
+        safetyScore: 98,
+        totalTrips: 567,
+        totalDistanceDriven: 45230.0,
+        onTimeDeliveryRate: 99.2,
+        fuelEfficiency: 6.8,
+        certifications: ["Advanced Driving", "First Aid Certified"],
+        yearsOfExperience: 12,
+        emergencyContactName: "Anita Sharma",
+        emergencyContactPhone: "+91 98765 11111",
+        joinedDate: Calendar.current.date(byAdding: .year, value: -5, to: Date())!
+    )
+    
+    static let mockDriver3 = Driver(
+        userId: UUID(),
+        driverLicenseNumber: "DL-0720110034567",
+        licenseType: .lightMotorVehicle,
+        licenseExpiryDate: Calendar.current.date(byAdding: .month, value: 8, to: Date())!,
+        status: .offDuty,
+        rating: 4.3,
+        safetyScore: 85,
+        totalTrips: 128,
+        totalDistanceDriven: 6240.0,
+        onTimeDeliveryRate: 92.0,
+        fuelEfficiency: 8.5,
+        certifications: ["First Aid Certified"],
+        yearsOfExperience: 3,
+        emergencyContactName: "Ravi Verma",
+        emergencyContactPhone: "+91 98765 22222",
+        joinedDate: Calendar.current.date(byAdding: .year, value: -1, to: Date())!
+    )
+    
+    static let mockDrivers: [Driver] = [
+        mockDriver1,
+        mockDriver2,
+        mockDriver3
+    ]
 }

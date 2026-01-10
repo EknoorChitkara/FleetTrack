@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Supabase
-
 struct LoginView: View {
     @Binding var isLoggedIn: Bool
     @Binding var currentUser: User?

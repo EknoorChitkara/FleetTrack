@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Supabase
-
 struct VerificationView: View {
     let email: String
     @Binding var isLoggedIn: Bool
