@@ -34,7 +34,7 @@ struct DriverDashboardView: View {
             }
             
             // Tab Bar
-            CustomTabBar(selectedTab: $selectedTab)
+            DriverCustomTabBar(selectedTab: $selectedTab)
         }
         .navigationBarHidden(true)
         .task {
@@ -87,13 +87,13 @@ struct DriverDashboardView: View {
                 } else {
                     // Stat Cards
                     HStack(spacing: 16) {
-                        StatCard(
+                        DriverStatCard(
                             title: "Trips Completed",
                             value: "\(viewModel.driver?.totalTrips ?? 0)",
                             unit: ""
                         )
                         
-                        StatCard(
+                        DriverStatCard(
                             title: "Distance",
                             value: "\(Int(viewModel.driver?.totalDistanceDriven ?? 0))",
                             unit: "km"

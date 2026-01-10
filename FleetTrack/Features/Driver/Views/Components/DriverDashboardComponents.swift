@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-struct StatCard: View {
+struct DriverStatCard: View {
     let title: String
     let value: String
     let unit: String
@@ -183,24 +183,24 @@ struct RecentTripRow: View {
     }
 }
 
-struct CustomTabBar: View {
+struct DriverCustomTabBar: View {
     @Binding var selectedTab: Int
     
     var body: some View {
         HStack {
-            TabBarItem(icon: "house.fill", label: "Home", isSelected: selectedTab == 0) {
+            DriverTabBarItem(icon: "house.fill", title: "Home", isSelected: selectedTab == 0) {
                 selectedTab = 0
             }
             
             Spacer()
             
-            TabBarItem(icon: "map.fill", label: "Trips", isSelected: selectedTab == 1) {
+            DriverTabBarItem(icon: "map.fill", title: "Trips", isSelected: selectedTab == 1) {
                 selectedTab = 1
             }
             
             Spacer()
             
-            TabBarItem(icon: "bell.fill", label: "Alerts", isSelected: selectedTab == 2) {
+            DriverTabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == 2) {
                 selectedTab = 2
             }
         }
@@ -214,9 +214,9 @@ struct CustomTabBar: View {
     }
 }
 
-struct TabBarItem: View {
+struct DriverTabBarItem: View {
     let icon: String
-    let label: String
+    let title: String
     let isSelected: Bool
     let action: () -> Void
     
@@ -225,7 +225,7 @@ struct TabBarItem: View {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 20, weight: .medium))
-                Text(label)
+                Text(title)
                     .font(.caption2)
             }
             .foregroundColor(isSelected ? .appEmerald : .appSecondaryText)
