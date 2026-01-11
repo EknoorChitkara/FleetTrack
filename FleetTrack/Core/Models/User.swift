@@ -95,4 +95,13 @@ extension User {
         mockDriver,
         mockMaintenancePersonnel
     ]
+    
+    static func testAdmin() -> User {
+        return User(
+            name: "Admin User",
+            email: "admin@fleettrack.com",
+            phoneNumber: "+91 98765 00000",
+            role: .fleetManager
+        )
+    }
 }

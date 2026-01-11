@@ -27,6 +27,15 @@ struct FleetTrackApp: App {
         let url: URL
     }
     
+    init() {
+        // Development: Check if we should bypass login
+        if DevelopmentConfig.bypassLogin {
+            _isLoggedIn = State(initialValue: true)
+            _currentUser = State(initialValue: DevelopmentConfig.mockUser)
+        }
+    }
+
+    
     var body: some Scene {
         WindowGroup {
             Group {
@@ -35,7 +44,7 @@ struct FleetTrackApp: App {
                         switch user.role {
                         case .fleetManager: FleetManagerDashboardView(user: user).toolbar { logoutButton }
                         case .driver: DriverDashboardView(user: user).toolbar { logoutButton }
-                        case .maintenancePersonnel: MaintenanceDashboardView(user: user).toolbar { logoutButton }
+                        case .maintenancePersonnel: MaintenanceTabView()
                         }
                     }
                 } else {
