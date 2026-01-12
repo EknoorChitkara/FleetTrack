@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MaintenanceDashboardView: View {
+    let user: User
     @ObservedObject var viewModel: MaintenanceDashboardViewModel
     @Binding var selectedTab: Int
     
@@ -166,7 +167,8 @@ struct MaintenanceDashboardView: View {
 
 #Preview {
     MaintenanceDashboardView(
-        viewModel: MaintenanceDashboardViewModel(),
+        user: .testAdmin(),
+        viewModel: MaintenanceDashboardViewModel(user: .testAdmin()),
         selectedTab: .constant(0)
     )
 }

@@ -29,10 +29,10 @@ class MaintenanceDashboardViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init() {
+    init(user: User) {
         // Initialize new dashboard properties
         // Using the existing User model from Authentication
-        self.currentUser = User.testAdmin()
+        self.currentUser = user
         self.maintenanceSummary = MaintenanceSummary(
             completedTasksThisMonth: 45,
             averageCompletionTimeHours: 2.5

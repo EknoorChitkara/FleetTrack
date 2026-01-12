@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ProfileView: View {
+struct MaintenanceProfileView: View {
     var body: some View {
         ZStack {
             AppTheme.backgroundPrimary
@@ -28,5 +28,5 @@ struct ProfileView: View {
 }
 
 #Preview {
-    ProfileView()
+    MaintenanceProfileView()
 }

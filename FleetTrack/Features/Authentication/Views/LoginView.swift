@@ -8,8 +8,8 @@
 import SwiftUI
 import Supabase
 struct LoginView: View {
-    @Binding var isLoggedIn: Bool
-    @Binding var currentUser: User?
+    @ObservedObject private var sessionManager = SessionManager.shared
+
     
     @State private var email = ""
     @State private var password = ""
@@ -102,7 +102,7 @@ struct LoginView: View {
                 }
             }
             .navigationDestination(isPresented: $show2FAView) {
-                VerificationView(email: otpEmail, isLoggedIn: $isLoggedIn, currentUser: $currentUser)
+                VerificationView(email: otpEmail)
             }
         }
     }
