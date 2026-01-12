@@ -1,8 +1,8 @@
 //
-//  ProfileView.swift
+//  MaintenanceProfileView.swift
 //  FleetTrack
 //
-//  Created by Anmolpreet Singh on 09/01/26.
+//  Created for Maintenance personnel
 //
 
 import SwiftUI
@@ -74,16 +74,6 @@ struct MaintenanceProfileView: View {
                         
                         // Settings Sections
                         VStack(spacing: 24) {
-                            // Account Section
-                            MaintenanceProfileSection(title: "Maintenance") {
-                                NavigationLink(destination: TasksView()) {
-                                    MaintenanceSettingRow(icon: "clipboard.fill", title: "My Tasks", color: .blue)
-                                }
-                                NavigationLink(destination: TaskHistoryView(completedTasks: [])) {
-                                    MaintenanceSettingRow(icon: "clock.fill", title: "Activity History", color: .purple)
-                                }
-                            }
-                            
                             // Security Section
                             MaintenanceProfileSection(title: "Security & Privacy") {
                                 NavigationLink(destination: MaintenanceChangePasswordView()) {

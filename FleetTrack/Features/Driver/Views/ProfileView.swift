@@ -86,7 +86,7 @@ struct ProfileHeaderView: View {
                 // Avatar
                 ZStack {
                     Circle()
-                        .fill(AppTheme.statusIdleBackground)
+                        .fill(AppTheme.backgroundElevated)
                         .frame(width: 80, height: 80)
                     
                     Text(user.initials)
@@ -155,8 +155,12 @@ struct ProfileHeaderView: View {
                     .foregroundColor(AppTheme.backgroundPrimary)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AppTheme.accentPrimary)
+                    .background(AppTheme.backgroundSecondary)
                     .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(AppTheme.dividerPrimary, lineWidth: 1)
+                    )
             }
             .padding(.all, 20)
         }

@@ -81,13 +81,13 @@ struct CustomTabBar: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            FleetManagerTabBarItem(icon: "house.fill", title: "Dashboard", isSelected: selectedTab == .dashboard) {
+            TabBarItem(icon: "house.fill", title: "Dashboard", isSelected: selectedTab == .dashboard) {
                 selectedTab = .dashboard
             }
-            FleetManagerTabBarItem(icon: "car.fill", title: "Vehicles", isSelected: selectedTab == .vehicles) {
+            TabBarItem(icon: "car.fill", title: "Vehicles", isSelected: selectedTab == .vehicles) {
                 selectedTab = .vehicles
             }
-            FleetManagerTabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == .alerts) {
+            TabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == .alerts) {
                 selectedTab = .alerts
             }
         }
@@ -100,7 +100,7 @@ struct CustomTabBar: View {
     }
 }
 
-struct FleetManagerTabBarItem: View {
+struct TabBarItem: View {
     let icon: String
     let title: String
     let isSelected: Bool

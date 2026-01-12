@@ -14,7 +14,7 @@ struct MaintenanceTabView: View {
     
     init(user: User) {
         self.user = user
-        self._viewModel = StateObject(wrappedValue: MaintenanceDashboardViewModel(user: user))
+        _viewModel = StateObject(wrappedValue: MaintenanceDashboardViewModel(user: user))
     }
     
     var body: some View {
@@ -86,7 +86,7 @@ struct MaintenanceTabView: View {
     }
 }
 
-// MARK: - Maintenance Tab Bar Item Component
+// MARK: - Tab Bar Item Component
 
 struct MaintenanceTabBarItem: View {
     let icon: String

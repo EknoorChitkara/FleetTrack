@@ -7,7 +7,7 @@ import SwiftUI
 
 struct FleetManagerProfileView: View {
     @Environment(\.presentationMode) var presentationMode
-
+    @EnvironmentObject var authViewModel: AuthViewModel
     let user: User
     @State private var showEditProfile = false
     
@@ -108,7 +108,7 @@ struct FleetManagerProfileView: View {
                         // Logout Button
                         Button(action: {
                             Task {
-                                try? await SupabaseAuthService.shared.logout()
+                                await authViewModel.logout()
                                 presentationMode.wrappedValue.dismiss()
                             }
                         }) {

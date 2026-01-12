@@ -98,7 +98,7 @@ struct EditProfileView: View {
         
         do {
             // Update in Supabase
-            let updatedUser = try await supabase.database
+            let updatedUser = try await supabase
                 .from("users")
                 .update(["name": name, "phone_number": phoneNumber])
                 .eq("id", value: user.id)

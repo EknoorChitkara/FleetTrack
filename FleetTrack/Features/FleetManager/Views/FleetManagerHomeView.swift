@@ -47,7 +47,7 @@ struct FleetManagerHomeView: View {
                         ActionCard(title: "Add\nDriver", icon: "person.badge.plus.fill", color: .green) {
                             showAddDriver = true
                         }
-                        ActionCard(title: "Add\nMaintenance", icon: "wrench.and.screwdriver.fill", color: .orange) {
+                        ActionCard(title: "Maintenance", icon: "wrench.and.screwdriver.fill", color: .orange) {
                             // Action Placeholder
                         }
                     }

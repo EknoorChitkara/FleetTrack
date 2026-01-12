@@ -107,9 +107,14 @@ struct PlanTripView: View {
                                             .stroke(Color(white: 0.2), lineWidth: 1)
                                     )
                                     .overlay(
-                                        DatePicker("", selection: $formData.startDate, displayedComponents: .date)
-                                            .labelsHidden()
-                                            .opacity(0.011)
+                                        ZStack {
+                                            DatePicker("", selection: $formData.startDate, displayedComponents: .date)
+                                                .datePickerStyle(.compact)
+                                                .labelsHidden()
+                                                .opacity(0.011)
+                                        }
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .contentShape(Rectangle())
                                     )
                                     
                                     HStack {
@@ -127,9 +132,14 @@ struct PlanTripView: View {
                                             .stroke(Color(white: 0.2), lineWidth: 1)
                                     )
                                     .overlay(
-                                        DatePicker("", selection: $formData.startTime, displayedComponents: .hourAndMinute)
-                                            .labelsHidden()
-                                            .opacity(0.011)
+                                        ZStack {
+                                            DatePicker("", selection: $formData.startTime, displayedComponents: .hourAndMinute)
+                                                .datePickerStyle(.compact)
+                                                .labelsHidden()
+                                                .opacity(0.011)
+                                        }
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .contentShape(Rectangle())
                                     )
                                 }
                             }

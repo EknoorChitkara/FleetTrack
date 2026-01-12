@@ -7,7 +7,6 @@
 
 import Foundation
 import Combine
-import Supabase
 
 /// Session manager that observes Supabase Auth state
 /// Maintains the current User (metadata from Supabase/Database)
@@ -24,46 +23,24 @@ class SessionManager: ObservableObject {
         startSessionMonitoring()
     }
     
-    /// Start monitoring Supabase auth state changes
+    /// Start checking session
     private func startSessionMonitoring() {
-        Task {
-            for await (event, session) in supabase.auth.authStateChanges {
-                await MainActor.run {
-                    handleAuthStateChange(event: event, session: session)
+        Task { @MainActor in
+            do {
+                if let user = try await authService.getCurrentUser() {
+                    self.currentUser = user
+                    self.isAuthenticated = true
+                    print("✅ Session active for: \(user.name)") // Assuming name is available in Core.User
+                } else {
+                    self.currentUser = nil
+                    self.isAuthenticated = false
+                    print("🔄 No active session")
                 }
+            } catch {
+                print("⚠️ Session check failed: \(error.localizedDescription)")
+                self.currentUser = nil
+                self.isAuthenticated = false
             }
-        }
-    }
-    
-    @MainActor
-    private func handleAuthStateChange(event: AuthChangeEvent, session: Session?) {
-        print("🔔 Auth State Change: \(event)")
-        
-        switch event {
-        case .signedIn, .initialSession, .tokenRefreshed:
-            if let session = session {
-                Task {
-                    do {
-                        let user = try await authService.getCurrentUser()
-                        await MainActor.run {
-                            self.currentUser = user
-                            self.isAuthenticated = true
-                        }
-                    } catch {
-                        print("⚠️ Failed to fetch user profile: \(error.localizedDescription)")
-                        await MainActor.run {
-                            self.isAuthenticated = false
-                            self.currentUser = nil
-                        }
-                    }
-                }
-            }
-        case .signedOut:
-            self.currentUser = nil
-            self.isAuthenticated = false
-            print("🔄 User signed out")
-        default:
-            break
         }
     }
     
