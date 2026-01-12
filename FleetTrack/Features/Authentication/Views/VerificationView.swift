@@ -35,7 +35,7 @@ struct VerificationView: View {
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     
-                    Text("Enter the 6-digit code sent to\n\(email)")
+                    Text("Enter the 8-digit code sent to\n\(email)")
                         .font(.subheadline)
                         .foregroundColor(.appSecondaryText)
                         .multilineTextAlignment(.center)
