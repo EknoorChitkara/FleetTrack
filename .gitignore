@@ -102,3 +102,10 @@ iOSInjectionProject/
 # Backup files
 *.bak
 *.backup
+
+# Firebase
+GoogleService-Info.plist
+google-services.json
+.firebase/
+functions/node_modules/
+functions/.env
