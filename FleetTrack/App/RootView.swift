@@ -11,12 +11,8 @@ struct RootView: View {
     
     var body: some View {
         ZStack {
-            // Priority 1: Loading
-            if sessionManager.isLoading {
-                loadingView
-            }
-            // Priority 2: Authenticated & User Data Present
-            else if sessionManager.isAuthenticated, let user = sessionManager.currentUser {
+            if sessionManager.isAuthenticated, let user = sessionManager.currentUser {
+                // User is authenticated - show dashboard based on role
                 NavigationStack {
                     switch user.role {
                     case .fleetManager:
@@ -27,9 +23,8 @@ struct RootView: View {
                         MaintenanceTabView(user: user)
                     }
                 }
-            }
-            // Priority 3: Not Authenticated (Login)
-            else {
+            } else {
+                // User is not authenticated - show login page
                 LoginView()
             }
         }
