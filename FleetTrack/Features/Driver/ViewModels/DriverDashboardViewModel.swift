@@ -58,9 +58,12 @@ final class DriverDashboardViewModel: ObservableObject {
                 // Initialize an empty driver object so the UI can show 0/nil values
                 self.driver = Driver(
                     userId: user.id,
+                    fullName: user.name,
+                    email: user.email,
+                    phoneNumber: user.phoneNumber,
                     driverLicenseNumber: "Not Set",
                     licenseType: .lightMotorVehicle,
-                    licenseExpiryDate: Date()
+                    licenseExpiryDate: nil // Specifically set to nil as requested by handling
                 )
                 self.assignedVehicle = nil
                 self.recentTrips = []

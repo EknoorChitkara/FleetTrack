@@ -55,4 +55,16 @@ final class DriverService {
             .value
         return trips
     }
+    /// Update driver profile
+    func updateDriverProfile<T: Encodable>(driverId: UUID, updates: T) async throws -> Driver {
+        let updated: Driver = try await client
+            .from("drivers")
+            .update(updates)
+            .eq("id", value: driverId.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return updated
+    }
 }
