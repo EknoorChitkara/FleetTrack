@@ -16,7 +16,7 @@ struct RootView: View {
                 NavigationStack {
                     switch user.role {
                     case .fleetManager:
-                        FleetManagerDashboardView(user: user).toolbar { logoutButton }
+                        FleetManagerDashboardView(user: user)
                     case .driver:
                         DriverDashboardView(user: user).toolbar { logoutButton }
                     case .maintenancePersonnel:

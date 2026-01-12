@@ -100,31 +100,54 @@ struct EditProfileView: View {
         isLoading = true
         errorMessage = nil
         
+        print("📝 Saving profile for driver: \(driver.id)")
+        
         do {
             // 1. Update in "users" table
-            let updatedUser = try await supabase.database
+            struct UserUpdate: Encodable {
+                let name: String
+                let phone_number: String
+            }
+            
+            let userUpdates = UserUpdate(name: name, phone_number: phoneNumber)
+            
+            let updatedUser: User = try await supabase.database
                 .from("users")
-                .update(["name": name, "phone_number": phoneNumber])
-                .eq("id", value: user.id)
+                .update(userUpdates)
+                .eq("id", value: user.id.uuidString)
                 .select()
                 .single()
                 .execute()
-                .value as User
+                .value
+            
+            print("✅ User updated successfully")
             
             // 2. Update in "drivers" table
             struct DriverUpdate: Encodable {
                 let full_name: String
-                let phone_number: String
-                let address: String
+                let phone_number: String?
+                let address: String?
+                let updated_at: String
             }
             
+            let dateFormatter = ISO8601DateFormatter()
             let driverUpdates = DriverUpdate(
                 full_name: name,
-                phone_number: phoneNumber,
-                address: address
+                phone_number: phoneNumber.isEmpty ? nil : phoneNumber,
+                address: address.isEmpty ? nil : address,
+                updated_at: dateFormatter.string(from: Date())
             )
             
-            let updatedDriver = try await DriverService.shared.updateDriverProfile(driverId: driver.id, updates: driverUpdates)
+            let updatedDriver: Driver = try await supabase.database
+                .from("drivers")
+                .update(driverUpdates)
+                .eq("id", value: driver.id.uuidString)
+                .select()
+                .single()
+                .execute()
+                .value
+            
+            print("✅ Driver updated successfully")
             
             await MainActor.run {
                 self.user = updatedUser
@@ -135,7 +158,7 @@ struct EditProfileView: View {
         } catch {
             print("❌ Error saving profile: \(error)")
             await MainActor.run {
-                self.errorMessage = "Failed to save profile. Please try again."
+                self.errorMessage = "Failed to save profile: \(error.localizedDescription)"
                 self.isLoading = false
             }
         }
