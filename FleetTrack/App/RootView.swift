@@ -11,11 +11,8 @@ struct RootView: View {
     
     var body: some View {
         ZStack {
-            if !sessionManager.isAuthenticated && sessionManager.currentUser == nil {
-                // We use isAuthenticated and currentUser to determine state
-                // If neither is true, show loading or login
-                loadingView
-            } else if sessionManager.isAuthenticated, let user = sessionManager.currentUser {
+            if sessionManager.isAuthenticated, let user = sessionManager.currentUser {
+                // User is authenticated - show dashboard based on role
                 NavigationStack {
                     switch user.role {
                     case .fleetManager:
@@ -27,6 +24,7 @@ struct RootView: View {
                     }
                 }
             } else {
+                // User is not authenticated - show login page
                 LoginView()
             }
         }
