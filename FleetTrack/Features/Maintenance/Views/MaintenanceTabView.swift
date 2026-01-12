@@ -8,14 +8,21 @@
 import SwiftUI
 
 struct MaintenanceTabView: View {
+    let user: User
     @State private var selectedTab = 0
-    @StateObject private var viewModel = MaintenanceDashboardViewModel()
+    @StateObject private var viewModel: MaintenanceDashboardViewModel
+    
+    init(user: User) {
+        self.user = user
+        self._viewModel = StateObject(wrappedValue: MaintenanceDashboardViewModel(user: user))
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
             // Tab Content
             TabView(selection: $selectedTab) {
                 MaintenanceDashboardView(
+                    user: user,
                     viewModel: viewModel,
                     selectedTab: $selectedTab
                 )
@@ -39,7 +46,7 @@ struct MaintenanceTabView: View {
     
     private var customTabBar: some View {
         HStack(spacing: 0) {
-            TabBarItem(
+            MaintenanceTabBarItem(
                 icon: "house.fill",
                 title: "Dashboard",
                 isSelected: selectedTab == 0
@@ -47,7 +54,7 @@ struct MaintenanceTabView: View {
                 selectedTab = 0
             }
             
-            TabBarItem(
+            MaintenanceTabBarItem(
                 icon: "clipboard.fill",
                 title: "Tasks",
                 isSelected: selectedTab == 1
@@ -55,7 +62,7 @@ struct MaintenanceTabView: View {
                 selectedTab = 1
             }
             
-            TabBarItem(
+            MaintenanceTabBarItem(
                 icon: "bell.fill",
                 title: "Alerts",
                 isSelected: selectedTab == 2
@@ -79,9 +86,9 @@ struct MaintenanceTabView: View {
     }
 }
 
-// MARK: - Tab Bar Item Component
+// MARK: - Maintenance Tab Bar Item Component
 
-struct TabBarItem: View {
+struct MaintenanceTabBarItem: View {
     let icon: String
     let title: String
     let isSelected: Bool
@@ -112,5 +119,5 @@ struct TabBarItem: View {
 }
 
 #Preview {
-    MaintenanceTabView()
+    MaintenanceTabView(user: .testAdmin())
 }

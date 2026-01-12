@@ -14,7 +14,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.background
+                AppTheme.backgroundPrimary
                     .ignoresSafeArea()
                 
                 ScrollView {
@@ -24,18 +24,18 @@ struct ProfileView: View {
                         // Account Settings
                         SectionCard(title: "Account Settings") {
                             SettingsRow(icon: "lock.fill", iconColor: AppTheme.iconDefault, title: "Change Password")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "shield.fill", iconColor: AppTheme.iconDefault, title: "Privacy & Security")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "bell.fill", iconColor: AppTheme.iconDefault, title: "Notification Settings", badgeCount: 3)
                         }
                         
                         // App Settings
                         SectionCard(title: "App Settings") {
                             SettingsRow(icon: "slider.horizontal.3", iconColor: AppTheme.iconDefault, title: "Preferences")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "questionmark.circle.fill", iconColor: AppTheme.iconDefault, title: "Help & Support")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "info.circle.fill", iconColor: AppTheme.iconDefault, title: "About")
                         }
                         
@@ -86,7 +86,7 @@ struct ProfileHeaderView: View {
                 // Avatar
                 ZStack {
                     Circle()
-                        .fill(AppTheme.surfaceHighlight)
+                        .fill(AppTheme.statusIdleBackground)
                         .frame(width: 80, height: 80)
                     
                     Text(user.initials)
@@ -111,7 +111,7 @@ struct ProfileHeaderView: View {
             .padding(.top, 20)
             
             Divider()
-                .background(AppTheme.border)
+                .background(AppTheme.dividerPrimary)
                 .padding(.vertical, 16)
             
             VStack(alignment: .leading, spacing: 12) {
@@ -152,15 +152,15 @@ struct ProfileHeaderView: View {
             }) {
                 Text("Edit Profile")
                     .font(.headline)
-                    .foregroundColor(AppTheme.background)
+                    .foregroundColor(AppTheme.backgroundPrimary)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AppTheme.primary)
+                    .background(AppTheme.accentPrimary)
                     .cornerRadius(12)
             }
             .padding(.all, 20)
         }
-        .background(AppTheme.cardBackground)
+        .background(AppTheme.backgroundSecondary)
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
     }
@@ -187,7 +187,7 @@ struct SectionCard<Content: View>: View {
             VStack(spacing: 0) {
                 content
             }
-            .background(AppTheme.cardBackground)
+            .background(AppTheme.backgroundSecondary)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         }
@@ -261,7 +261,7 @@ struct LogoutButton: View {
             .foregroundColor(.red)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(AppTheme.cardBackground)
+            .background(AppTheme.backgroundSecondary)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         }

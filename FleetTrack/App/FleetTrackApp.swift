@@ -31,7 +31,7 @@ struct FleetTrackApp: App {
                         case .driver:
                             DriverDashboardView(user: user)
                         case .maintenancePersonnel:
-                            MaintenanceDashboardView(user: user)
+                            MaintenanceTabView(user: user)
                         }
                     }
                     .onOpenURL { url in
