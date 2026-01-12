@@ -129,6 +129,7 @@ struct VerificationView: View {
                 .value
             
             await MainActor.run {
+                self.sessionManager.setUser(userProfile)
                 self.isLoading = false
             }
         } catch {
@@ -136,7 +137,7 @@ struct VerificationView: View {
             await MainActor.run {
                 message = "❌ Invalid or expired code"
                 // Clear boxes on failure to allow fresh entry
-                otpCode = Array(repeating: "", count: 6)
+                otpCode = Array(repeating: "", count: 8)
                 focusedIndex = 0
                 isLoading = false
             }

@@ -21,6 +21,11 @@ class SupabaseAuthService: AuthServiceProtocol {
     
     private init() {}
     
+    /// Expose auth state changes for SessionManager
+    var authStateChanges: AsyncStream<(event: AuthChangeEvent, session: Session?)> {
+        client.auth.authStateChanges
+    }
+    
     // MARK: - Admin
     
     func createAdminAccount(email: String) async throws -> (user: User, setupToken: String) {
