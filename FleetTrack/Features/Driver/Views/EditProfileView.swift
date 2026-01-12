@@ -12,6 +12,7 @@ struct EditProfileView: View {
     
     @State private var name: String
     @State private var phoneNumber: String
+    @State private var address: String
     @State private var isLoading = false
     @State private var errorMessage: String?
     
@@ -19,8 +20,9 @@ struct EditProfileView: View {
         self._user = user
         self._driver = driver
         self._isPresented = isPresented
-        self._name = State(initialValue: user.wrappedValue.name)
-        self._phoneNumber = State(initialValue: user.wrappedValue.phoneNumber ?? "")
+        self._name = State(initialValue: driver.wrappedValue.fullName.isEmpty ? user.wrappedValue.name : driver.wrappedValue.fullName)
+        self._phoneNumber = State(initialValue: driver.wrappedValue.phoneNumber ?? user.wrappedValue.phoneNumber ?? "")
+        self._address = State(initialValue: driver.wrappedValue.address ?? "")
     }
     
     var body: some View {
@@ -35,6 +37,8 @@ struct EditProfileView: View {
                         TextField("Phone Number", text: $phoneNumber)
                             .foregroundColor(AppTheme.textPrimary)
                             .keyboardType(.phonePad)
+                        TextField("Address", text: $address)
+                            .foregroundColor(AppTheme.textPrimary)
                     }
                     .listRowBackground(AppTheme.cardBackground)
                     
@@ -42,13 +46,13 @@ struct EditProfileView: View {
                         HStack {
                             Text("License")
                             Spacer()
-                            Text(driver.driverLicenseNumber)
+                            Text(driver.driverLicenseNumber ?? "Not Set")
                                 .foregroundColor(AppTheme.textSecondary)
                         }
                         HStack {
                             Text("Experience")
                             Spacer()
-                            Text("\(driver.yearsOfExperience) years")
+                            Text("\(driver.yearsOfExperience ?? 0) years")
                                 .foregroundColor(AppTheme.textSecondary)
                         }
                     }
@@ -97,7 +101,7 @@ struct EditProfileView: View {
         errorMessage = nil
         
         do {
-            // Update in Supabase
+            // 1. Update in "users" table
             let updatedUser = try await supabase.database
                 .from("users")
                 .update(["name": name, "phone_number": phoneNumber])
@@ -107,13 +111,29 @@ struct EditProfileView: View {
                 .execute()
                 .value as User
             
+            // 2. Update in "drivers" table
+            struct DriverUpdate: Encodable {
+                let full_name: String
+                let phone_number: String
+                let address: String
+            }
+            
+            let driverUpdates = DriverUpdate(
+                full_name: name,
+                phone_number: phoneNumber,
+                address: address
+            )
+            
+            let updatedDriver = try await DriverService.shared.updateDriverProfile(driverId: driver.id, updates: driverUpdates)
+            
             await MainActor.run {
                 self.user = updatedUser
+                self.driver = updatedDriver
                 self.isLoading = false
                 self.isPresented = false
             }
         } catch {
-            print(" Error saving profile: \(error)")
+            print("❌ Error saving profile: \(error)")
             await MainActor.run {
                 self.errorMessage = "Failed to save profile. Please try again."
                 self.isLoading = false

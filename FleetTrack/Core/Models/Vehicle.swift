@@ -81,6 +81,30 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var createdAt: Date
     var updatedAt: Date
     
+    enum CodingKeys: String, CodingKey {
+        case id
+        case registrationNumber = "registration_number"
+        case model
+        case manufacturer
+        case vehicleType = "vehicle_type"
+        case status
+        case currentSpeed = "current_speed"
+        case fuelLevel = "fuel_level"
+        case totalMileage = "total_mileage"
+        case averageFuelEfficiency = "average_fuel_efficiency"
+        case currentLocation = "current_location"
+        case lastUpdated = "last_updated"
+        case assignedDriverId = "assigned_driver_id"
+        case nextServiceDue = "next_service_due"
+        case lastServiceDate = "last_service_date"
+        case yearOfManufacture = "year_of_manufacture"
+        case vinNumber = "vin_number"
+        case color
+        case capacity
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+    
     init(
         id: UUID = UUID(),
         registrationNumber: String,

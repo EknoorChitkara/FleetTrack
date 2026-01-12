@@ -140,7 +140,37 @@ struct ProfileHeaderView: View {
                         Text("Phone")
                             .font(.caption)
                             .foregroundColor(AppTheme.textTertiary)
-                        Text(user.phoneNumber ?? "Not set")
+                        Text(driver.phoneNumber ?? user.phoneNumber ?? "Not set")
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                }
+                
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .foregroundColor(AppTheme.iconDefault)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Address")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textTertiary)
+                        Text(driver.address ?? "Not set")
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                }
+                
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "car.fill")
+                        .foregroundColor(AppTheme.iconDefault)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("License Number")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textTertiary)
+                        Text(driver.licenseNumber ?? driver.driverLicenseNumber ?? "Not Set")
                             .font(.subheadline)
                             .foregroundColor(AppTheme.textPrimary)
                     }

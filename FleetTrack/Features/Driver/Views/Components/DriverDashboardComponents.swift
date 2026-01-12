@@ -174,7 +174,7 @@ struct RecentTripRow: View {
                     .fontWeight(.bold)
                     .foregroundColor(.white)
                 
-                Text(trip.status.rawValue)
+                Text(trip.status?.rawValue ?? "Unknown")
                     .font(.caption2)
                     .foregroundColor(trip.status == .completed ? .appEmerald : .orange)
             }
