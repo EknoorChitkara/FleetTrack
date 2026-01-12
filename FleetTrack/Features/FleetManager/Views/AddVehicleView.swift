@@ -102,15 +102,22 @@ struct AddVehicleView: View {
                                     .foregroundColor(.black)
                                     .frame(maxWidth: .infinity)
                                     .padding()
-                                    .background(formData.registrationNumber.isEmpty ? Color.gray : Color.appEmerald)
+                                    .background(!isValidRegistration ? Color.gray : Color.appEmerald)
                                     .cornerRadius(12)
                             }
-                            .disabled(formData.registrationNumber.isEmpty)
+                            .disabled(!isValidRegistration)
+                        }
+                        
+                        if !formData.registrationNumber.isEmpty && !isValidRegistration {
+                            Text("Invalid format. Expected: MH-14-AB1234")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .padding(.top, 4)
                         }
                         
                         Text("* Indicates required field")
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundColor(.gray)
                             .padding(.top, 8)
                     }
                     .padding()
@@ -118,6 +125,15 @@ struct AddVehicleView: View {
             }
             .navigationBarHidden(true)
         }
+    }
+    
+    private var isValidRegistration: Bool {
+        let regEx = "^[A-Z]{2}-\\d{2}-[A-Z]{1,2}\\d{4}$"
+        // Also allow without dashes for better UX if the user prefers, but requirement said "only format required"
+        // I will stick to the exact format but maybe slightly more flexible on spaces/dashes if I wanted, 
+        // but user specifically asked for "only the format which is required".
+        let pred = NSPredicate(format:"SELF MATCHES %@", regEx)
+        return pred.evaluate(with: formData.registrationNumber.uppercased())
     }
 }
 
@@ -279,9 +295,14 @@ struct CustomDatePicker: View {
                     .stroke(Color(white: 0.2), lineWidth: 1)
             )
             .overlay(
-                DatePicker("", selection: $selection, in: ...maxDate, displayedComponents: .date)
-                    .labelsHidden()
-                    .opacity(0.011)
+                ZStack {
+                    DatePicker("", selection: $selection, in: ...maxDate, displayedComponents: .date)
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                        .opacity(0.011)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
             )
         }
     }

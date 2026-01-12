@@ -28,7 +28,7 @@ struct EditProfileView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                AppTheme.background.ignoresSafeArea()
+                AppTheme.backgroundPrimary.ignoresSafeArea()
                 
                 Form {
                     Section(header: Text("Personal Information").foregroundColor(AppTheme.textSecondary)) {
@@ -40,7 +40,7 @@ struct EditProfileView: View {
                         TextField("Address", text: $address)
                             .foregroundColor(AppTheme.textPrimary)
                     }
-                    .listRowBackground(AppTheme.cardBackground)
+                    .listRowBackground(AppTheme.backgroundSecondary)
                     
                     Section(header: Text("Driver Details").foregroundColor(AppTheme.textSecondary)) {
                         HStack {
@@ -56,14 +56,14 @@ struct EditProfileView: View {
                                 .foregroundColor(AppTheme.textSecondary)
                         }
                     }
-                    .listRowBackground(AppTheme.cardBackground)
+                    .listRowBackground(AppTheme.backgroundSecondary)
                 }
                 .scrollContentBackground(.hidden)
                 
                 if isLoading {
                     Color.black.opacity(0.4).ignoresSafeArea()
                     ProgressView()
-                        .tint(AppTheme.primary)
+                        .tint(AppTheme.accentPrimary)
                 }
             }
             .navigationTitle("Edit Profile")
@@ -73,7 +73,7 @@ struct EditProfileView: View {
                     Button("Cancel") {
                         isPresented = false
                     }
-                    .foregroundColor(AppTheme.primary)
+                    .foregroundColor(AppTheme.accentPrimary)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -82,7 +82,7 @@ struct EditProfileView: View {
                             await saveProfile()
                         }
                     }
-                    .foregroundColor(AppTheme.primary)
+                    .foregroundColor(AppTheme.accentPrimary)
                     .disabled(name.isEmpty || isLoading)
                 }
             }

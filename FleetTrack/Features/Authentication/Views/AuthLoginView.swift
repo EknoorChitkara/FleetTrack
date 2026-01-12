@@ -27,16 +27,16 @@ struct AuthLoginView: View {
                 .foregroundColor(.gray)
             
             // Logout button (for testing)
-            if authViewModel.isAuthenticated {
-                Button("Logout Current Session") {
-                    Task {
-                        await authViewModel.logout()
-                    }
-                }
-                .buttonStyle(.bordered)
-                .tint(.red)
-            }
-            
+//            if authViewModel.isAuthenticated {
+//                Button("Logout Current Session") {
+//                    Task {
+//                        await authViewModel.logout()
+//                    }
+//                }
+//                .buttonStyle(.bordered)
+//                .tint(.red)
+//            }
+////            
             // Temporary Debug Login Buttons
             VStack(spacing: 12) {
                 Button("Create Test Admin (Mock)") {

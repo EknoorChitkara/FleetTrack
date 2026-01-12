@@ -9,8 +9,8 @@ import SwiftUI
 import Supabase
 struct VerificationView: View {
     let email: String
-    @Binding var isLoggedIn: Bool
-    @Binding var currentUser: User?
+    @ObservedObject private var sessionManager = SessionManager.shared
+
     
     @Environment(\.dismiss) var dismiss
     @State private var otpCode: [String] = Array(repeating: "", count: 8)
@@ -129,8 +129,6 @@ struct VerificationView: View {
                 .value
             
             await MainActor.run {
-                self.currentUser = userProfile
-                self.isLoggedIn = true
                 self.isLoading = false
             }
         } catch {

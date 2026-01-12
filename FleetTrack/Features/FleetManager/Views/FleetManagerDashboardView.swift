@@ -42,6 +42,7 @@ struct FleetManagerDashboardView: View {
                             showAddVehicle: $showAddVehicle,
                             showAddDriver: $showAddDriver,
                             showProfile: $showProfile
+                            
                         )
                         .environmentObject(fleetVM)
                     case .vehicles:
@@ -118,5 +119,6 @@ struct TabBarItem: View {
             }
             .frame(maxWidth: .infinity)
         }
+        //    },
     }
 }

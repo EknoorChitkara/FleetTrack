@@ -4,7 +4,6 @@
 //
 
 import SwiftUI
-import Supabase
 
 struct ProfileView: View {
     @Binding var user: User
@@ -15,7 +14,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                AppTheme.background
+                AppTheme.backgroundPrimary
                     .ignoresSafeArea()
                 
                 ScrollView {
@@ -25,18 +24,18 @@ struct ProfileView: View {
                         // Account Settings
                         SectionCard(title: "Account Settings") {
                             SettingsRow(icon: "lock.fill", iconColor: AppTheme.iconDefault, title: "Change Password")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "shield.fill", iconColor: AppTheme.iconDefault, title: "Privacy & Security")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "bell.fill", iconColor: AppTheme.iconDefault, title: "Notification Settings", badgeCount: 3)
                         }
                         
                         // App Settings
                         SectionCard(title: "App Settings") {
                             SettingsRow(icon: "slider.horizontal.3", iconColor: AppTheme.iconDefault, title: "Preferences")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "questionmark.circle.fill", iconColor: AppTheme.iconDefault, title: "Help & Support")
-                            Divider().background(AppTheme.border)
+                            Divider().background(AppTheme.dividerPrimary)
                             SettingsRow(icon: "info.circle.fill", iconColor: AppTheme.iconDefault, title: "About")
                         }
                         
@@ -87,7 +86,7 @@ struct ProfileHeaderView: View {
                 // Avatar
                 ZStack {
                     Circle()
-                        .fill(AppTheme.surfaceHighlight)
+                        .fill(AppTheme.backgroundElevated)
                         .frame(width: 80, height: 80)
                     
                     Text(user.initials)
@@ -112,7 +111,7 @@ struct ProfileHeaderView: View {
             .padding(.top, 20)
             
             Divider()
-                .background(AppTheme.border)
+                .background(AppTheme.dividerPrimary)
                 .padding(.vertical, 16)
             
             VStack(alignment: .leading, spacing: 12) {
@@ -183,15 +182,19 @@ struct ProfileHeaderView: View {
             }) {
                 Text("Edit Profile")
                     .font(.headline)
-                    .foregroundColor(AppTheme.background)
+                    .foregroundColor(AppTheme.backgroundPrimary)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AppTheme.primary)
+                    .background(AppTheme.backgroundSecondary)
                     .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(AppTheme.dividerPrimary, lineWidth: 1)
+                    )
             }
             .padding(.all, 20)
         }
-        .background(AppTheme.cardBackground)
+        .background(AppTheme.backgroundSecondary)
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
     }
@@ -218,7 +221,7 @@ struct SectionCard<Content: View>: View {
             VStack(spacing: 0) {
                 content
             }
-            .background(AppTheme.cardBackground)
+            .background(AppTheme.backgroundSecondary)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         }
@@ -278,7 +281,7 @@ struct LogoutButton: View {
     var body: some View {
         Button(action: {
             Task {
-                try? await supabase.auth.signOut()
+                try? await SupabaseAuthService.shared.logout()
                 // The app will react to session change in FleetTrackApp
                 dismissRoot()
             }
@@ -292,7 +295,7 @@ struct LogoutButton: View {
             .foregroundColor(.red)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(AppTheme.cardBackground)
+            .background(AppTheme.backgroundSecondary)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         }
