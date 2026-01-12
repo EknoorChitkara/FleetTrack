@@ -60,9 +60,13 @@ struct MaintenanceDashboardView: View {
         .sheet(isPresented: $showingTaskHistory) {
             TaskHistoryView(completedTasks: viewModel.completedTasks)
         }
+        .sheet(isPresented: $showProfile) {
+            MaintenanceProfileView(user: user)
+        }
     }
     
     @State private var showingTaskHistory = false
+    @State private var showProfile = false
     
     // MARK: - Header View
     
@@ -83,7 +87,7 @@ struct MaintenanceDashboardView: View {
             
             // Profile Icon - simple green circle with person
             Button(action: {
-                // Handle profile navigation
+                showProfile = true
             }) {
                 ZStack {
                     Circle()
