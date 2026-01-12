@@ -9,11 +9,11 @@ import SwiftUI
 import Supabase
 struct VerificationView: View {
     let email: String
-    @Binding var isLoggedIn: Bool
-    @Binding var currentUser: User?
+    @ObservedObject private var sessionManager = SessionManager.shared
+
     
     @Environment(\.dismiss) var dismiss
-    @State private var otpCode: [String] = Array(repeating: "", count: 6)
+    @State private var otpCode: [String] = Array(repeating: "", count: 8)
     @FocusState private var focusedIndex: Int?
     @State private var isLoading = false
     @State private var message = ""
@@ -42,14 +42,14 @@ struct VerificationView: View {
                 }
                 
                 HStack(spacing: 8) {
-                    ForEach(0..<6, id: \.self) { index in
+                    ForEach(0..<8, id: \.self) { index in
                         OTPInputBox(text: $otpCode[index], isFocused: focusedIndex == index)
                             .focused($focusedIndex, equals: index)
                             .onChange(of: otpCode[index]) { newValue in
                                 if newValue.count > 1 {
                                     otpCode[index] = String(newValue.prefix(1))
                                 }
-                                if !newValue.isEmpty && index < 5 {
+                                if !newValue.isEmpty && index < 7 {
                                     focusedIndex = index + 1
                                 }
                             }
@@ -129,8 +129,6 @@ struct VerificationView: View {
                 .value
             
             await MainActor.run {
-                self.currentUser = userProfile
-                self.isLoggedIn = true
                 self.isLoading = false
             }
         } catch {

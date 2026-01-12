@@ -15,11 +15,9 @@ class SupabaseAuthService: AuthServiceProtocol {
     
     static let shared = SupabaseAuthService()
     
-    // Creds found in FleetTrackApp.swift
-    private let client = SupabaseClient(
-        supabaseURL: URL(string: "https://aqvcmemepiupasgozdei.supabase.co")!,
-        supabaseKey: "sb_publishable_BWUDyIK9C8RxkWgkJhCx5A_34dcG1rT"
-    )
+    // Use the global supabase client from SupabaseClient.swift
+    private let client = supabase
+
     
     private init() {}
     
@@ -73,10 +71,10 @@ class SupabaseAuthService: AuthServiceProtocol {
     // MARK: - Session
     
     func getCurrentUser() async throws -> User? {
-        guard let sidebarUser = try? await client.auth.session.user else {
+        guard let user = try? await client.auth.session.user else {
             return nil
         }
-        return try? await fetchUser(id: sidebarUser.id)
+        return try? await fetchUser(id: user.id)
     }
     
     func logout() async throws {
@@ -101,15 +99,15 @@ class SupabaseAuthService: AuthServiceProtocol {
     
     private func fetchUser(id: UUID) async throws -> User {
         // Fetch user profile from 'public.users' table
-        // let user: User = try await client.database.from("users").select().eq("id", value: id).single().execute().value
+        let user: User = try await client.database
+            .from("users")
+            .select()
+            .eq("id", value: id)
+            .single()
+            .execute()
+            .value
         
-        // Return a mock user for now to allow compilation until table structure is set
-        return User(
-            id: id,
-            name: "Supabase User",
-            email: "user@example.com",
-            role: .fleetManager
-        )
+        return user
     }
 }
 

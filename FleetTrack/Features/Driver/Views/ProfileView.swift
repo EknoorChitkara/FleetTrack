@@ -4,7 +4,6 @@
 //
 
 import SwiftUI
-import Supabase
 
 struct ProfileView: View {
     @Binding var user: User
@@ -248,7 +247,7 @@ struct LogoutButton: View {
     var body: some View {
         Button(action: {
             Task {
-                try? await supabase.auth.signOut()
+                try? await SupabaseAuthService.shared.logout()
                 // The app will react to session change in FleetTrackApp
                 dismissRoot()
             }
