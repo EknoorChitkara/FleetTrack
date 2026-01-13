@@ -15,10 +15,6 @@ struct FleetManagerHomeView: View {
     @Binding var showAddDriver: Bool
     @Binding var showProfile: Bool
     
-    // Additional state for new sheets
-    @State private var showGeofence = false
-    @State private var showAddMaintenanceStaff = false
-    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -29,8 +25,8 @@ struct FleetManagerHomeView: View {
                 // Stats Grid
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     StatCard(title: "Total Vehicles", value: "\(fleetVM.vehicles.count)", icon: "car.fill", color: .appEmerald)
-                    StatCard(title: "Active Drivers", value: "\(fleetVM.drivers.filter { $0.status == .available }.count)", icon: "person.fill.checkmark", color: .appEmerald)
-                    StatCard(title: "In Maintenance", value: "\(fleetVM.vehicles.filter { $0.status == .inMaintenance }.count)", icon: "wrench.fill", color: .orange)
+                    StatCard(title: "Active", value: "\(fleetVM.vehicles.filter { $0.status == .active }.count)", icon: "chart.line.uptrend.xyaxis", color: .appEmerald)
+                    StatCard(title: "In Maintenance", value: "\(fleetVM.vehicles.filter { $0.status == .maintenance }.count)", icon: "wrench.fill", color: .orange)
                     StatCard(title: "Ongoing Trips", value: "\(fleetVM.trips.count)", icon: "location.fill", color: .blue)
                 }
                 .padding(.horizontal)
@@ -45,58 +41,47 @@ struct FleetManagerHomeView: View {
                         ActionCard(title: "Create\nTrip", icon: "map.fill", color: .blue) {
                             showCreateTrip = true
                         }
-                        ActionCard(title: "Add\nVehicle", icon: "car.fill", color: .appEmerald) {
+                        ActionCard(title: "Add\nVehicle", icon: "car.fill", color: .appEmerald) { // Changed to appEmerald (Green)
                             showAddVehicle = true
                         }
                         ActionCard(title: "Add\nDriver", icon: "person.badge.plus.fill", color: .green) {
                             showAddDriver = true
                         }
-                        ActionCard(title: "Maintenance\nStaff", icon: "wrench.and.screwdriver.fill", color: .orange) {
-                            showAddMaintenanceStaff = true
+                        ActionCard(title: "Maintenance", icon: "wrench.and.screwdriver.fill", color: .orange) {
+                            // Action Placeholder
                         }
                     }
                 }
                 .padding(.horizontal)
                 
-                // View Geofence Section
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Geofencing")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Button(action: {
-                        showGeofence = true
-                    }) {
-                        HStack {
-                            Image(systemName: "map.circle.fill")
-                                .font(.system(size: 24))
+                // Recent Trips section
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Recent Trips")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                        NavigationLink(destination: AllTripsView().environmentObject(fleetVM)) {
+                            Text("See All")
+                                .font(.subheadline)
                                 .foregroundColor(.appEmerald)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("View Geofence")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white)
-                                Text("Manage geofenced areas")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.appSecondaryText)
-                            }
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
                         }
-                        .padding()
-                        .background(Color.appCardBackground)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                        )
+                    }
+                    .padding(.horizontal)
+                    
+                    if fleetVM.trips.isEmpty {
+                        Text("No trips planned yet.")
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 20)
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(fleetVM.trips.prefix(3)) { trip in
+                                TripRow(trip: trip)
+                            }
+                        }
+                        .padding(.horizontal)
                     }
                 }
-                .padding(.horizontal)
-
                 
                 // Activities section
                 VStack(spacing: 16) {
@@ -131,12 +116,6 @@ struct FleetManagerHomeView: View {
             }
         }
         .background(Color.appBackground.ignoresSafeArea())
-        .sheet(isPresented: $showGeofence) {
-            GeofenceView()
-        }
-        .sheet(isPresented: $showAddMaintenanceStaff) {
-            AddMaintenanceStaffView().environmentObject(fleetVM)
-        }
     }
     
     var headerView: some View {
@@ -181,7 +160,7 @@ struct ActionCard: View {
                     .cornerRadius(8)
                 
                 Text(title)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .multilineTextAlignment(.leading)
                     .foregroundColor(.white)
                 
