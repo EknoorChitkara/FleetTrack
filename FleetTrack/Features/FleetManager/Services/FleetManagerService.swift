@@ -58,52 +58,28 @@ class FleetManagerService {
         print("✅ [addDriver] Driver record created successfully for \(data.fullName)")
     }
     
-    /// Sends an invitation email to the driver using Supabase Edge Function
-    /// Edge Function verifies user role internally (no secret key needed)
+    /// Sends an invitation email to the driver using Supabase Magic Link
+    /// No Edge Function needed - uses built-in Supabase authentication
     private func sendDriverInvite(email: String, fullName: String) async throws {
         print("🔐 [sendDriverInvite] Starting invite for: \(email)")
-        
-        // Define the request body structure
-        struct InviteRequest: Encodable {
-            let email: String
-            let fullName: String
-            let role: String
-        }
-        
-        // Define the response structure
-        struct InviteResponse: Decodable {
-            let success: Bool
-            let userId: String?
-            let message: String?
-            let error: String?
-        }
-        
-        let request = InviteRequest(email: email, fullName: fullName, role: "Driver")
-        print("📦 [sendDriverInvite] Request payload: email=\(email), fullName=\(fullName), role=Driver")
+        print("📧 [sendDriverInvite] Using Supabase Magic Link (no Edge Function)")
         
         do {
-            print("🌐 [sendDriverInvite] Calling Edge Function 'quick-function'...")
-            
-            // Call the Edge Function (no secret key needed - Edge Function verifies user internally)
-            let response: InviteResponse = try await client.functions.invoke(
-                "quick-function",
-                options: FunctionInvokeOptions(body: request)
+            // Send magic link invitation
+            // This creates auth.users record and sends email automatically
+            try await client.auth.signInWithOTP(
+                email: email,
+                redirectTo: URL(string: "fleettrack://set-password")!,
+                shouldCreateUser: true
             )
             
-            print("📥 [sendDriverInvite] Response received:")
-            print("   - success: \(response.success)")
-            print("   - userId: \(response.userId ?? "nil")")
-            print("   - message: \(response.message ?? "nil")")
-            print("   - error: \(response.error ?? "nil")")
+            print("✅ [sendDriverInvite] Magic link sent to \(email)")
+            print("📧 [sendDriverInvite] Driver will receive email with login link")
+            print("ℹ️  [sendDriverInvite] Driver can use magic link to log in and set password")
             
-            if response.success {
-                print("📧 [sendDriverInvite] ✅ Invitation email sent to \(email)")
-            } else if let error = response.error {
-                print("❌ [sendDriverInvite] Failed to send invite: \(error)")
-                throw NSError(domain: "FleetManager", code: 500, userInfo: [NSLocalizedDescriptionKey: error])
-            }
         } catch {
-            print("🚨 [sendDriverInvite] Error: \(error)")
+            print("❌ [sendDriverInvite] Failed to send magic link: \(error)")
+            print("   Error details: \(error.localizedDescription)")
             // Don't block driver creation if invite fails
             print("⚠️ [sendDriverInvite] Continuing without invite email")
         }
