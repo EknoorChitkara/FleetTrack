@@ -120,20 +120,59 @@ struct VerificationView: View {
             print("✅ 2FA Success for \(email)")
             print("✅ Session user ID: \(session.user.id)")
             
-            // Fetch User profile after verification
-            let userProfile: User = try await supabase
-                .from("users")
-                .select()
-                .eq("id", value: session.user.id)
-                .single()
-                .execute()
-                .value
+            // Try to fetch existing user profile
+            var userProfile: User?
             
-            print("✅ User profile fetched: \(userProfile.name)")
+            do {
+                userProfile = try await supabase
+                    .from("users")
+                    .select()
+                    .eq("id", value: session.user.id)
+                    .single()
+                    .execute()
+                    .value
+                print("✅ Existing user profile found: \(userProfile?.name ?? "Unknown")")
+            } catch {
+                // User doesn't exist in users table - create them
+                print("⚠️ No user profile found, creating new record...")
+                
+                // Extract user info from auth session
+                let userName = session.user.userMetadata["full_name"]?.stringValue ?? 
+                               session.user.userMetadata["name"]?.stringValue ?? 
+                               email.components(separatedBy: "@").first ?? "User"
+                let userRole = session.user.userMetadata["role"]?.stringValue ?? "Driver"
+                
+                // Create new user record
+                let newUser = User(
+                    id: session.user.id,
+                    name: userName,
+                    email: email,
+                    phoneNumber: session.user.phone,
+                    role: UserRole(rawValue: userRole) ?? .driver,
+                    profileImageURL: nil,
+                    isActive: true,
+                    createdAt: Date(),
+                    updatedAt: Date()
+                )
+                
+                try await supabase
+                    .from("users")
+                    .insert(newUser)
+                    .execute()
+                
+                userProfile = newUser
+                print("✅ New user profile created for \(userName)")
+            }
+            
+            guard let profile = userProfile else {
+                throw NSError(domain: "Auth", code: 500, userInfo: [NSLocalizedDescriptionKey: "Failed to get or create user profile"])
+            }
+            
+            print("✅ User profile ready: \(profile.name)")
             
             // Update SessionManager to trigger navigation
             await MainActor.run {
-                self.sessionManager.setUser(userProfile)
+                self.sessionManager.setUser(profile)
                 self.isLoading = false
             }
         } catch {
