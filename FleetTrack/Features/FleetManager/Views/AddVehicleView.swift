@@ -11,6 +11,7 @@ struct AddVehicleView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var fleetVM: FleetViewModel
     @State private var formData = VehicleCreationData()
+    @State private var showError = false
     
     // Mock data for dropdowns
     let vehicleTypes = VehicleType.allCases
@@ -124,6 +125,20 @@ struct AddVehicleView: View {
                 }
             }
             .navigationBarHidden(true)
+            .alert(isPresented: $showError) {
+                Alert(
+                    title: Text("Error"),
+                    message: Text(fleetVM.errorMessage ?? "An unknown error occurred"),
+                    dismissButton: .default(Text("OK")) {
+                        fleetVM.errorMessage = nil
+                    }
+                )
+            }
+            .onChange(of: fleetVM.errorMessage) { newValue in
+                if newValue != nil {
+                    showError = true
+                }
+            }
         }
     }
     

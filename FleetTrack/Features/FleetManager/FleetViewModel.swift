@@ -9,6 +9,7 @@ class FleetViewModel: ObservableObject {
     @Published var activities: [FMActivity] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    private var hasLoadedOnce = false
     
     // Singleton for easy access across views
     static let shared = FleetViewModel()
@@ -25,12 +26,14 @@ class FleetViewModel: ObservableObject {
             async let fetchedDrivers = FleetManagerService.shared.fetchDrivers()
             async let fetchedTrips = FleetManagerService.shared.fetchTrips()
             
-            self.vehicles = try await fetchedVehicles
-            self.drivers = try await fetchedDrivers
+            // Wait for all fetches and merge Results
+            self.mergeVehicles(try await fetchedVehicles)
+            self.mergeDrivers(try await fetchedDrivers)
             self.trips = try await fetchedTrips
             
+            self.hasLoadedOnce = true
             self.isLoading = false
-            print("✅ Fleet Data Loaded: \(vehicles.count) vehicles, \(drivers.count) drivers")
+            print("✅ Fleet Data Merged: \(vehicles.count) vehicles, \(drivers.count) drivers")
         } catch {
             self.errorMessage = "Failed to load fleet data: \(error.localizedDescription)"
             self.isLoading = false
@@ -41,59 +44,70 @@ class FleetViewModel: ObservableObject {
     // MARK: - Actions
     
     func addVehicle(_ data: VehicleCreationData) {
+        // Construct a local model for immediate UI reflection (True Optimistic Update)
+        let newVehicle = FMVehicle(
+            id: UUID(),
+            registrationNumber: data.registrationNumber.uppercased(),
+            vehicleType: data.vehicleType,
+            manufacturer: data.manufacturer,
+            model: data.model,
+            fuelType: data.fuelType,
+            capacity: data.capacity,
+            registrationDate: data.registrationDate,
+            status: data.status,
+            assignedDriverId: data.assignedDriverId,
+            assignedDriverName: getDriverName(for: data.assignedDriverId)
+        )
+        
+        // Add locally first
+        self.vehicles.append(newVehicle)
+        self.logActivity(title: "New Vehicle Added", description: "Vehicle \(data.registrationNumber) was added to fleet.", icon: "car.fill", color: "blue")
+        
         isLoading = true
         Task { @MainActor in
             do {
-                try await FleetManagerService.shared.addVehicle(data)
-                
-                // Construct a local model for immediate UI reflection (Optimistic Update)
-                let newVehicle = FMVehicle(
-                    id: UUID(),
-                    registrationNumber: data.registrationNumber,
-                    vehicleType: data.vehicleType,
-                    manufacturer: data.manufacturer,
-                    model: data.model,
-                    fuelType: data.fuelType,
-                    capacity: data.capacity,
-                    registrationDate: data.registrationDate,
-                    status: data.status,
-                    assignedDriverId: data.assignedDriverId,
-                    assignedDriverName: getDriverName(for: data.assignedDriverId)
-                )
-                self.vehicles.append(newVehicle)
-                self.logActivity(title: "New Vehicle Added", description: "Vehicle \(data.registrationNumber) was added to fleet.", icon: "car.fill", color: "blue")
+                try await FleetManagerService.shared.addVehicle(data, id: newVehicle.id)
                 self.isLoading = false
+                print("✅ Vehicle added successfully to backend")
             } catch {
+                // Revert local change on failure
+                self.vehicles.removeAll(where: { $0.registrationNumber == newVehicle.registrationNumber })
                 self.errorMessage = "Failed to add vehicle: \(error.localizedDescription)"
                 self.isLoading = false
+                print("❌ Failed to add vehicle: \(error)")
             }
         }
     }
     
     func addDriver(_ data: DriverCreationData) {
+        // Construct a local model for immediate UI reflection (True Optimistic Update)
+        let newDriver = FMDriver(
+            id: UUID(),
+            fullName: data.fullName,
+            licenseNumber: data.licenseNumber,
+            phoneNumber: data.phoneNumber,
+            email: data.email,
+            address: data.address,
+            status: data.status,
+            createdAt: Date()
+        )
+        
+        // Add locally first
+        self.drivers.append(newDriver)
+        self.logActivity(title: "New Driver Invited", description: "Invitation sent to \(data.email).", icon: "person.fill", color: "green")
+        
         isLoading = true
         Task { @MainActor in
             do {
-                try await FleetManagerService.shared.addDriver(data)
-                
-                // Optimistically update UI or fetch fresh data
-                let newDriver = FMDriver(
-                    id: UUID(), // In real app, use ID returned from DB if possible, or fetch
-                    fullName: data.fullName,
-                    licenseNumber: data.licenseNumber,
-                    phoneNumber: data.phoneNumber,
-                    email: data.email,
-                    address: data.address,
-                    status: data.status,
-                    createdAt: Date()
-                )
-                self.drivers.append(newDriver)
-                self.logActivity(title: "New Driver Invited", description: "Invitation sent to \(data.email).", icon: "envelope.fill", color: "green")
+                try await FleetManagerService.shared.addDriver(data, id: newDriver.id)
                 self.isLoading = false
+                print("✅ Driver added successfully to backend")
             } catch {
+                // Revert local change on failure
+                self.drivers.removeAll(where: { $0.email == newDriver.email })
                 self.errorMessage = "Failed to add driver: \(error.localizedDescription)"
                 self.isLoading = false
-                print("Error adding driver: \(error)")
+                print("❌ Failed to add driver: \(error)")
             }
         }
     }
@@ -147,6 +161,40 @@ class FleetViewModel: ObservableObject {
     private func getDriverName(for id: UUID?) -> String? {
         guard let id = id else { return nil }
         return drivers.first(where: { $0.id == id })?.fullName
+    }
+    
+    // MARK: - Merging Logic
+    
+    private func mergeVehicles(_ fetched: [FMVehicle]) {
+        var current = self.vehicles
+        
+        for vehicle in fetched {
+            if let index = current.firstIndex(where: { $0.id == vehicle.id }) {
+                // Update existing
+                current[index] = vehicle
+            } else if !current.contains(where: { $0.registrationNumber == vehicle.registrationNumber }) {
+                // Append new if not already present (checking reg no to avoid duplicates if ID changed)
+                current.append(vehicle)
+            }
+        }
+        
+        self.vehicles = current
+    }
+    
+    private func mergeDrivers(_ fetched: [FMDriver]) {
+        var current = self.drivers
+        
+        for driver in fetched {
+            if let index = current.firstIndex(where: { $0.id == driver.id }) {
+                // Update existing
+                current[index] = driver
+            } else if !current.contains(where: { $0.email == driver.email }) {
+                // Append new if not already present
+                current.append(driver)
+            }
+        }
+        
+        self.drivers = current
     }
     
     private func loadMockData() {

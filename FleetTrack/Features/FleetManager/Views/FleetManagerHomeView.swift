@@ -44,7 +44,7 @@ struct FleetManagerHomeView: View {
                         ActionCard(title: "Add\nVehicle", icon: "car.fill", color: .appEmerald) { // Changed to appEmerald (Green)
                             showAddVehicle = true
                         }
-                        ActionCard(title: "Add\nDriver", icon: "person.badge.plus.fill", color: .green) {
+                        ActionCard(title: "Add\nDriver", icon: "person.fill", color: .green) {
                             showAddDriver = true
                         }
                         ActionCard(title: "Maintenance", icon: "wrench.and.screwdriver.fill", color: .orange) {
@@ -77,6 +77,30 @@ struct FleetManagerHomeView: View {
                         VStack(spacing: 12) {
                             ForEach(fleetVM.trips.prefix(3)) { trip in
                                 TripRow(trip: trip)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                
+                // Recent Vehicles section
+                VStack(spacing: 16) {
+                    HStack {
+                        Text("Recent Vehicles")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    
+                    if fleetVM.vehicles.isEmpty {
+                        Text("No vehicles added yet.")
+                            .foregroundColor(.gray)
+                            .padding(.vertical, 20)
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(fleetVM.vehicles.prefix(3)) { vehicle in
+                                VehicleCard(vehicle: vehicle)
                             }
                         }
                         .padding(.horizontal)

@@ -23,7 +23,7 @@ class FleetManagerService {
     /// Add a new driver to the system
     /// 1. Sends an invitation email (Magic Link)
     /// 2. Creates a record in the 'drivers' table
-    func addDriver(_ data: DriverCreationData) async throws {
+    func addDriver(_ data: DriverCreationData, id: UUID? = nil) async throws {
         // 1. Invite User via Email (Magic Link)
         // This sends an email to the user with a login link.
         // If the user doesn't exist, it effectively acts as a signup invite if signups are enabled.
@@ -37,9 +37,8 @@ class FleetManagerService {
         print("📧 Invitation sent to \(data.email)")
         
         // 2. Create Driver Record
-        // ... (rest of addDriver remains same)
         let newDriver = FMDriver(
-            id: UUID(),
+            id: id ?? UUID(),
             fullName: data.fullName,
             licenseNumber: data.licenseNumber,
             phoneNumber: data.phoneNumber,
@@ -59,7 +58,7 @@ class FleetManagerService {
     
     // MARK: - Vehicle Management
     
-    func addVehicle(_ data: VehicleCreationData) async throws {
+    func addVehicle(_ data: VehicleCreationData, id: UUID? = nil) async throws {
         // Fetch Driver Name if assigned
         var driverName: String? = nil
         if let driverId = data.assignedDriverId {
@@ -79,7 +78,7 @@ class FleetManagerService {
 
         // Create FMVehicle from creation data
         let newVehicle = FMVehicle(
-            id: UUID(),
+            id: id ?? UUID(),
             registrationNumber: data.registrationNumber,
             vehicleType: data.vehicleType,
             manufacturer: data.manufacturer,
