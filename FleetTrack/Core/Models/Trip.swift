@@ -144,6 +144,44 @@ struct Trip: Identifiable, Codable, Hashable {
         guard let distance = distance else { return nil }
         return String(format: "%.1f km", distance)
     }
+    
+    // MARK: - Location Helpers
+    
+    /// Check if trip has start location coordinates
+    var hasStartLocation: Bool {
+        startLat != nil && startLong != nil
+    }
+    
+    /// Check if trip has end location coordinates
+    var hasEndLocation: Bool {
+        endLat != nil && endLong != nil
+    }
+    
+    // MARK: - Validation
+    
+    /// Validate if trip has minimum required data
+    var isValid: Bool {
+        // Must have vehicle, driver, and at least addresses
+        return startAddress != nil && 
+               !startAddress!.isEmpty && 
+               endAddress != nil && 
+               !endAddress!.isEmpty
+    }
+    
+    /// Check if trip can be started by driver
+    var canBeStarted: Bool {
+        status == .scheduled && startTime != nil
+    }
+    
+    /// Check if trip can be completed
+    var canBeCompleted: Bool {
+        status == .ongoing
+    }
+    
+    /// Check if trip is active (scheduled or ongoing)
+    var isActive: Bool {
+        status == .scheduled || status == .ongoing
+    }
 }
 
 // MARK: - Mock Data
