@@ -90,45 +90,110 @@ class FleetManagerService {
     // MARK: - Vehicle Management
     
     func addVehicle(_ data: VehicleCreationData) async throws {
+        print("🚀 [addVehicle] Starting vehicle creation")
+        print("   Registration: \(data.registrationNumber)")
+        print("   Type: \(data.vehicleType)")
+        print("   Assigned Driver ID: \(data.assignedDriverId?.uuidString ?? "nil")")
+        
         // Fetch Driver Name if assigned
         var driverName: String? = nil
         if let driverId = data.assignedDriverId {
             do {
+                // Specify columns to avoid PGRST116 error
                 let driver: FMDriver = try await client
                     .from("drivers")
-                    .select()
+                    .select("id, full_name, email")
                     .eq("id", value: driverId)
                     .single()
                     .execute()
                     .value
                 driverName = driver.fullName ?? driver.email ?? "Unknown"
+                print("✅ Fetched driver name: \(driverName ?? "nil")")
             } catch {
                 print("⚠️ Could not fetch driver name for vehicle assignment: \(error)")
+                // Continue without driver name - vehicle creation should not fail
             }
+        } else {
+            print("ℹ️  No driver assigned to vehicle")
         }
 
-        // Create FMVehicle from creation data - matches DB schema
-        let newVehicle = FMVehicle(
+        // Create insert DTO without status field - let database use default
+        struct VehicleInsertDTO: Encodable {
+            let id: UUID
+            let registrationNumber: String
+            let vehicleType: String  // Send as String to bypass enum validation
+            let manufacturer: String
+            let model: String
+            let fuelType: String  // Send as String to bypass enum validation
+            let capacity: String
+            let registrationDate: Date
+            // status field excluded - database will use default 'active'
+            let assignedDriverId: UUID?
+            let assignedDriverName: String?
+            let vin: String?
+            let mileage: Double?
+            let insuranceStatus: String?
+            let lastService: Date?
+            let createdAt: Date
+            
+            enum CodingKeys: String, CodingKey {
+                case id
+                case registrationNumber = "registration_number"
+                case vehicleType = "vehicle_type"
+                case manufacturer
+                case model
+                case fuelType = "fuel_type"
+                case capacity
+                case registrationDate = "registration_date"
+                case assignedDriverId = "assigned_driver_id"
+                case assignedDriverName = "assigned_driver_name"
+                case vin
+                case mileage
+                case insuranceStatus = "insurance_status"
+                case lastService = "last_service"
+                case createdAt = "created_at"
+            }
+        }
+        
+        let vehicleDTO = VehicleInsertDTO(
             id: UUID(),
             registrationNumber: data.registrationNumber,
-            vehicleType: data.vehicleType,
+            vehicleType: data.vehicleType.rawValue,  // Convert enum to String
             manufacturer: data.manufacturer,
             model: data.model,
-            fuelType: data.fuelType,
+            fuelType: data.fuelType.rawValue,  // Convert enum to String
             capacity: data.capacity,
             registrationDate: data.registrationDate,
-            status: data.status,
             assignedDriverId: data.assignedDriverId,
             assignedDriverName: driverName,
+            vin: nil,
+            mileage: nil,
+            insuranceStatus: nil,
+            lastService: nil,
             createdAt: Date()
         )
         
-        try await client
-            .from("vehicles")
-            .insert(newVehicle)
-            .execute()
+        print("💾 [addVehicle] Inserting vehicle into database...")
+        print("   Note: status field excluded, database will use default value")
+        
+        do {
+            try await client
+                .from("vehicles")
+                .insert(vehicleDTO)
+                .execute()
             
-        print("✅ Vehicle record created: \(data.registrationNumber)")
+            print("✅ Vehicle record created: \(data.registrationNumber)")
+            if let driverName = driverName {
+                print("   Assigned to driver: \(driverName)")
+            } else {
+                print("   Status: Unassigned")
+            }
+        } catch {
+            print("❌ [addVehicle] Failed to insert vehicle: \(error)")
+            print("   Error type: \(type(of: error))")
+            print("   Error description: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     // MARK: - Trip Management
