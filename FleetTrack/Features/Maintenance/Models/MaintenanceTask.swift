@@ -45,4 +45,17 @@ struct MaintenanceTask: Identifiable, Codable, Hashable {
     var totalPartsCost: Double {
         partsUsed.reduce(0) { $0 + $1.totalCost }
     }
+    
+    // MARK: - Coding Keys
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case vehicleRegistrationNumber = "vehicle_registration_number"
+        case priority
+        case component
+        case status
+        case dueDate = "due_date"
+        case completedDate = "completed_date"
+        case partsUsed = "parts_used"
+    }
 }

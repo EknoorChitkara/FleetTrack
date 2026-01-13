@@ -7,9 +7,10 @@ import SwiftUI
 
 struct FleetManagerProfileView: View {
     @Environment(\.presentationMode) var presentationMode
-    @EnvironmentObject var authViewModel: AuthViewModel
+    @ObservedObject private var sessionManager = SessionManager.shared
     let user: User
     @State private var showEditProfile = false
+    @State private var isLoggingOut = false
     
     var body: some View {
         NavigationView {
@@ -107,15 +108,23 @@ struct FleetManagerProfileView: View {
                         
                         // Logout Button
                         Button(action: {
+                            isLoggingOut = true
                             Task {
-                                await authViewModel.logout()
+                                try? await SupabaseAuthService.shared.logout()
+                                sessionManager.clearSession()
+                                isLoggingOut = false
                                 presentationMode.wrappedValue.dismiss()
                             }
                         }) {
                             HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                Text("Logout")
-                                    .fontWeight(.bold)
+                                if isLoggingOut {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    Text("Logout")
+                                        .fontWeight(.bold)
+                                }
                             }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -123,6 +132,7 @@ struct FleetManagerProfileView: View {
                             .background(Color.red.opacity(0.8))
                             .cornerRadius(12)
                         }
+                        .disabled(isLoggingOut)
                         .padding(.horizontal)
                         .padding(.bottom, 40)
                     }

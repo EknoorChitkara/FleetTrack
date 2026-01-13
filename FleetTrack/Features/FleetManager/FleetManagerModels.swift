@@ -39,6 +39,23 @@ struct FMVehicle: Identifiable, Codable {
     var insuranceStatus: String = "Pending"
     var lastService: String = "Never"
     var createdAt: Date = Date()
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case registrationNumber = "registration_number"
+        case vehicleType = "vehicle_type"
+        case manufacturer, model
+        case fuelType = "fuel_type"
+        case capacity
+        case registrationDate = "registration_date"
+        case status
+        case assignedDriverId = "assigned_driver_id"
+        case assignedDriverName = "assigned_driver_name"
+        case vin, mileage
+        case insuranceStatus = "insurance_status"
+        case lastService = "last_service"
+        case createdAt = "created_at"
+    }
 }
 
 struct FMDriver: Identifiable, Codable {
@@ -50,6 +67,17 @@ struct FMDriver: Identifiable, Codable {
     var address: String
     var status: DriverStatus
     var createdAt: Date = Date()
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fullName = "full_name"
+        case licenseNumber = "license_number"
+        case phoneNumber = "phone_number"
+        case email
+        case address
+        case status
+        case createdAt = "created_at"
+    }
 }
 
 struct FMTrip: Identifiable, Codable {
@@ -62,6 +90,18 @@ struct FMTrip: Identifiable, Codable {
     var startDate: Date
     var startTime: Date
     var status: String = "Completed"
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case vehicleId = "vehicle_id"
+        case vehicleName = "vehicle_name"
+        case startLocation = "start_location"
+        case destination
+        case distance
+        case startDate = "start_date"
+        case startTime = "start_time"
+        case status
+    }
 }
 
 struct FMActivity: Identifiable, Codable {

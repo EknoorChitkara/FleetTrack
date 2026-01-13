@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 @main
 struct FleetTrackApp: App {
@@ -20,6 +21,10 @@ struct FleetTrackApp: App {
         WindowGroup {
             RootView()
                 .onOpenURL { url in
+                // Intercept Supabase Auth URLs
+                Task {
+                    try? await SupabaseClientManager.shared.client.handle(url)
+                }
                 handleDeepLink(url)
             }
             .sheet(item: $deepLinkData) { data in
