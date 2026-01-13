@@ -24,6 +24,7 @@ struct FleetManagerDashboardView: View {
     enum Tab {
         case dashboard
         case vehicles
+        case trips
         case alerts
     }
     
@@ -47,6 +48,9 @@ struct FleetManagerDashboardView: View {
                         .environmentObject(fleetVM)
                     case .vehicles:
                         FleetManagerVehiclesView()
+                            .environmentObject(fleetVM)
+                    case .trips:
+                        FleetManagerTripsView()
                             .environmentObject(fleetVM)
                     case .alerts:
                         FleetManagerAlertsView()
@@ -86,6 +90,9 @@ struct CustomTabBar: View {
             }
             TabBarItem(icon: "car.fill", title: "Vehicles", isSelected: selectedTab == .vehicles) {
                 selectedTab = .vehicles
+            }
+            TabBarItem(icon: "map.fill", title: "Trips", isSelected: selectedTab == .trips) {
+                selectedTab = .trips
             }
             TabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == .alerts) {
                 selectedTab = .alerts
