@@ -11,11 +11,11 @@ import Foundation
 // MARK: - Enums
 
 enum VehicleStatus: String, Codable, CaseIterable {
-    case active = "active"
-    case inactive = "inactive"
-    case maintenance = "maintenance"
-    case retired = "retired"
-    case inTransit = "in_transit"
+    case active = "Active"
+    case inactive = "Inactive"
+    case maintenance = "Maintenance"
+    case retired = "Retired"
+    case inTransit = "In Transit"
 }
 
 enum VehicleType: String, Codable, CaseIterable {
