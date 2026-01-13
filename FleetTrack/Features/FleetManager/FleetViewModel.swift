@@ -76,16 +76,21 @@ class FleetViewModel: ObservableObject {
             do {
                 try await FleetManagerService.shared.addDriver(data)
                 
-                // Optimistically update UI or fetch fresh data
+                // Optimistically update UI with the new driver
+                let now = Date()
                 let newDriver = FMDriver(
-                    id: UUID(), // In real app, use ID returned from DB if possible, or fetch
+                    id: UUID(),
+                    userId: nil,
                     fullName: data.fullName,
                     licenseNumber: data.licenseNumber,
+                    driverLicenseNumber: nil,
                     phoneNumber: data.phoneNumber,
                     email: data.email,
                     address: data.address,
                     status: data.status,
-                    createdAt: Date()
+                    isActive: true,
+                    createdAt: now,
+                    updatedAt: now
                 )
                 self.drivers.append(newDriver)
                 self.logActivity(title: "New Driver Invited", description: "Invitation sent to \(data.email).", icon: "envelope.fill", color: "green")
@@ -104,20 +109,20 @@ class FleetViewModel: ObservableObject {
             do {
                 try await FleetManagerService.shared.addTrip(data)
                 
-                // Optimistic UI Update
+                // Optimistic UI Update - Updated to match new FMTrip model
                 let newTrip = FMTrip(
                     id: UUID(),
                     vehicleId: data.vehicleId ?? UUID(),
-                    vehicleName: "Vehicle", // Placeholder
-                    startLocation: data.startLocation,
-                    destination: data.destination,
+                    driverId: data.driverId ?? UUID(),
+                    status: "Scheduled",
+                    startAddress: data.startAddress,
+                    endAddress: data.endAddress,
                     distance: data.distance,
-                    startDate: data.startDate,
                     startTime: data.startTime,
-                    status: "Scheduled"
+                    purpose: data.purpose
                 )
                 self.trips.append(newTrip)
-                self.logActivity(title: "New Trip Scheduled", description: "Trip to \(data.destination) created.", icon: "map.fill", color: "orange")
+                self.logActivity(title: "New Trip Scheduled", description: "Trip to \(data.endAddress) created.", icon: "map.fill", color: "orange")
                 self.isLoading = false
             } catch {
                 self.errorMessage = "Failed to add trip: \(error.localizedDescription)"

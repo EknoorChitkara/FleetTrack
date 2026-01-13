@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum MaintenancePriority: String, Codable, CaseIterable {
+enum MaintenancePriority: String, Codable, CaseIterable, Hashable {
     case high = "High"
     case medium = "Medium"
     case low = "Low"

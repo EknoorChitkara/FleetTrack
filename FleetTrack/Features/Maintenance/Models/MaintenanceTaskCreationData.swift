@@ -15,4 +15,16 @@ struct MaintenanceTaskCreationData {
     var status: String = "Pending"
     var dueDate: Date = Date()
     var partsUsed: [PartUsage] = []
+    
+    /// Convert to MaintenanceTask for database insertion
+    func toMaintenanceTask() -> MaintenanceTask {
+        MaintenanceTask(
+            vehicleRegistrationNumber: vehicleRegistrationNumber,
+            priority: priority,
+            component: component,
+            status: status,
+            dueDate: dueDate,
+            partsUsed: partsUsed
+        )
+    }
 }

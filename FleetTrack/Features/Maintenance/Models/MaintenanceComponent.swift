@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum MaintenanceComponent: String, Codable, CaseIterable, Identifiable {
+enum MaintenanceComponent: String, Codable, CaseIterable, Identifiable, Hashable {
     case engine = "Engine"
     case oil = "Oil"
     case oilChange = "Oil Change"

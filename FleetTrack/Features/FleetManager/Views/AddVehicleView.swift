@@ -198,12 +198,12 @@ struct CustomDropdown: View {
                     Button(action: {
                         selection = driver.id
                     }) {
-                        Text(driver.fullName)
+                        Text(driver.displayName)
                     }
                 }
             } label: {
                 HStack {
-                    Text(selection == nil ? "Unassigned" : (drivers.first(where: { $0.id == selection })?.fullName ?? placeholder))
+                    Text(selection == nil ? "Unassigned" : (drivers.first(where: { $0.id == selection })?.displayName ?? placeholder))
                         .foregroundColor(selection == nil ? .gray : .white)
                     Spacer()
                     Image(systemName: "chevron.down")

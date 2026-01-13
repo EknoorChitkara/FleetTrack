@@ -5,6 +5,8 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key></key>
+			<string></string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
@@ -13,7 +15,12 @@
 			<array>
 				<string>fleettrack</string>
 			</array>
+			<key>fleettrack://login-callback</key>
+			<string></string>
+			<key>fleettrack://set-password</key>
+			<string></string>
 		</dict>
+		<dict/>
 	</array>
 </dict>
 </plist>

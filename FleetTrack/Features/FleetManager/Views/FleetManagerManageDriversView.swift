@@ -79,10 +79,10 @@ struct DriverCard: View {
                 .foregroundColor(.appEmerald)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(driver.fullName)
+                Text(driver.displayName)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
-                Text(driver.licenseNumber)
+                Text(driver.licenseNumber ?? "No License")
                     .font(.caption)
                     .foregroundColor(.gray)
             }
@@ -90,15 +90,16 @@ struct DriverCard: View {
             Spacer()
             
             VStack(alignment: .trailing, spacing: 4) {
-                Text(driver.status.rawValue)
+                let status = driver.status ?? .available
+                Text(status.rawValue)
                     .font(.system(size: 10, weight: .bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(driver.status == .available ? Color.green.opacity(0.2) : Color.gray.opacity(0.2))
-                    .foregroundColor(driver.status == .available ? .green : .gray)
+                    .background(status == .available ? Color.green.opacity(0.2) : Color.gray.opacity(0.2))
+                    .foregroundColor(status == .available ? .green : .gray)
                     .cornerRadius(6)
                 
-                Text(driver.phoneNumber)
+                Text(driver.phoneNumber ?? "No Phone")
                     .font(.system(size: 10))
                     .foregroundColor(.gray)
             }
