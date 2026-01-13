@@ -16,10 +16,10 @@ struct TripRow: View {
                 .overlay(Image(systemName: "map.fill").foregroundColor(.purple))
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(trip.startLocation) → \(trip.destination)")
+                Text("\(trip.startAddress ?? "Start") → \(trip.endAddress ?? "End")")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
-                Text(trip.vehicleName)
+                Text(trip.purpose ?? "Trip")
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
             }
@@ -27,12 +27,14 @@ struct TripRow: View {
             Spacer()
             
             VStack(alignment: .trailing, spacing: 4) {
-                Text(trip.distance)
+                Text(trip.formattedDistance)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.appEmerald)
-                Text(trip.startDate, style: .date)
-                    .font(.system(size: 10))
-                    .foregroundColor(.gray)
+                if let startTime = trip.startTime {
+                    Text(startTime, style: .date)
+                        .font(.system(size: 10))
+                        .foregroundColor(.gray)
+                }
             }
         }
         .padding()

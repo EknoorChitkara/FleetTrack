@@ -2,48 +2,87 @@
 //  InventoryPart.swift
 //  FleetTrack
 //
-//  Created by Anmolpreet Singh on 09/01/26.
+//  Updated to match database `parts` table schema
 //
 
 import Foundation
 
+// MARK: - Part Category Enum
+
+enum PartCategory: String, Codable, CaseIterable {
+    case engine = "Engine"
+    case transmission = "Transmission"
+    case brakes = "Brakes"
+    case suspension = "Suspension"
+    case electrical = "Electrical"
+    case bodyWork = "Body Work"
+    case tires = "Tires"
+    case fluids = "Fluids"
+    case filters = "Filters"
+    case other = "Other"
+}
+
+// MARK: - InventoryPart Model (Matches DB `parts` table)
+
 struct InventoryPart: Identifiable, Codable, Hashable {
     let id: UUID
-    var partName: String
-    var partNumber: String // SKU/Part Number
+    var name: String
+    var partNumber: String
+    var category: PartCategory
     var description: String?
-    var currentStock: Int
-    var minimumThreshold: Int
+    var quantityInStock: Int
+    var minimumStockLevel: Int
     var unitPrice: Double
-    var supplier: String?
-    var lastRestocked: Date?
+    var supplierName: String?
+    var supplierContact: String?
+    var isActive: Bool
     
     // Timestamps
     var createdAt: Date
     var updatedAt: Date
     
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case partNumber = "part_number"
+        case category
+        case description
+        case quantityInStock = "quantity_in_stock"
+        case minimumStockLevel = "minimum_stock_level"
+        case unitPrice = "unit_price"
+        case supplierName = "supplier_name"
+        case supplierContact = "supplier_contact"
+        case isActive = "is_active"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+    
     init(
         id: UUID = UUID(),
-        partName: String,
+        name: String,
         partNumber: String,
+        category: PartCategory = .other,
         description: String? = nil,
-        currentStock: Int = 0,
-        minimumThreshold: Int = 0,
+        quantityInStock: Int = 0,
+        minimumStockLevel: Int = 5,
         unitPrice: Double = 0.0,
-        supplier: String? = nil,
-        lastRestocked: Date? = nil,
+        supplierName: String? = nil,
+        supplierContact: String? = nil,
+        isActive: Bool = true,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
         self.id = id
-        self.partName = partName
+        self.name = name
         self.partNumber = partNumber
+        self.category = category
         self.description = description
-        self.currentStock = currentStock
-        self.minimumThreshold = minimumThreshold
+        self.quantityInStock = quantityInStock
+        self.minimumStockLevel = minimumStockLevel
         self.unitPrice = unitPrice
-        self.supplier = supplier
-        self.lastRestocked = lastRestocked
+        self.supplierName = supplierName
+        self.supplierContact = supplierContact
+        self.isActive = isActive
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -51,10 +90,65 @@ struct InventoryPart: Identifiable, Codable, Hashable {
     // MARK: - Computed Properties
     
     var isLowStock: Bool {
-        currentStock <= minimumThreshold
+        quantityInStock <= minimumStockLevel
+    }
+    
+    var stockStatus: String {
+        if quantityInStock == 0 {
+            return "Out of Stock"
+        } else if isLowStock {
+            return "Low Stock"
+        } else {
+            return "In Stock"
+        }
     }
     
     var formattedPrice: String {
         String(format: "₹%.2f", unitPrice)
     }
+}
+
+// MARK: - Mock Data
+extension InventoryPart {
+    static let mockPart1 = InventoryPart(
+        name: "Oil Filter",
+        partNumber: "OF-001",
+        category: .filters,
+        description: "High quality oil filter for commercial vehicles",
+        quantityInStock: 25,
+        minimumStockLevel: 10,
+        unitPrice: 450.0,
+        supplierName: "AutoParts India",
+        supplierContact: "+91 98765 43210"
+    )
+    
+    static let mockPart2 = InventoryPart(
+        name: "Brake Pads Set",
+        partNumber: "BP-002",
+        category: .brakes,
+        description: "Heavy duty brake pads for trucks",
+        quantityInStock: 8,
+        minimumStockLevel: 10,
+        unitPrice: 2500.0,
+        supplierName: "Brake Masters",
+        supplierContact: "+91 98765 11111"
+    )
+    
+    static let mockPart3 = InventoryPart(
+        name: "Engine Oil 15W-40",
+        partNumber: "EO-003",
+        category: .fluids,
+        description: "Premium diesel engine oil - 5L",
+        quantityInStock: 50,
+        minimumStockLevel: 20,
+        unitPrice: 1800.0,
+        supplierName: "Castrol Distributor",
+        supplierContact: "+91 98765 22222"
+    )
+    
+    static let mockParts: [InventoryPart] = [
+        mockPart1,
+        mockPart2,
+        mockPart3
+    ]
 }

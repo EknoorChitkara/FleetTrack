@@ -182,15 +182,11 @@ struct ProfileHeaderView: View {
             }) {
                 Text("Edit Profile")
                     .font(.headline)
-                    .foregroundColor(AppTheme.backgroundPrimary)
+                    .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AppTheme.backgroundSecondary)
+                    .background(AppTheme.accentPrimary)
                     .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(AppTheme.dividerPrimary, lineWidth: 1)
-                    )
             }
             .padding(.all, 20)
         }
@@ -277,12 +273,13 @@ struct SettingsRow: View {
 
 struct LogoutButton: View {
     var dismissRoot: DismissAction
+    @ObservedObject private var sessionManager = SessionManager.shared
     
     var body: some View {
         Button(action: {
             Task {
                 try? await SupabaseAuthService.shared.logout()
-                // The app will react to session change in FleetTrackApp
+                sessionManager.clearSession()
                 dismissRoot()
             }
         }) {

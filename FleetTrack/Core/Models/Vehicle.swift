@@ -3,6 +3,7 @@
 //  FleetTrack
 //
 //  Professional Fleet Management System
+//  Updated to match database schema
 //
 
 import Foundation
@@ -23,7 +24,7 @@ enum VehicleType: String, Codable, CaseIterable {
     case specialized = "Specialized"
 }
 
-// MARK: - Location Model
+// MARK: - Location Model (for convenience, not stored in DB)
 
 struct Location: Codable, Hashable {
     var latitude: Double
@@ -44,7 +45,7 @@ struct Location: Codable, Hashable {
     }
 }
 
-// MARK: - Vehicle Model
+// MARK: - Vehicle Model (Matches DB Schema)
 
 struct Vehicle: Identifiable, Codable, Hashable {
     let id: UUID
@@ -55,17 +56,20 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var status: VehicleStatus
     
     // Live tracking data
-    var currentSpeed: Double // km/h
-    var fuelLevel: Double // percentage (0-100)
-    var totalMileage: Double // km
-    var averageFuelEfficiency: Double // km/l
+    var currentSpeed: Double
+    var fuelLevel: Double
+    var totalMileage: Double
+    var averageFuelEfficiency: Double
     
-    // Location
-    var currentLocation: Location?
-    var lastUpdated: Date
+    // Location (flat columns in DB, not nested)
+    var latitude: Double?
+    var longitude: Double?
+    var address: String?
+    var lastLocationUpdate: Date?
     
     // Assignment
     var assignedDriverId: UUID?
+    var assignedDriverName: String?
     
     // Maintenance
     var nextServiceDue: Date?
@@ -76,6 +80,14 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var vinNumber: String?
     var color: String?
     var capacity: String?
+    
+    // Additional DB columns
+    var fuelType: String?
+    var registrationDate: Date?
+    var vin: String?
+    var mileage: String?
+    var insuranceStatus: String?
+    var lastService: String?
     
     // Timestamps
     var createdAt: Date
@@ -92,15 +104,24 @@ struct Vehicle: Identifiable, Codable, Hashable {
         case fuelLevel = "fuel_level"
         case totalMileage = "total_mileage"
         case averageFuelEfficiency = "average_fuel_efficiency"
-        case currentLocation = "current_location"
-        case lastUpdated = "last_updated"
+        case latitude
+        case longitude
+        case address
+        case lastLocationUpdate = "last_location_update"
         case assignedDriverId = "assigned_driver_id"
+        case assignedDriverName = "assigned_driver_name"
         case nextServiceDue = "next_service_due"
         case lastServiceDate = "last_service_date"
         case yearOfManufacture = "year_of_manufacture"
         case vinNumber = "vin_number"
         case color
         case capacity
+        case fuelType = "fuel_type"
+        case registrationDate = "registration_date"
+        case vin
+        case mileage
+        case insuranceStatus = "insurance_status"
+        case lastService = "last_service"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -116,15 +137,24 @@ struct Vehicle: Identifiable, Codable, Hashable {
         fuelLevel: Double = 100,
         totalMileage: Double = 0,
         averageFuelEfficiency: Double = 0,
-        currentLocation: Location? = nil,
-        lastUpdated: Date = Date(),
+        latitude: Double? = nil,
+        longitude: Double? = nil,
+        address: String? = nil,
+        lastLocationUpdate: Date? = nil,
         assignedDriverId: UUID? = nil,
+        assignedDriverName: String? = nil,
         nextServiceDue: Date? = nil,
         lastServiceDate: Date? = nil,
         yearOfManufacture: Int? = nil,
         vinNumber: String? = nil,
         color: String? = nil,
         capacity: String? = nil,
+        fuelType: String? = "Diesel",
+        registrationDate: Date? = nil,
+        vin: String? = "UNKNOWN",
+        mileage: String? = "0 km",
+        insuranceStatus: String? = "Pending",
+        lastService: String? = "Never",
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -138,20 +168,40 @@ struct Vehicle: Identifiable, Codable, Hashable {
         self.fuelLevel = fuelLevel
         self.totalMileage = totalMileage
         self.averageFuelEfficiency = averageFuelEfficiency
-        self.currentLocation = currentLocation
-        self.lastUpdated = lastUpdated
+        self.latitude = latitude
+        self.longitude = longitude
+        self.address = address
+        self.lastLocationUpdate = lastLocationUpdate
         self.assignedDriverId = assignedDriverId
+        self.assignedDriverName = assignedDriverName
         self.nextServiceDue = nextServiceDue
         self.lastServiceDate = lastServiceDate
         self.yearOfManufacture = yearOfManufacture
         self.vinNumber = vinNumber
         self.color = color
         self.capacity = capacity
+        self.fuelType = fuelType
+        self.registrationDate = registrationDate
+        self.vin = vin
+        self.mileage = mileage
+        self.insuranceStatus = insuranceStatus
+        self.lastService = lastService
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
     
     // MARK: - Computed Properties
+    
+    /// Convenience property to get location as Location object
+    var currentLocation: Location? {
+        guard let lat = latitude, let lng = longitude else { return nil }
+        return Location(
+            latitude: lat,
+            longitude: lng,
+            address: address ?? "",
+            timestamp: lastLocationUpdate ?? Date()
+        )
+    }
     
     var formattedMileage: String {
         String(format: "%.1f km", totalMileage)
@@ -179,7 +229,9 @@ extension Vehicle {
         fuelLevel: 75.0,
         totalMileage: 12500.5,
         averageFuelEfficiency: 12.5,
-        currentLocation: Location(latitude: 19.0760, longitude: 72.8777, address: "Mumbai, Maharashtra"),
+        latitude: 19.0760,
+        longitude: 72.8777,
+        address: "Mumbai, Maharashtra",
         yearOfManufacture: 2021,
         color: "White",
         capacity: "1.5 Ton"
@@ -195,7 +247,9 @@ extension Vehicle {
         fuelLevel: 45.0,
         totalMileage: 45000.0,
         averageFuelEfficiency: 6.5,
-        currentLocation: Location(latitude: 28.6139, longitude: 77.2090, address: "Delhi"),
+        latitude: 28.6139,
+        longitude: 77.2090,
+        address: "Delhi",
         yearOfManufacture: 2019,
         color: "Yellow",
         capacity: "10 Ton"

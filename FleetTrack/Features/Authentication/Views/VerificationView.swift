@@ -1,5 +1,3 @@
-//
-//  VerificationView.swift
 //  FleetTrack
 //
 //  Created by Eknoor on 07/01/26.
@@ -41,7 +39,7 @@ struct VerificationView: View {
                         .multilineTextAlignment(.center)
                 }
                 
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(0..<8, id: \.self) { index in
                         OTPInputBox(text: $otpCode[index], isFocused: focusedIndex == index)
                             .focused($focusedIndex, equals: index)
@@ -110,32 +108,77 @@ struct VerificationView: View {
         isLoading = true
         let fullCode = otpCode.joined().trimmingCharacters(in: .whitespaces)
         
+        print("🔐 Attempting to verify OTP: \(fullCode) for email: \(email)")
+        
         do {
-            try await supabase.auth.verifyOTP(
+            // Use .magiclink type since we used signInWithOTP(email:)
+            let session = try await supabase.auth.verifyOTP(
                 email: email,
                 token: fullCode,
                 type: .magiclink
             )
             print("✅ 2FA Success for \(email)")
+            print("✅ Session user ID: \(session.user.id)")
             
-            // Fetch User profile after verification
-            let session = try await supabase.auth.session
-            let userProfile: User = try await supabase
-                .from("users")
-                .select()
-                .eq("id", value: session.user.id)
-                .single()
-                .execute()
-                .value
+            // Try to fetch existing user profile
+            var userProfile: User?
             
+            do {
+                userProfile = try await supabase
+                    .from("users")
+                    .select()
+                    .eq("id", value: session.user.id)
+                    .single()
+                    .execute()
+                    .value
+                print("✅ Existing user profile found: \(userProfile?.name ?? "Unknown")")
+            } catch {
+                // User doesn't exist in users table - create them
+                print("⚠️ No user profile found, creating new record...")
+                
+                // Extract user info from auth session
+                let userName = session.user.userMetadata["full_name"]?.stringValue ?? 
+                               session.user.userMetadata["name"]?.stringValue ?? 
+                               email.components(separatedBy: "@").first ?? "User"
+                let userRole = session.user.userMetadata["role"]?.stringValue ?? "Driver"
+                
+                // Create new user record
+                let newUser = User(
+                    id: session.user.id,
+                    name: userName,
+                    email: email,
+                    phoneNumber: session.user.phone,
+                    role: UserRole(rawValue: userRole) ?? .driver,
+                    profileImageURL: nil,
+                    isActive: true,
+                    createdAt: Date(),
+                    updatedAt: Date()
+                )
+                
+                try await supabase
+                    .from("users")
+                    .insert(newUser)
+                    .execute()
+                
+                userProfile = newUser
+                print("✅ New user profile created for \(userName)")
+            }
+            
+            guard let profile = userProfile else {
+                throw NSError(domain: "Auth", code: 500, userInfo: [NSLocalizedDescriptionKey: "Failed to get or create user profile"])
+            }
+            
+            print("✅ User profile ready: \(profile.name)")
+            
+            // Update SessionManager to trigger navigation
             await MainActor.run {
-                self.sessionManager.setUser(userProfile)
+                self.sessionManager.setUser(profile)
                 self.isLoading = false
             }
         } catch {
             print("❌ Verification Error: \(error)")
             await MainActor.run {
-                message = "❌ Invalid or expired code"
+                message = "❌ Invalid or expired code. Please request a new code."
                 // Clear boxes on failure to allow fresh entry
                 otpCode = Array(repeating: "", count: 8)
                 focusedIndex = 0
