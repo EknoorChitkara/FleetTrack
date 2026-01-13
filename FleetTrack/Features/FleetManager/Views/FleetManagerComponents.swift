@@ -159,18 +159,15 @@ struct DriverCard: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: "person.fill")
-                .font(.system(size: 24))
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 50))
                 .foregroundColor(.appEmerald)
-                .padding(12)
-                .background(Color.appEmerald.opacity(0.1))
-                .clipShape(Circle())
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(driver.fullName)
+                Text(driver.displayName)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
-                Text(driver.licenseNumber)
+                Text(driver.licenseNumber ?? "No License")
                     .font(.caption)
                     .foregroundColor(.gray)
             }
@@ -178,13 +175,20 @@ struct DriverCard: View {
             Spacer()
             
             VStack(alignment: .trailing, spacing: 4) {
-                Text(driver.status.rawValue)
+                let status = driver.status ?? .available
+                Text(status.rawValue)
                     .font(.system(size: 10, weight: .bold))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(driver.status == .available ? Color.green.opacity(0.2) : Color.gray.opacity(0.2))
-                    .foregroundColor(driver.status == .available ? .green : .gray)
+                    .background(status == .available ? Color.green.opacity(0.2) : Color.gray.opacity(0.2))
+                    .foregroundColor(status == .available ? .green : .gray)
                     .cornerRadius(6)
+                
+                if let phone = driver.phoneNumber {
+                    Text(phone)
+                        .font(.system(size: 10))
+                        .foregroundColor(.gray)
+                }
             }
         }
         .padding()
