@@ -3,6 +3,7 @@
 //  FleetTrack
 //
 //  Created for Fleet Manager
+//  Updated to match database schema
 //
 
 import Foundation
@@ -21,44 +22,98 @@ class FleetManagerService {
     // MARK: - Driver Management
     
     /// Add a new driver to the system
-    /// 1. Sends an invitation email (Magic Link)
+    /// 1. Sends invitation email via Edge Function (uses secret key)
     /// 2. Creates a record in the 'drivers' table
-    func addDriver(_ data: DriverCreationData, id: UUID? = nil) async throws {
-        // 1. Invite User via Email (Magic Link)
-        // This sends an email to the user with a login link.
-        // If the user doesn't exist, it effectively acts as a signup invite if signups are enabled.
-        // Note: For a strict "Invite" flow, we might want to check if user exists first, 
-        // but signInWithOTP is safe and idempotent for this use case.
-        // We MUST specify the redirect URL to ensure it opens the app
-        try await client.auth.signInWithOTP(
-            email: data.email,
-            redirectTo: URL(string: "fleettrack://login-callback")!
-        )
-        print("📧 Invitation sent to \(data.email)")
+    func addDriver(_ data: DriverCreationData) async throws {
+        print("🚀 [addDriver] Starting driver creation for: \(data.fullName)")
+        print("📧 [addDriver] Email: \(data.email)")
         
-        // 2. Create Driver Record
+        // Send invitation email via Edge Function
+        // Uses secret key authentication (no JWT needed)
+        try await sendDriverInvite(email: data.email, fullName: data.fullName)
+        
+        // Create Driver Record with all required fields
+        let now = Date()
         let newDriver = FMDriver(
-            id: id ?? UUID(),
+            id: UUID(),
+            userId: nil, // Will be linked when driver sets password and logs in
             fullName: data.fullName,
             licenseNumber: data.licenseNumber,
+            driverLicenseNumber: nil,
             phoneNumber: data.phoneNumber,
             email: data.email,
             address: data.address,
             status: data.status,
-            createdAt: Date()
+            isActive: true,
+            createdAt: now,
+            updatedAt: now
         )
         
+        print("💾 [addDriver] Inserting driver record to database...")
         try await client
             .from("drivers")
             .insert(newDriver)
             .execute()
         
-        print("✅ Driver record created for \(data.fullName)")
+        print("✅ [addDriver] Driver record created successfully for \(data.fullName)")
+    }
+    
+    /// Sends an invitation email to the driver using Supabase Edge Function
+    /// Edge Function verifies user role internally (no secret key needed)
+    private func sendDriverInvite(email: String, fullName: String) async throws {
+        print("🔐 [sendDriverInvite] Starting invite for: \(email)")
+        
+        // Define the request body structure
+        struct InviteRequest: Encodable {
+            let email: String
+            let fullName: String
+            let role: String
+        }
+        
+        // Define the response structure
+        struct InviteResponse: Decodable {
+            let success: Bool
+            let userId: String?
+            let message: String?
+            let error: String?
+        }
+        
+        let request = InviteRequest(email: email, fullName: fullName, role: "Driver")
+        print("📦 [sendDriverInvite] Request payload: email=\(email), fullName=\(fullName), role=Driver")
+        
+        do {
+            print("🌐 [sendDriverInvite] Calling Edge Function 'quick-function'...")
+            
+            // Call the Edge Function (no secret key needed - Edge Function verifies user internally)
+            let response: InviteResponse = try await client.functions.invoke(
+                "quick-function",
+                options: FunctionInvokeOptions(body: request)
+            )
+            
+            print("📥 [sendDriverInvite] Response received:")
+            print("   - success: \(response.success)")
+            print("   - userId: \(response.userId ?? "nil")")
+            print("   - message: \(response.message ?? "nil")")
+            print("   - error: \(response.error ?? "nil")")
+            
+            if response.success {
+                print("📧 [sendDriverInvite] ✅ Invitation email sent to \(email)")
+            } else if let error = response.error {
+                print("❌ [sendDriverInvite] Failed to send invite: \(error)")
+                throw NSError(domain: "FleetManager", code: 500, userInfo: [NSLocalizedDescriptionKey: error])
+            }
+        } catch {
+            print("🚨 [sendDriverInvite] Error: \(error)")
+            // Don't block driver creation if invite fails
+            print("⚠️ [sendDriverInvite] Continuing without invite email")
+        }
+        
+        print("🏁 [sendDriverInvite] Function completed")
     }
     
     // MARK: - Vehicle Management
     
-    func addVehicle(_ data: VehicleCreationData, id: UUID? = nil) async throws {
+    func addVehicle(_ data: VehicleCreationData) async throws {
         // Fetch Driver Name if assigned
         var driverName: String? = nil
         if let driverId = data.assignedDriverId {
@@ -70,15 +125,15 @@ class FleetManagerService {
                     .single()
                     .execute()
                     .value
-                driverName = driver.fullName
+                driverName = driver.fullName ?? driver.email ?? "Unknown"
             } catch {
                 print("⚠️ Could not fetch driver name for vehicle assignment: \(error)")
             }
         }
 
-        // Create FMVehicle from creation data
+        // Create FMVehicle from creation data - matches DB schema
         let newVehicle = FMVehicle(
-            id: id ?? UUID(),
+            id: UUID(),
             registrationNumber: data.registrationNumber,
             vehicleType: data.vehicleType,
             manufacturer: data.manufacturer,
@@ -88,7 +143,7 @@ class FleetManagerService {
             registrationDate: data.registrationDate,
             status: data.status,
             assignedDriverId: data.assignedDriverId,
-            assignedDriverName: driverName, // Populated from DB fetch
+            assignedDriverName: driverName,
             createdAt: Date()
         )
         
@@ -107,31 +162,22 @@ class FleetManagerService {
             throw NSError(domain: "FleetManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Vehicle ID required"])
         }
         
-        // Fetch Vehicle Name
-        var vehicleName = "Unknown Vehicle"
-        do {
-            let vehicle: FMVehicle = try await client
-                .from("vehicles")
-                .select()
-                .eq("id", value: vehicleId)
-                .single()
-                .execute()
-                .value
-            vehicleName = vehicle.registrationNumber
-        } catch {
-             print("⚠️ Could not fetch vehicle name for trip: \(error)")
+        guard let driverId = data.driverId else {
+            throw NSError(domain: "FleetManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Driver ID required"])
         }
         
+        // Create trip matching DB schema
         let newTrip = FMTrip(
             id: UUID(),
             vehicleId: vehicleId,
-            vehicleName: vehicleName, // Populated from DB fetch
-            startLocation: data.startLocation,
-            destination: data.destination,
+            driverId: driverId,
+            status: "Scheduled",
+            startAddress: data.startAddress,
+            endAddress: data.endAddress,
             distance: data.distance,
-            startDate: data.startDate,
             startTime: data.startTime,
-            status: "Scheduled"
+            purpose: data.purpose,
+            createdAt: Date()
         )
         
         try await client

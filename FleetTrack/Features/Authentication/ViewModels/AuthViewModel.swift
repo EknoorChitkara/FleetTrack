@@ -78,6 +78,9 @@ class AuthViewModel: ObservableObject {
             let vid = try await authService.sendDriverSMSCode(phoneNumber: phoneNumber)
             self.verificationID = vid
             
+            // Store employeeID for 2FA verification
+            self.pendingEmployeeID = employeeID
+            
             currentLoginUser = user
             twoFactorMethod = .sms
             isAwaitingTwoFactor = true
@@ -108,6 +111,9 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    // Store employeeID from driver login for 2FA verification
+    @Published var pendingEmployeeID: String?
+    
     // MARK: - Two-Factor Authentication
     
     /// Verify 2FA code (SMS only for now)
@@ -123,7 +129,7 @@ class AuthViewModel: ObservableObject {
         do {
             // Verify based on method
             if twoFactorMethod == .sms {
-                guard let employeeID = user.employeeID, let vid = verificationID else {
+                guard let employeeID = pendingEmployeeID, let vid = verificationID else {
                    throw AuthError.invalidCredentials
                 }
                 
@@ -199,6 +205,7 @@ class AuthViewModel: ObservableObject {
         currentLoginUser = nil
         twoFactorMethod = nil
         verificationID = nil
+        pendingEmployeeID = nil
         loginSuccessful = false
     }
     

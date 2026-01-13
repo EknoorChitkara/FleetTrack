@@ -3,6 +3,7 @@
 //  FleetTrack
 //
 //  Created for Fleet Manager
+//  Updated to match new TripCreationData model
 //
 
 import SwiftUI
@@ -13,6 +14,8 @@ struct PlanTripView: View {
     @State private var formData = TripCreationData()
     
     @State private var selectedVehicleString = "Choose a vehicle"
+    @State private var selectedDriverString = "Choose a driver"
+    @State private var distanceString = ""
     
     var body: some View {
         NavigationView {
@@ -75,15 +78,48 @@ struct PlanTripView: View {
                                 }
                             }
                             
+                            // Driver Selection
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Select Driver")
+                                    .foregroundColor(.appSecondaryText)
+                                
+                                Menu {
+                                    ForEach(fleetVM.drivers) { driver in
+                                        Button(action: {
+                                            formData.driverId = driver.id
+                                            selectedDriverString = driver.displayName
+                                        }) {
+                                            Text(driver.displayName)
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(selectedDriverString)
+                                            .foregroundColor(selectedDriverString == "Choose a driver" ? .gray : .white)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .foregroundColor(.gray)
+                                    }
+                                    .padding()
+                                    .background(Color.appBackground)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color(white: 0.2), lineWidth: 1)
+                                    )
+                                }
+                            }
+                            
                             // Route Details
                             VStack(alignment: .leading, spacing: 16) {
                                 Text("Route Details")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                 
-                                TripTextField(title: "Start Location", text: $formData.startLocation)
-                                TripTextField(title: "Destination", text: $formData.destination)
-                                TripTextField(title: "Distance (e.g. 350 km)", text: $formData.distance)
+                                TripTextField(title: "Start Location", text: $formData.startAddress)
+                                TripTextField(title: "Destination", text: $formData.endAddress)
+                                TripTextField(title: "Distance (e.g. 350)", text: $distanceString)
+                                TripTextField(title: "Purpose", text: $formData.purpose)
                             }
                             
                             // Date & Time
@@ -93,7 +129,7 @@ struct PlanTripView: View {
                                 
                                 HStack(spacing: 16) {
                                     HStack {
-                                        Text(formData.startDate, style: .date)
+                                        Text(formData.startTime, style: .date)
                                             .foregroundColor(.white)
                                         Spacer()
                                         Image(systemName: "calendar")
@@ -108,7 +144,7 @@ struct PlanTripView: View {
                                     )
                                     .overlay(
                                         ZStack {
-                                            DatePicker("", selection: $formData.startDate, displayedComponents: .date)
+                                            DatePicker("", selection: $formData.startTime, displayedComponents: .date)
                                                 .datePickerStyle(.compact)
                                                 .labelsHidden()
                                                 .opacity(0.011)
@@ -152,6 +188,8 @@ struct PlanTripView: View {
                         
                         // Create Button
                         Button(action: {
+                            // Parse distance string to Double
+                            formData.distance = Double(distanceString)
                             fleetVM.addTrip(formData)
                             presentationMode.wrappedValue.dismiss()
                         }) {
@@ -160,16 +198,23 @@ struct PlanTripView: View {
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(formData.vehicleId == nil || formData.startLocation.isEmpty || formData.destination.isEmpty ? Color.gray : Color.appEmerald)
+                                .background(isFormValid ? Color.appEmerald : Color.gray)
                                 .cornerRadius(12)
                         }
-                        .disabled(formData.vehicleId == nil || formData.startLocation.isEmpty || formData.destination.isEmpty)
+                        .disabled(!isFormValid)
                     }
                     .padding()
                 }
             }
             .navigationBarHidden(true)
         }
+    }
+    
+    private var isFormValid: Bool {
+        formData.vehicleId != nil && 
+        formData.driverId != nil && 
+        !formData.startAddress.isEmpty && 
+        !formData.endAddress.isEmpty
     }
 }
 
