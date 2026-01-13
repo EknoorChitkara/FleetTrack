@@ -58,7 +58,6 @@ struct FleetManagerManageDriversView: View {
                         VStack(spacing: 16) {
                             ForEach(fleetVM.drivers) { driver in
                                 DriverCard(driver: driver)
-                                    .environmentObject(fleetVM)
                             }
                         }
                         .padding()
@@ -72,8 +71,6 @@ struct FleetManagerManageDriversView: View {
 
 struct DriverCard: View {
     let driver: FMDriver
-    @EnvironmentObject var fleetVM: FleetViewModel
-    @State private var showDeleteAlert = false
     
     var body: some View {
         HStack(spacing: 16) {
@@ -106,35 +103,9 @@ struct DriverCard: View {
                     .font(.system(size: 10))
                     .foregroundColor(.gray)
             }
-            
-            // Delete Button
-            Button(action: {
-                showDeleteAlert = true
-            }) {
-                Image(systemName: "trash.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(.red)
-                    .padding(8)
-                    .background(Color.red.opacity(0.1))
-                    .clipShape(Circle())
-            }
         }
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(12)
-        .alert("Delete Driver", isPresented: $showDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) {
-                deleteDriver()
-            }
-        } message: {
-            Text("Are you sure you want to delete \(driver.displayName)? This action cannot be undone.")
-        }
-    }
-    
-    private func deleteDriver() {
-        // Remove driver from the fleet view model
-        fleetVM.drivers.removeAll { $0.id == driver.id }
-        print("Driver deleted: \(driver.displayName)")
     }
 }
