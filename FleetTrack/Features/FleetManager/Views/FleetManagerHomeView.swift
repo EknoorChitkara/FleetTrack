@@ -26,7 +26,7 @@ struct FleetManagerHomeView: View {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     StatCard(title: "Total Vehicles", value: "\(fleetVM.vehicles.count)", icon: "car.fill", color: .appEmerald)
                     StatCard(title: "Active", value: "\(fleetVM.vehicles.filter { $0.status == .active }.count)", icon: "chart.line.uptrend.xyaxis", color: .appEmerald)
-                    StatCard(title: "In Maintenance", value: "\(fleetVM.vehicles.filter { $0.status == .inMaintenance }.count)", icon: "wrench.fill", color: .orange)
+                    StatCard(title: "In Maintenance", value: "\(fleetVM.vehicles.filter { $0.status == .maintenance }.count)", icon: "wrench.fill", color: .orange)
                     StatCard(title: "Ongoing Trips", value: "\(fleetVM.trips.count)", icon: "location.fill", color: .blue)
                 }
                 .padding(.horizontal)
