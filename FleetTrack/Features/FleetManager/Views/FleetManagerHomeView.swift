@@ -14,6 +14,8 @@ struct FleetManagerHomeView: View {
     @Binding var showAddVehicle: Bool
     @Binding var showAddDriver: Bool
     @Binding var showProfile: Bool
+    @Binding var showAddMaintenanceStaff: Bool
+    @State private var showGeofencing = false
     
     var body: some View {
         ScrollView {
@@ -25,10 +27,11 @@ struct FleetManagerHomeView: View {
                 // Stats Grid
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                     StatCard(title: "Total Vehicles", value: "\(fleetVM.vehicles.count)", icon: "car.fill", color: .appEmerald)
-                    StatCard(title: "Active", value: "\(fleetVM.vehicles.filter { $0.status == .active }.count)", icon: "chart.line.uptrend.xyaxis", color: .appEmerald)
+                    StatCard(title: "Active Drivers", value: "\(fleetVM.drivers.filter { $0.status == .available || $0.status == .onTrip }.count)", icon: "person.fill.checkmark", color: .appEmerald)
                     StatCard(title: "In Maintenance", value: "\(fleetVM.vehicles.filter { $0.status == .maintenance }.count)", icon: "wrench.fill", color: .orange)
                     StatCard(title: "Ongoing Trips", value: "\(fleetVM.trips.count)", icon: "location.fill", color: .blue)
                 }
+
                 .padding(.horizontal)
                 
                 // Quick Actions (2x2 Grid)
@@ -47,41 +50,56 @@ struct FleetManagerHomeView: View {
                         ActionCard(title: "Add\nDriver", icon: "person.badge.plus.fill", color: .green) {
                             showAddDriver = true
                         }
-                        ActionCard(title: "Maintenance", icon: "wrench.and.screwdriver.fill", color: .orange) {
-                            // Action Placeholder
+                        ActionCard(title: "Add\nMaintenance", icon: "wrench.and.screwdriver.fill", color: .orange) {
+                            showAddMaintenanceStaff = true
                         }
                     }
                 }
                 .padding(.horizontal)
                 
-                // Recent Trips section
-                VStack(spacing: 16) {
-                    HStack {
-                        Text("Recent Trips")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
-                        Spacer()
-                        NavigationLink(destination: AllTripsView().environmentObject(fleetVM)) {
-                            Text("See All")
-                                .font(.subheadline)
-                                .foregroundColor(.appEmerald)
+                // Geofencing Button
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Quick Links")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal)
+                    
+                    Button(action: {
+                        showGeofencing = true
+                    }) {
+                        HStack(spacing: 16) {
+                            Image(systemName: "map.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.purple)
+                                .padding(12)
+                                .background(Color.purple.opacity(0.1))
+                                .clipShape(Circle())
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("View Geofencing")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Manage virtual boundaries")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.gray)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
                         }
+                        .padding()
+                        .background(Color.appCardBackground)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        )
                     }
                     .padding(.horizontal)
-                    
-                    if fleetVM.trips.isEmpty {
-                        Text("No trips planned yet.")
-                            .foregroundColor(.gray)
-                            .padding(.vertical, 20)
-                    } else {
-                        VStack(spacing: 12) {
-                            ForEach(fleetVM.trips.prefix(3)) { trip in
-                                TripRow(trip: trip)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
                 }
+                
                 
                 // Activities section
                 VStack(spacing: 16) {
@@ -116,6 +134,9 @@ struct FleetManagerHomeView: View {
             }
         }
         .background(Color.appBackground.ignoresSafeArea())
+        .sheet(isPresented: $showGeofencing) {
+            GeofencingView()
+        }
     }
     
     var headerView: some View {
@@ -160,7 +181,7 @@ struct ActionCard: View {
                     .cornerRadius(8)
                 
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .multilineTextAlignment(.leading)
                     .foregroundColor(.white)
                 
