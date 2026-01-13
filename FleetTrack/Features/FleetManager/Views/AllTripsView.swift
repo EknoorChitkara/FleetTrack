@@ -50,7 +50,7 @@ struct AllTripsView: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 16) {
-                            ForEach(fleetVM.trips.sorted(by: { $0.startDate > $1.startDate })) { trip in
+                            ForEach(fleetVM.trips.sorted(by: { ($0.startTime ?? Date.distantPast) > ($1.startTime ?? Date.distantPast) })) { trip in
                                 TripRow(trip: trip)
                             }
                         }
