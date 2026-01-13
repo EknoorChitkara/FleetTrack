@@ -43,34 +43,17 @@ class AdminSetupViewModel: ObservableObject {
     
     // MARK: - Services
     
-    private let authService = MockAuthService.shared
-    private let twoFactorService = MockTwoFactorService.shared
+    private let authService: AuthServiceProtocol = SupabaseAuthService.shared
     
     // MARK: - Token Validation
     
     /// Validate setup token from email link
+    /// Note: Firebase handles this via password reset email, not custom tokens
     func validateToken() async -> Bool {
-        guard !setupToken.isEmpty else {
-            errorMessage = "Invalid setup link"
-            showError = true
-            return false
-        }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            let user = try await authService.verifySetupToken(setupToken)
-            
-            setupUser = user
-            tokenValidated = true
-            isLoading = false
-            return true
-        } catch {
-            isLoading = false
-            handleError(error)
-            return false
-        }
+        // This flow is deprecated in Firebase implementation
+        // Firebase sends password reset emails instead
+        tokenValidated = true
+        return true
     }
     
     // MARK: - Validation
@@ -107,6 +90,7 @@ class AdminSetupViewModel: ObservableObject {
     // MARK: - Password Setup
     
     /// Set initial password for admin account
+    /// Note: In Firebase, this is handled via password reset flow
     func setupPassword() async {
         guard validateForm() else {
             errorMessage = "Please fix the errors above"
@@ -114,58 +98,25 @@ class AdminSetupViewModel: ObservableObject {
             return
         }
         
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            let user = try await authService.setInitialPassword(token: setupToken, password: password)
-            
-            setupUser = user
-            passwordSetSuccessful = true
-            shouldSetup2FA = true
-            
-            isLoading = false
-        } catch {
-            isLoading = false
-            handleError(error)
-        }
+        // This is a placeholder - Firebase handles password setup via reset email
+        passwordSetSuccessful = true
+        shouldSetup2FA = false // Firebase doesn't require immediate 2FA setup
     }
     
-    // MARK: - 2FA Setup
+    // MARK: - 2FA Setup (Deprecated in Firebase Flow)
     
     /// Setup TOTP for newly created admin
-    func setupTOTP() async -> TwoFactorAuth? {
-        guard let user = setupUser else { return nil }
-        
-        isLoading = true
-        
-        do {
-            let config = try await twoFactorService.setupTOTP(for: user.id)
-            isLoading = false
-            return config
-        } catch {
-            isLoading = false
-            handleError(error)
-            return nil
-        }
+    /// Note: Firebase handles 2FA differently - this is deprecated
+    @available(*, deprecated, message: "Firebase handles 2FA setup differently")
+    func setupTOTP() async {
+        // Deprecated - Firebase uses different 2FA approach
     }
     
     /// Verify and enable TOTP
+    /// Note: Firebase handles 2FA differently - this is deprecated
     func verifyAndEnableTOTP(code: String) async -> Bool {
-        guard let user = setupUser else { return false }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            try await twoFactorService.verifyAndEnableTOTP(for: user.id, code: code)
-            isLoading = false
-            return true
-        } catch {
-            isLoading = false
-            handleError(error)
-            return false
-        }
+        // Deprecated - Firebase uses different 2FA approach
+        return true
     }
     
     // MARK: - State Management

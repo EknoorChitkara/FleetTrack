@@ -2,85 +2,163 @@
 //  LoginView.swift
 //  FleetTrack
 //
-//  Created by Firebase Integration
+//  Created by Eknoor on 07/01/26.
 //
 
 import SwiftUI
-
-/// Placeholder Login View
-/// This will be implemented in Phase 3
+import Supabase
 struct LoginView: View {
-    @EnvironmentObject var authViewModel: AuthViewModel
+    @ObservedObject private var sessionManager = SessionManager.shared
+
+    
+    @State private var email = ""
+    @State private var password = ""
+    @State private var message = ""
+    @State private var isLoading = false
+    @State private var show2FAView = false
+    @State private var otpEmail = ""
     
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "lock.shield.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.blue)
-            
-            Text("FleetTrack Login")
-                .font(.largeTitle)
-                .bold()
-            
-            Text("Authentication System Active")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-            
-            // Temporary Debug Login Buttons
-            VStack(spacing: 12) {
-                Button("Create Test Admin") {
-                    Task {
-                        do {
-                            // ⚠️ SECURITY: Never commit real emails to Git
-                            // Replace this with your email when testing locally
-                            let testEmail = "admin@example.com" // TODO: Replace locally for testing
-                            
-                            // Direct call to adapter for seeding
-                            let (user, tempPassword) = try await FirebaseAuthAdapter.shared.createAdminAccount(email: testEmail)
-                            
-                            print("✅ Test Admin Created")
-                            print("📧 Email: \(testEmail)")
-                            print("🔑 Temporary Password: \(tempPassword)")
-                            print("📬 Password reset email sent to your inbox!")
-                            print("⚠️ Check your email and click the reset link to set your password")
-                            
-                            // Show alert to user
-                            authViewModel.errorMessage = "Admin created! Check \(testEmail) for password reset email."
-                            authViewModel.showError = true
-                        } catch {
-                            print("❌ Error: \(error.localizedDescription)")
-                            authViewModel.errorMessage = error.localizedDescription
-                            authViewModel.showError = true
-                        }
-                    }
-                }
-                .buttonStyle(.bordered)
-                .tint(.green)
+        NavigationStack {
+            ZStack {
+                Color.appBackground.ignoresSafeArea()
                 
-                Button("Login as Admin") {
-                    Task {
-                        // ⚠️ SECURITY: Never commit real passwords to Git
-                        // Replace these when testing locally
-                        await authViewModel.adminLogin(
-                            email: "admin@example.com", // TODO: Replace locally
-                            password: "YourPasswordHere" // TODO: Replace locally
-                        )
+                VStack(spacing: 24) {
+                    Spacer()
+                    
+                    Image(systemName: "truck.box.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.appEmerald)
+                        .shadow(color: .appEmerald.opacity(0.3), radius: 10)
+                    
+                    VStack(spacing: 8) {
+                        Text("FleetTrack")
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        
+                        Text("Precision Fleet Management")
+                            .font(.subheadline)
+                            .foregroundColor(.appSecondaryText)
                     }
+                    
+                    Spacer().frame(height: 40)
+                    
+                    VStack(spacing: 16) {
+                        TextField("", text: $email, prompt: Text("Email").foregroundColor(.appSecondaryText))
+                            .padding()
+                            .background(Color.appCardBackground)
+                            .cornerRadius(12)
+                            .foregroundColor(.white)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appSecondaryText.opacity(0.3), lineWidth: 1))
+                            .textContentType(.emailAddress)
+                            .autocapitalization(.none)
+                        
+                        SecureField("", text: $password, prompt: Text("Password").foregroundColor(.appSecondaryText))
+                            .padding()
+                            .background(Color.appCardBackground)
+                            .cornerRadius(12)
+                            .foregroundColor(.white)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appSecondaryText.opacity(0.3), lineWidth: 1))
+                    }
+                    .padding(.horizontal)
+                    
+                    Button {
+                        Task { await login() }
+                    } label: {
+                        HStack {
+                            if isLoading {
+                                ProgressView().tint(.white)
+                            } else {
+                                Text("Sign In")
+                                    .fontWeight(.bold)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            LinearGradient(gradient: Gradient(colors: [.appEmerald, .appEmerald.opacity(0.8)]), startPoint: .top, endPoint: .bottom)
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .shadow(color: .appEmerald.opacity(0.4), radius: 8, x: 0, y: 4)
+                    }
+                    .padding(.horizontal)
+                    .disabled(isLoading)
+                    
+                    Button("Forgot Password?") {
+                        Task { await forgotPassword() }
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.appEmerald)
+                    
+                    if !message.isEmpty {
+                        Text(message)
+                            .foregroundColor(message.contains("✅") ? .appEmeraldLight : .red)
+                            .font(.caption)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                    }
+                    
                 }
-                .buttonStyle(.borderedProminent)
             }
-            .padding()
-            
-            if authViewModel.isLoading {
-                ProgressView()
-            }
-            
-            if let error = authViewModel.errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .font(.caption)
+            .navigationDestination(isPresented: $show2FAView) {
+                VerificationView(email: otpEmail)
             }
         }
-        .padding()
+    }
+    
+    private func login() async {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty, !password.isEmpty else {
+            message = "❌ Please enter email and password"
+            return
+        }
+        
+        isLoading = true
+        message = ""
+        
+        do {
+            // Step 1: Verify Password
+            try await supabase.auth.signIn(email: trimmedEmail, password: password)
+            print("✅ Step 1: Password Verified")
+            
+            // Step 2: Clear session to ensure clean OTP flow
+            // This prevents "otp_expired" conflicts
+            try? await supabase.auth.signOut() 
+            
+            // Small delay to let Supabase settle
+            try? await Task.sleep(for: .seconds(1))
+            
+            // Step 3: Trigger Code Send
+            try await supabase.auth.signInWithOTP(email: trimmedEmail)
+            print("✅ Step 2: OTP Sent to \(trimmedEmail)")
+            
+            await MainActor.run {
+                self.otpEmail = trimmedEmail
+                self.show2FAView = true
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                print("❌ Login error: \(error)")
+                message = "❌ Invalid email or password"
+                isLoading = false
+            }
+        }
+    }
+    
+    private func forgotPassword() async {
+        guard !email.isEmpty else {
+            message = "❌ Enter email first"
+            return
+        }
+        isLoading = true
+        do {
+            try await supabase.auth.resetPasswordForEmail(email, redirectTo: URL(string: "fleettrack://auth/callback"))
+            message = "✅ Reset link sent!"
+        } catch {
+            message = "❌ \(error.localizedDescription)"
+        }
+        isLoading = false
     }
 }

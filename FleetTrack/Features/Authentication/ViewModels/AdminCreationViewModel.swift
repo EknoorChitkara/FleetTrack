@@ -33,8 +33,7 @@ class AdminCreationViewModel: ObservableObject {
     
     // MARK: - Services
     
-    private let authService = MockAuthService.shared
-    private let emailService = MockEmailService.shared
+    private let authService: AuthServiceProtocol = SupabaseAuthService.shared
     
     // MARK: - Validation
     
@@ -63,15 +62,12 @@ class AdminCreationViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            // Create admin account
+            // Create admin account (Firebase sends password reset email automatically)
             let (user, token) = try await authService.createAdminAccount(email: email)
-            
-            // Send setup email
-            try await emailService.sendSetupEmail(to: email, token: token)
             
             // Update state
             createdUser = user
-            setupLink = "fleetms://setup?token=\(token)"
+            setupLink = "Password reset email sent to \(email)"
             creationSuccessful = true
             
             isLoading = false

@@ -23,15 +23,25 @@ class AuthViewModel: ObservableObject {
     @Published var isAwaitingTwoFactor = false
     @Published var currentLoginUser: User?
     @Published var twoFactorMethod: TwoFactorMethod?
+    @Published var verificationID: String? // Added for SMS flow
+    @Published var isAuthenticated = false
     
     // Success state
     @Published var loginSuccessful = false
     
     // MARK: - Services
     
-    private let authService = MockAuthService.shared
-    private let twoFactorService = MockTwoFactorService.shared
+    private let authService: AuthServiceProtocol = SupabaseAuthService.shared
     private let sessionManager = SessionManager.shared
+    private var cancellables = Set<AnyCancellable>()
+    
+    init() {
+        // Sync auth state with session manager
+        sessionManager.$isAuthenticated
+            .receive(on: RunLoop.main)
+            .assign(to: \.isAuthenticated, on: self)
+            .store(in: &cancellables)
+    }
     
     // MARK: - Admin Authentication
     
@@ -42,27 +52,7 @@ class AuthViewModel: ObservableObject {
         
         do {
             let user = try await authService.adminLogin(email: email, password: password)
-            
-            // Check if 2FA is enabled
-            if user.twoFactorEnabled {
-                currentLoginUser = user
-                
-                // Get 2FA method
-                if let config = MockDataStore.shared.find2FAConfig(forUserID: user.id) {
-                    twoFactorMethod = config.method
-                    
-                    // If SMS, send code
-                    if config.method == .sms {
-                        _ = try await twoFactorService.sendSMSCode(for: user.id)
-                    }
-                }
-                
-                isAwaitingTwoFactor = true
-            } else {
-                // No 2FA, create session directly
-                await completeLogin(user: user, rememberMe: false)
-            }
-            
+            await completeLogin(user: user, rememberMe: false)
             isLoading = false
         } catch {
             isLoading = false
@@ -72,19 +62,24 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Driver Authentication
     
-    /// Driver login - Step 1: Verify credentials
+    /// Driver login - Step 1: Verify credentials and send SMS
     func driverLogin(phoneNumber: String, employeeID: String) async {
         isLoading = true
         errorMessage = nil
         
         do {
+            // 1. Validate credentials existence
             let user = try await authService.driverLogin(
                 phoneNumber: phoneNumber,
                 employeeID: employeeID
             )
             
-            // Send SMS code
-            _ = try await twoFactorService.sendSMSCode(for: user.id)
+            // 2. Send SMS code
+            let vid = try await authService.sendDriverSMSCode(phoneNumber: phoneNumber)
+            self.verificationID = vid
+            
+            // Store employeeID for 2FA verification
+            self.pendingEmployeeID = employeeID
             
             currentLoginUser = user
             twoFactorMethod = .sms
@@ -108,19 +103,7 @@ class AuthViewModel: ObservableObject {
                 employeeID: employeeID,
                 password: password
             )
-            
-            // Check 2FA method
-            if let config = MockDataStore.shared.find2FAConfig(forUserID: user.id) {
-                twoFactorMethod = config.method
-                
-                // If SMS, send code
-                if config.method == .sms {
-                    _ = try await twoFactorService.sendSMSCode(for: user.id)
-                }
-            }
-            
-            currentLoginUser = user
-            isAwaitingTwoFactor = true
+            await completeLogin(user: user, rememberMe: false)
             isLoading = false
         } catch {
             isLoading = false
@@ -128,9 +111,12 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    // Store employeeID from driver login for 2FA verification
+    @Published var pendingEmployeeID: String?
+    
     // MARK: - Two-Factor Authentication
     
-    /// Verify 2FA code (TOTP or SMS)
+    /// Verify 2FA code (SMS only for now)
     func verifyTwoFactorCode(_ code: String, rememberMe: Bool = false) async {
         guard let user = currentLoginUser else {
             handleError(AuthError.userNotFound)
@@ -141,45 +127,21 @@ class AuthViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            var isValid = false
-            
             // Verify based on method
-            if twoFactorMethod == .totp {
-                isValid = try await twoFactorService.verifyTOTPCode(for: user.id, code: code)
-            } else if twoFactorMethod == .sms {
-                isValid = try await twoFactorService.verifySMSCode(for: user.id, code: code)
-            }
-            
-            if isValid {
-                await completeLogin(user: user, rememberMe: rememberMe)
+            if twoFactorMethod == .sms {
+                guard let employeeID = pendingEmployeeID, let vid = verificationID else {
+                   throw AuthError.invalidCredentials
+                }
+                
+                // Login via SMS verification
+                let verifiedUser = try await authService.verifyDriverSMSCode(
+                    verificationID: vid,
+                    code: code,
+                    employeeID: employeeID
+                )
+                await completeLogin(user: verifiedUser, rememberMe: rememberMe)
             } else {
-                throw AuthError.invalid2FACode
-            }
-            
-            isLoading = false
-        } catch {
-            isLoading = false
-            handleError(error)
-        }
-    }
-    
-    /// Verify backup code
-    func verifyBackupCode(_ code: String, rememberMe: Bool = false) async {
-        guard let user = currentLoginUser else {
-            handleError(AuthError.userNotFound)
-            return
-        }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            let isValid = try await twoFactorService.verifyBackupCode(for: user.id, code: code)
-            
-            if isValid {
-                await completeLogin(user: user, rememberMe: rememberMe)
-            } else {
-                throw AuthError.invalid2FACode
+                throw AuthError.invalidCredentials
             }
             
             isLoading = false
@@ -192,6 +154,7 @@ class AuthViewModel: ObservableObject {
     /// Resend 2FA code (SMS only)
     func resendTwoFactorCode() async {
         guard let user = currentLoginUser,
+              let phoneNumber = user.phoneNumber,
               twoFactorMethod == .sms else {
             return
         }
@@ -199,7 +162,8 @@ class AuthViewModel: ObservableObject {
         isLoading = true
         
         do {
-            _ = try await twoFactorService.sendSMSCode(for: user.id)
+            let vid = try await authService.sendDriverSMSCode(phoneNumber: phoneNumber)
+            self.verificationID = vid
             isLoading = false
         } catch {
             isLoading = false
@@ -209,26 +173,23 @@ class AuthViewModel: ObservableObject {
     
     // MARK: - Session Management
     
-    /// Complete login and create session
+    /// Complete login and update session
     private func completeLogin(user: User, rememberMe: Bool) async {
-        do {
-            let session = try await authService.createSession(for: user, rememberMe: rememberMe)
-            sessionManager.setSession(user: user, session: session)
-            
-            // Reset state
-            isAwaitingTwoFactor = false
-            currentLoginUser = nil
-            twoFactorMethod = nil
-            loginSuccessful = true
-        } catch {
-            handleError(error)
-        }
+        sessionManager.setUser(user)
+        
+        // Reset state
+        isAwaitingTwoFactor = false
+        currentLoginUser = nil
+        twoFactorMethod = nil
+        verificationID = nil
+        loginSuccessful = true
     }
     
     /// Logout
     func logout() async {
         isLoading = true
-        await sessionManager.logout()
+        try? await authService.logout()
+        sessionManager.clearSession()
         isLoading = false
         resetState()
     }
@@ -243,6 +204,8 @@ class AuthViewModel: ObservableObject {
         isAwaitingTwoFactor = false
         currentLoginUser = nil
         twoFactorMethod = nil
+        verificationID = nil
+        pendingEmployeeID = nil
         loginSuccessful = false
     }
     
@@ -257,4 +220,23 @@ class AuthViewModel: ObservableObject {
         errorMessage = nil
         showError = false
     }
+}
+
+enum AuthError: LocalizedError {
+    case userNotFound
+    case invalidCredentials
+    
+    var errorDescription: String? {
+        switch self {
+        case .userNotFound:
+            return "User not found"
+        case .invalidCredentials:
+            return "Invalid credentials"
+        }
+    }
+}
+
+enum TwoFactorMethod: String, Codable, CaseIterable {
+    case sms
+    case email
 }
