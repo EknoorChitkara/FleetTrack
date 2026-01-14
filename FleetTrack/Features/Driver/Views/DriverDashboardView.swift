@@ -10,6 +10,9 @@ struct DriverDashboardView: View {
     @StateObject private var viewModel = DriverDashboardViewModel()
     @State private var selectedTab = 0
     @State private var isShowingProfile = false
+    @State private var navigateToInspection = false
+    @State private var navigateToReportIssue = false
+    @State private var initialInspectionTab: InspectionTab = .summary
     
     init(user: User) {
         self._localUser = State(initialValue: user)
@@ -138,36 +141,42 @@ struct DriverDashboardView: View {
                     AssignedVehicleCard(vehicle: viewModel.assignedVehicle)
                         .padding(.horizontal)
                     
-                    // Recent Trips
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Recent Trips")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        
-                        if viewModel.recentTrips.isEmpty {
-                            Text("No recent trips")
-                                .font(.subheadline)
-                                .foregroundColor(.appSecondaryText)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 8)
-                        } else {
-                            ForEach(viewModel.recentTrips) { trip in
-                                RecentTripRow(trip: trip)
-                                
-                                if trip.id != viewModel.recentTrips.last?.id {
-                                    Divider().background(Color.white.opacity(0.1))
-                                }
+                    // Quick Actions
+                    VStack(spacing: 16) {
+                        DashboardActionRow(
+                            icon: "car.fill",
+                            title: "Vehicle Inspection",
+                            subtitle: "Daily checklist & maintenance",
+                            action: {
+                                initialInspectionTab = .summary
+                                navigateToInspection = true
                             }
-                        }
+                        )
+                        
+                        DashboardActionRow(
+                            icon: "exclamationmark.triangle.fill",
+                            title: "Report Issue",
+                            subtitle: "Emergency or maintenance alert",
+                            action: {
+                                navigateToReportIssue = true
+                            }
+                        )
                     }
-                    .padding()
-                    .background(Color.appCardBackground)
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                    )
+                    .padding(.horizontal)
                     .padding(.bottom, 100) // Space for TabBar
+                    
+                    // Hidden Navigation Links
+                    NavigationLink(isActive: $navigateToInspection) {
+                        DriverVehicleInspectionView(user: localUser, initialTab: initialInspectionTab)
+                    } label: {
+                        EmptyView()
+                    }
+                    
+                    NavigationLink(isActive: $navigateToReportIssue) {
+                        ReportIssueView(driverId: localUser.id, vehicleId: viewModel.assignedVehicle?.id)
+                    } label: {
+                        EmptyView()
+                    }
                 }
             }
         }
@@ -175,8 +184,59 @@ struct DriverDashboardView: View {
             await viewModel.loadDashboardData(user: localUser)
         }
     }
-
 }
+
+// MARK: - Components
+
+struct DashboardActionRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                // Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                }
+                
+                // Text
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 14))
+                        .foregroundColor(.appSecondaryText)
+                }
+                
+                Spacer()
+                
+                // Chevron
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.appSecondaryText)
+            }
+            .padding(16)
+            .background(Color.appCardBackground)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.white.opacity(0.05), lineWidth: 1)
+            )
+        }
+    }
+}
+
 
 // MARK: - Preview
 #Preview {
