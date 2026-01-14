@@ -85,11 +85,11 @@ struct VehicleDetailView: View {
                                 Divider().background(Color.gray.opacity(0.2))
                                 InfoRow(icon: "number", label: "License Plate", value: vehicle.registrationNumber)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "fingerprint", label: "VIN", value: vehicle.vin)
+                                InfoRow(icon: "fingerprint", label: "VIN", value: vehicle.vin ?? "N/A")
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "speedometer", label: "Mileage", value: vehicle.mileage)
+                                InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(vehicle.mileage))
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "shield.fill", label: "Insurance", value: vehicle.insuranceStatus)
+                                InfoRow(icon: "shield.fill", label: "Insurance", value: vehicle.insuranceStatus ?? "Pending")
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
@@ -147,6 +147,11 @@ struct VehicleDetailView: View {
         .sheet(isPresented: $showInspection) {
             VehicleInspectionView(vehicle: vehicle)
         }
+    }
+    
+    private func formatMileage(_ mileage: Double?) -> String {
+        guard let mileage = mileage else { return "0 km" }
+        return String(format: "%.0f km", mileage)
     }
     
     @EnvironmentObject var fleetVM: FleetViewModel

@@ -12,7 +12,7 @@ import Supabase
 
 enum TripStatus: String, Codable, CaseIterable, PostgrestFilterValue {
     case scheduled = "Scheduled"
-    case ongoing = "Ongoing"
+    case ongoing = "In Progress"  // Database uses "In Progress"
     case completed = "Completed"
     case cancelled = "Cancelled"
     
@@ -58,11 +58,11 @@ struct Trip: Identifiable, Codable, Hashable {
         case vehicleId = "vehicle_id"
         case driverId = "driver_id"
         case status
-        case startLat = "start_lat"
-        case startLong = "start_long"
+        case startLat = "start_latitude"
+        case startLong = "start_longitude"
         case startAddress = "start_address"
-        case endLat = "end_lat"
-        case endLong = "end_long"
+        case endLat = "end_latitude"
+        case endLong = "end_longitude"
         case endAddress = "end_address"
         case startTime = "start_time"
         case endTime = "end_time"
@@ -143,6 +143,44 @@ struct Trip: Identifiable, Codable, Hashable {
     var formattedDistance: String? {
         guard let distance = distance else { return nil }
         return String(format: "%.1f km", distance)
+    }
+    
+    // MARK: - Location Helpers
+    
+    /// Check if trip has start location coordinates
+    var hasStartLocation: Bool {
+        startLat != nil && startLong != nil
+    }
+    
+    /// Check if trip has end location coordinates
+    var hasEndLocation: Bool {
+        endLat != nil && endLong != nil
+    }
+    
+    // MARK: - Validation
+    
+    /// Validate if trip has minimum required data
+    var isValid: Bool {
+        // Must have vehicle, driver, and at least addresses
+        return startAddress != nil && 
+               !startAddress!.isEmpty && 
+               endAddress != nil && 
+               !endAddress!.isEmpty
+    }
+    
+    /// Check if trip can be started by driver
+    var canBeStarted: Bool {
+        status == .scheduled && startTime != nil
+    }
+    
+    /// Check if trip can be completed
+    var canBeCompleted: Bool {
+        status == .ongoing
+    }
+    
+    /// Check if trip is active (scheduled or ongoing)
+    var isActive: Bool {
+        status == .scheduled || status == .ongoing
     }
 }
 

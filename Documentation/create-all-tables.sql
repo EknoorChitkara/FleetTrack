@@ -144,6 +144,7 @@ CREATE TABLE trips (
     purpose TEXT,
     notes TEXT,
     fuel_consumed DECIMAL(10,2),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
