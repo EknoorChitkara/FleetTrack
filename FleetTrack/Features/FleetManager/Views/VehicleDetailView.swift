@@ -11,6 +11,9 @@ struct VehicleDetailView: View {
     let vehicle: FMVehicle
     @Environment(\.presentationMode) var presentationMode
     @State private var showInspection = false
+    @State private var showServiceSelection = false
+    @State private var selectedServices: Set<String> = []
+    @State private var serviceDescription: String = ""
     
     var body: some View {
         ZStack {
@@ -65,11 +68,32 @@ struct VehicleDetailView: View {
                                 QuickActionBtn(title: "Inspection", icon: "doc.text.fill", color: .blue) {
                                     showInspection = true
                                 }
-                                QuickActionBtn(title: "Assign", icon: "person.badge.plus.fill", color: .green) {
-                                    // Assign logic
+                                
+                                Menu {
+                                    Button(action: {
+                                        fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: nil)
+                                        presentationMode.wrappedValue.dismiss()
+                                    }) {
+                                        Label("Unassign", systemImage: "person.fill.xmark")
+                                    }
+                                    
+                                    Divider()
+                                    
+                                    ForEach(fleetVM.unassignedDrivers) { driver in
+                                        Button(action: {
+                                            fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: driver.id)
+                                            presentationMode.wrappedValue.dismiss()
+                                        }) {
+                                            Text(driver.displayName)
+                                        }
+                                    }
+                                } label: {
+                                    QuickActionBtn(title: "Assign", icon: "person.badge.plus.fill", color: .green) {}
                                 }
+                                .disabled(fleetVM.unassignedDrivers.isEmpty && vehicle.assignedDriverId == nil)
+                                
                                 QuickActionBtn(title: "Service", icon: "wrench.and.screwdriver.fill", color: .orange) {
-                                    // Service logic
+                                    showServiceSelection = true
                                 }
                             }
                         }
@@ -84,8 +108,6 @@ struct VehicleDetailView: View {
                                 InfoRow(icon: "car.fill", label: "Model", value: vehicle.model)
                                 Divider().background(Color.gray.opacity(0.2))
                                 InfoRow(icon: "number", label: "License Plate", value: vehicle.registrationNumber)
-                                Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "fingerprint", label: "VIN", value: vehicle.vin ?? "N/A")
                                 Divider().background(Color.gray.opacity(0.2))
                                 InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(vehicle.mileage))
                                 Divider().background(Color.gray.opacity(0.2))
@@ -147,6 +169,14 @@ struct VehicleDetailView: View {
         .sheet(isPresented: $showInspection) {
             VehicleInspectionView(vehicle: vehicle)
         }
+        .sheet(isPresented: $showServiceSelection) {
+            ServiceSelectionView(selectedServices: $selectedServices, description: $serviceDescription) {
+                fleetVM.markForService(vehicleId: vehicle.id, serviceTypes: Array(selectedServices), description: serviceDescription)
+                serviceDescription = "" // Reset for next time
+                presentationMode.wrappedValue.dismiss()
+            }
+            .environmentObject(fleetVM)
+        }
     }
     
     private func formatMileage(_ mileage: Double?) -> String {
@@ -207,5 +237,96 @@ struct InfoRow: View {
                 .foregroundColor(.white)
         }
         .padding()
+    }
+}
+
+struct ServiceSelectionView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @Binding var selectedServices: Set<String>
+    @Binding var description: String
+    let onSave: () -> Void
+    
+    var body: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button("Cancel") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.gray)
+                    
+                    Spacer()
+                    
+                    Text("Select Services")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Button("Save") {
+                        onSave()
+                    }
+                    .foregroundColor(selectedServices.isEmpty ? .gray : .appEmerald)
+                    .fontWeight(.bold)
+                    .disabled(selectedServices.isEmpty)
+                }
+                .padding()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        ModernFormHeader(title: "Maintenance", subtitle: "Select all components that need work", iconName: "wrench.and.screwdriver.fill")
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Description")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .padding(.horizontal)
+                            
+                            ModernTextField(icon: "pencil.and.outline", placeholder: "What is the problem in the vehicle?", text: $description)
+                                .padding(.horizontal)
+                        }
+                        
+                        VStack(spacing: 12) {
+                            ForEach(FleetViewModel.maintenanceOptions, id: \.self) { service in
+                                Button(action: {
+                                    if selectedServices.contains(service) {
+                                        selectedServices.remove(service)
+                                    } else {
+                                        selectedServices.insert(service)
+                                    }
+                                }) {
+                                    HStack {
+                                        Text(service)
+                                            .foregroundColor(.white)
+                                        Spacer()
+                                        if selectedServices.contains(service) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.appEmerald)
+                                        } else {
+                                            Circle()
+                                                .stroke(Color.gray, lineWidth: 1)
+                                                .frame(width: 22, height: 22)
+                                        }
+                                    }
+                                    .padding()
+                                    .background(Color.appCardBackground)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(selectedServices.contains(service) ? Color.appEmerald.opacity(0.3) : Color.white.opacity(0.05), lineWidth: 1)
+                                    )
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                        
+                        Spacer(minLength: 40)
+                    }
+                }
+            }
+        }
     }
 }

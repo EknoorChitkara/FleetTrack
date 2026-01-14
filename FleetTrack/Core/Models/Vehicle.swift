@@ -13,8 +13,8 @@ import Foundation
 enum VehicleStatus: String, Codable, CaseIterable {
     case active = "Active"
     case inactive = "Inactive"
-    case maintenance = "Maintenance"
-    case retired = "Retired"
+    case inMaintenance = "In Maintenance"
+    case outOfService = "Out of Service"
     case inTransit = "In Transit"
 }
 
@@ -245,7 +245,7 @@ extension Vehicle {
         model: "LPT 1613",
         manufacturer: "Tata",
         vehicleType: .truck,
-        status: .maintenance,
+        status: .inMaintenance,
         currentSpeed: 0.0,
         fuelLevel: 45.0,
         totalMileage: 45000.0,
