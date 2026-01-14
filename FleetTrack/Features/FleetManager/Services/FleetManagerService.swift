@@ -58,52 +58,28 @@ class FleetManagerService {
         print("✅ [addDriver] Driver record created successfully for \(data.fullName)")
     }
     
-    /// Sends an invitation email to the driver using Supabase Edge Function
-    /// Edge Function verifies user role internally (no secret key needed)
+    /// Sends an invitation email to the driver using Supabase Magic Link
+    /// No Edge Function needed - uses built-in Supabase authentication
     private func sendDriverInvite(email: String, fullName: String) async throws {
         print("🔐 [sendDriverInvite] Starting invite for: \(email)")
-        
-        // Define the request body structure
-        struct InviteRequest: Encodable {
-            let email: String
-            let fullName: String
-            let role: String
-        }
-        
-        // Define the response structure
-        struct InviteResponse: Decodable {
-            let success: Bool
-            let userId: String?
-            let message: String?
-            let error: String?
-        }
-        
-        let request = InviteRequest(email: email, fullName: fullName, role: "Driver")
-        print("📦 [sendDriverInvite] Request payload: email=\(email), fullName=\(fullName), role=Driver")
+        print("📧 [sendDriverInvite] Using Supabase Magic Link (no Edge Function)")
         
         do {
-            print("🌐 [sendDriverInvite] Calling Edge Function 'quick-function'...")
-            
-            // Call the Edge Function (no secret key needed - Edge Function verifies user internally)
-            let response: InviteResponse = try await client.functions.invoke(
-                "quick-function",
-                options: FunctionInvokeOptions(body: request)
+            // Send magic link invitation
+            // This creates auth.users record and sends email automatically
+            try await client.auth.signInWithOTP(
+                email: email,
+                redirectTo: URL(string: "fleettrack://set-password")!,
+                shouldCreateUser: true
             )
             
-            print("📥 [sendDriverInvite] Response received:")
-            print("   - success: \(response.success)")
-            print("   - userId: \(response.userId ?? "nil")")
-            print("   - message: \(response.message ?? "nil")")
-            print("   - error: \(response.error ?? "nil")")
+            print("✅ [sendDriverInvite] Magic link sent to \(email)")
+            print("📧 [sendDriverInvite] Driver will receive email with login link")
+            print("ℹ️  [sendDriverInvite] Driver can use magic link to log in and set password")
             
-            if response.success {
-                print("📧 [sendDriverInvite] ✅ Invitation email sent to \(email)")
-            } else if let error = response.error {
-                print("❌ [sendDriverInvite] Failed to send invite: \(error)")
-                throw NSError(domain: "FleetManager", code: 500, userInfo: [NSLocalizedDescriptionKey: error])
-            }
         } catch {
-            print("🚨 [sendDriverInvite] Error: \(error)")
+            print("❌ [sendDriverInvite] Failed to send magic link: \(error)")
+            print("   Error details: \(error.localizedDescription)")
             // Don't block driver creation if invite fails
             print("⚠️ [sendDriverInvite] Continuing without invite email")
         }
@@ -114,45 +90,110 @@ class FleetManagerService {
     // MARK: - Vehicle Management
     
     func addVehicle(_ data: VehicleCreationData) async throws {
+        print("🚀 [addVehicle] Starting vehicle creation")
+        print("   Registration: \(data.registrationNumber)")
+        print("   Type: \(data.vehicleType)")
+        print("   Assigned Driver ID: \(data.assignedDriverId?.uuidString ?? "nil")")
+        
         // Fetch Driver Name if assigned
         var driverName: String? = nil
         if let driverId = data.assignedDriverId {
             do {
+                // Specify columns to avoid PGRST116 error
                 let driver: FMDriver = try await client
                     .from("drivers")
-                    .select()
+                    .select("id, full_name, email")
                     .eq("id", value: driverId)
                     .single()
                     .execute()
                     .value
                 driverName = driver.fullName ?? driver.email ?? "Unknown"
+                print("✅ Fetched driver name: \(driverName ?? "nil")")
             } catch {
                 print("⚠️ Could not fetch driver name for vehicle assignment: \(error)")
+                // Continue without driver name - vehicle creation should not fail
             }
+        } else {
+            print("ℹ️  No driver assigned to vehicle")
         }
 
-        // Create FMVehicle from creation data - matches DB schema
-        let newVehicle = FMVehicle(
+        // Create insert DTO without status field - let database use default
+        struct VehicleInsertDTO: Encodable {
+            let id: UUID
+            let registrationNumber: String
+            let vehicleType: String  // Send as String to bypass enum validation
+            let manufacturer: String
+            let model: String
+            let fuelType: String  // Send as String to bypass enum validation
+            let capacity: String
+            let registrationDate: Date
+            // status field excluded - database will use default 'active'
+            let assignedDriverId: UUID?
+            let assignedDriverName: String?
+            let vin: String?
+            let mileage: Double?
+            let insuranceStatus: String?
+            let lastService: Date?
+            let createdAt: Date
+            
+            enum CodingKeys: String, CodingKey {
+                case id
+                case registrationNumber = "registration_number"
+                case vehicleType = "vehicle_type"
+                case manufacturer
+                case model
+                case fuelType = "fuel_type"
+                case capacity
+                case registrationDate = "registration_date"
+                case assignedDriverId = "assigned_driver_id"
+                case assignedDriverName = "assigned_driver_name"
+                case vin
+                case mileage
+                case insuranceStatus = "insurance_status"
+                case lastService = "last_service"
+                case createdAt = "created_at"
+            }
+        }
+        
+        let vehicleDTO = VehicleInsertDTO(
             id: UUID(),
             registrationNumber: data.registrationNumber,
-            vehicleType: data.vehicleType,
+            vehicleType: data.vehicleType.rawValue,  // Convert enum to String
             manufacturer: data.manufacturer,
             model: data.model,
-            fuelType: data.fuelType,
+            fuelType: data.fuelType.rawValue,  // Convert enum to String
             capacity: data.capacity,
             registrationDate: data.registrationDate,
-            status: data.status,
             assignedDriverId: data.assignedDriverId,
             assignedDriverName: driverName,
+            vin: nil,
+            mileage: nil,
+            insuranceStatus: nil,
+            lastService: nil,
             createdAt: Date()
         )
         
-        try await client
-            .from("vehicles")
-            .insert(newVehicle)
-            .execute()
+        print("💾 [addVehicle] Inserting vehicle into database...")
+        print("   Note: status field excluded, database will use default value")
+        
+        do {
+            try await client
+                .from("vehicles")
+                .insert(vehicleDTO)
+                .execute()
             
-        print("✅ Vehicle record created: \(data.registrationNumber)")
+            print("✅ Vehicle record created: \(data.registrationNumber)")
+            if let driverName = driverName {
+                print("   Assigned to driver: \(driverName)")
+            } else {
+                print("   Status: Unassigned")
+            }
+        } catch {
+            print("❌ [addVehicle] Failed to insert vehicle: \(error)")
+            print("   Error type: \(type(of: error))")
+            print("   Error description: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     // MARK: - Trip Management

@@ -10,6 +10,8 @@ import SwiftUI
 struct FleetManagerManageDriversView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var fleetVM: FleetViewModel
+    @State private var driverToDelete: FMDriver? = nil
+    @State private var showDeleteAlert = false
     
     var body: some View {
         ZStack {
@@ -57,7 +59,13 @@ struct FleetManagerManageDriversView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             ForEach(fleetVM.drivers) { driver in
-                                DriverCard(driver: driver)
+                                DriverCard(
+                                    driver: driver,
+                                    onDelete: {
+                                        driverToDelete = driver
+                                        showDeleteAlert = true
+                                    }
+                                )
                             }
                         }
                         .padding()
@@ -66,6 +74,72 @@ struct FleetManagerManageDriversView: View {
             }
         }
         .navigationBarHidden(true)
+        .alert(isPresented: $showDeleteAlert) {
+            Alert(
+                title: Text("Delete Driver"),
+                message: Text("Are you sure you want to remove \(driverToDelete?.displayName ?? "this driver") from the fleet?"),
+                primaryButton: .destructive(Text("Delete")) {
+                    if let driver = driverToDelete {
+                        fleetVM.deleteDriver(byId: driver.id)
+                    }
+                    driverToDelete = nil
+                },
+                secondaryButton: .cancel {
+                    driverToDelete = nil
+                }
+            )
+        }
     }
 }
 
+struct DriverCard: View {
+    let driver: FMDriver
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "person.crop.circle.fill")
+                .font(.system(size: 50))
+                .foregroundColor(.appEmerald)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(driver.displayName)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                Text(driver.licenseNumber ?? "No License")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            VStack(alignment: .trailing, spacing: 4) {
+                let status = driver.status ?? .available
+                Text(status.rawValue)
+                    .font(.system(size: 10, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(status == .available ? Color.green.opacity(0.2) : Color.gray.opacity(0.2))
+                    .foregroundColor(status == .available ? .green : .gray)
+                    .cornerRadius(6)
+                
+                Text(driver.phoneNumber ?? "No Phone")
+                    .font(.system(size: 10))
+                    .foregroundColor(.gray)
+            }
+            
+            // Delete Button
+            Button(action: onDelete) {
+                Image(systemName: "trash.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(.red)
+                    .padding(10)
+                    .background(Color.red.opacity(0.1))
+                    .clipShape(Circle())
+            }
+        }
+        .padding()
+        .background(Color.appCardBackground)
+        .cornerRadius(12)
+    }
+}

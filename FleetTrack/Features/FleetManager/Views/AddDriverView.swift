@@ -105,10 +105,6 @@ struct AddDriverView: View {
                     Text("Cancel")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Capsule())
                 },
                 
                 trailing: Button(action: {
@@ -117,11 +113,7 @@ struct AddDriverView: View {
                 }) {
                     Text("Save")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(!isFormValid ? .gray : .black)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 8)
-                        .background(!isFormValid ? Color(white: 0.2) : Color.appEmerald)
-                        .clipShape(Capsule())
+                        .foregroundColor(!isFormValid ? .gray : .appEmerald)
                 }
                 .disabled(!isFormValid)
             )

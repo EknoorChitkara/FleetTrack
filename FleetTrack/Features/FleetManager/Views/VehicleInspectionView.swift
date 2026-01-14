@@ -54,7 +54,7 @@ struct VehicleInspectionView: View {
                                 Divider().background(Color.gray.opacity(0.2))
                                 InspectionRow(label: "Model", value: vehicle.model)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InspectionRow(label: "VIN", value: vehicle.vin)
+                                InspectionRow(label: "VIN", value: vehicle.vin ?? "N/A")
                                 Divider().background(Color.gray.opacity(0.2))
                                 InspectionRow(label: "Fuel Type", value: vehicle.fuelType.rawValue)
                                 Divider().background(Color.gray.opacity(0.2))
@@ -69,9 +69,9 @@ struct VehicleInspectionView: View {
                             VStack(spacing: 0) {
                                 InspectionRow(label: "Current Status", value: vehicle.status.rawValue)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InspectionRow(label: "Mileage", value: vehicle.mileage)
+                                InspectionRow(label: "Mileage", value: formatMileage(vehicle.mileage))
                                 Divider().background(Color.gray.opacity(0.2))
-                                InspectionRow(label: "Last Service", value: vehicle.lastService)
+                                InspectionRow(label: "Last Service", value: formatOptionalDate(vehicle.lastService))
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
@@ -88,6 +88,16 @@ struct VehicleInspectionView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yyyy"
         return formatter.string(from: date)
+    }
+    
+    private func formatOptionalDate(_ date: Date?) -> String {
+        guard let date = date else { return "Never" }
+        return formatDate(date)
+    }
+    
+    private func formatMileage(_ mileage: Double?) -> String {
+        guard let mileage = mileage else { return "0 km" }
+        return String(format: "%.0f km", mileage)
     }
 }
 
