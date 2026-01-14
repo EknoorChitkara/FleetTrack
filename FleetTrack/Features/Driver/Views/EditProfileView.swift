@@ -111,17 +111,14 @@ struct EditProfileView: View {
             
             let userUpdates = UserUpdate(name: name, phone_number: phoneNumber)
             
-            let updatedUsers: [User] = try await supabase.database
+            let updatedUser: User = try await supabase.database
                 .from("users")
                 .update(userUpdates)
                 .eq("id", value: user.id.uuidString)
                 .select()
+                .single()
                 .execute()
                 .value
-            
-            guard let updatedUser = updatedUsers.first else {
-                throw NSError(domain: "EditProfile", code: 404, userInfo: [NSLocalizedDescriptionKey: "Failed to update user: No data returned"])
-            }
             
             print("✅ User updated successfully")
             
@@ -141,17 +138,14 @@ struct EditProfileView: View {
                 updated_at: dateFormatter.string(from: Date())
             )
             
-            let updatedDrivers: [Driver] = try await supabase.database
+            let updatedDriver: Driver = try await supabase.database
                 .from("drivers")
                 .update(driverUpdates)
                 .eq("id", value: driver.id.uuidString)
                 .select()
+                .single()
                 .execute()
                 .value
-            
-            guard let updatedDriver = updatedDrivers.first else {
-                 throw NSError(domain: "EditProfile", code: 404, userInfo: [NSLocalizedDescriptionKey: "Failed to update driver: No data returned"])
-            }
             
             print("✅ Driver updated successfully")
             

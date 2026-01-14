@@ -2,14 +2,13 @@
 //  DriverTripsView.swift
 //  FleetTrack
 //
-
+//  Shows driver's assigned trips with ability to view on map and start trip
 //
 
 import SwiftUI
 import Supabase
 
 struct DriverTripsView: View {
-
     @State private var trips: [Trip] = []
     @State private var isLoading = true
     @State private var selectedFilter: TripFilter = .upcoming
@@ -34,14 +33,12 @@ struct DriverTripsView: View {
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
-
             ZStack {
                 Color.appBackground.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Header
                     HStack {
-
                         Text("My Trips")
                             .font(.system(size: 34, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
@@ -106,46 +103,6 @@ struct DriverTripsView: View {
                                         DriverTripCardView(trip: trip)
                                     }
                                     .buttonStyle(PlainButtonStyle())
-=======
-                        Text("Trips")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(.white)
-                        Spacer()
-                    }
-                    .padding()
-                    .padding(.top, 20)
-                    
-                    // Custom Segment Control
-                    HStack(spacing: 0) {
-                        SegmentButton(title: "Upcoming", isSelected: selectedSegment == 0) {
-                            withAnimation { selectedSegment = 0 }
-                        }
-                        SegmentButton(title: "History", isSelected: selectedSegment == 1) {
-                            withAnimation { selectedSegment = 1 }
-                        }
-                    }
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
-                    
-                    // List Content
-                    ScrollView {
-                        if viewModel.isLoading {
-                            ProgressView().tint(.white).padding(.top, 50)
-                        } else {
-                            LazyVStack(spacing: 16) {
-                                let trips = selectedSegment == 0 ? viewModel.upcomingTrips : viewModel.historyTrips
-                                
-                                if trips.isEmpty {
-                                    EmptyStateView(tab: selectedSegment)
-                                } else {
-                                    ForEach(trips) { trip in
-                                        NavigationLink(destination: TripDetailsContainer(trip: trip, viewModel: viewModel)) {
-                                            TripCard(trip: trip)
-                                        }
-                                    }
->>>>>>> 7ebedc4 (error)
                                 }
                             }
                             .padding()
@@ -153,14 +110,8 @@ struct DriverTripsView: View {
                     }
                 }
             }
-<<<<<<< HEAD
             .navigationDestination(for: Trip.self) { trip in
                 TripMapView(trip: trip)
-=======
-            .navigationBarHidden(true)
-            .task {
-                await viewModel.loadTrips()
->>>>>>> 7ebedc4 (error)
             }
         }
         .task {
@@ -307,144 +258,6 @@ struct DriverTripCardView: View {
                     Text(startTime.formatted(date: .abbreviated, time: .shortened)).font(.caption)
                 }
                 .foregroundColor(.appEmerald)
-            }
-        }
-        .padding()
-        .background(Color.appCardBackground)
-        .cornerRadius(16)
-    }
-}
-
-// Helper Container to route to correct view based on status
-struct TripDetailsContainer: View {
-    let trip: Trip
-    @ObservedObject var viewModel: DriverTripsViewModel
-    
-    var body: some View {
-        if trip.status == .ongoing {
-            ActiveTripView(trip: trip, viewModel: viewModel)
-        } else {
-            TripDetailsView(trip: trip, viewModel: viewModel)
-        }
-    }
-}
-
-struct SegmentButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(isSelected ? .black : .gray)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(isSelected ? Color.appEmerald : Color.clear)
-                .cornerRadius(12)
-        }
-    }
-}
-
-struct EmptyStateView: View {
-    let tab: Int
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: tab == 0 ? "car.circle" : "clock.arrow.circlepath")
-                .font(.system(size: 50))
-                .foregroundColor(.gray)
-            Text(tab == 0 ? "No upcoming trips" : "No trip history")
-                .foregroundColor(.gray)
-                .font(.headline)
-        }
-        .padding(.top, 50)
-    }
-}
-
-struct TripCard: View {
-    let trip: Trip
-    
-    var statusColor: Color {
-        switch trip.status {
-        case .scheduled: return .white.opacity(0.2)
-        case .ongoing: return .appEmerald.opacity(0.2)
-        case .completed: return .appEmerald
-        case .cancelled: return .red
-        default: return .gray
-        }
-    }
-    
-    var statusTextColor: Color {
-        switch trip.status {
-        case .ongoing: return .appEmerald
-        case .completed: return .black
-        default: return .white
-        }
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("TRP-\(trip.id.uuidString.prefix(4).uppercased())") // Using ID prefix mock
-                    .font(.headline)
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                VStack(alignment: .trailing) {
-                    Text(trip.startTime?.formatted(date: .omitted, time: .shortened) ?? "TBD")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    if let dist = trip.formattedDistance {
-                        Text(dist)
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
-            
-            // Status Badge
-            Text(trip.status?.rawValue ?? "Unknown")
-                .font(.caption)
-                .fontWeight(.bold)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(statusColor)
-                .foregroundColor(statusTextColor)
-                .cornerRadius(4)
-            
-            // Route
-            VStack(alignment: .leading, spacing: 0) { // Timeline style
-                HStack(alignment: .top) {
-                    Circle().fill(Color.appEmerald).frame(width: 8, height: 8).padding(.top, 4)
-                    VStack(alignment: .leading) {
-                        Text("Pickup")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Text(trip.pickupLocationName ?? trip.startAddress ?? "Unknown")
-                            .font(.system(size: 15))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.leading, 8)
-                }
-                
-                Rectangle().fill(Color.gray.opacity(0.3)).frame(width: 1, height: 20).padding(.leading, 3.5)
-                
-                HStack(alignment: .top) {
-                    Circle().fill(Color.red).frame(width: 8, height: 8).padding(.top, 4)
-                    VStack(alignment: .leading) {
-                        Text("Drop-off")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                        Text(trip.dropoffLocationName ?? trip.endAddress ?? "Unknown")
-                            .font(.system(size: 15))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.leading, 8)
-                }
             }
         }
         .padding()

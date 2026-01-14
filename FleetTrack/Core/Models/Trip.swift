@@ -49,12 +49,6 @@ struct Trip: Identifiable, Codable, Hashable {
     var notes: String?
     var createdBy: UUID?
     
-    // UI Enhancements
-    var pickupLocationName: String?
-    var dropoffLocationName: String?
-    var routeSuggestions: [RouteSuggestion] = []
-    var voiceLogs: [VoiceLog] = []
-    
     // Timestamps
     var createdAt: Date
     var updatedAt: Date
@@ -78,10 +72,6 @@ struct Trip: Identifiable, Codable, Hashable {
         case createdBy = "created_by"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
-        case pickupLocationName = "pickup_location_name"
-        case dropoffLocationName = "dropoff_location_name"
-        case routeSuggestions = "route_suggestions"
-        case voiceLogs = "voice_logs"
     }
     
     init(
@@ -101,10 +91,6 @@ struct Trip: Identifiable, Codable, Hashable {
         purpose: String? = nil,
         notes: String? = nil,
         createdBy: UUID? = nil,
-        pickupLocationName: String? = nil,
-        dropoffLocationName: String? = nil,
-        routeSuggestions: [RouteSuggestion] = [],
-        voiceLogs: [VoiceLog] = [],
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -124,10 +110,6 @@ struct Trip: Identifiable, Codable, Hashable {
         self.purpose = purpose
         self.notes = notes
         self.createdBy = createdBy
-        self.pickupLocationName = pickupLocationName
-        self.dropoffLocationName = dropoffLocationName
-        self.routeSuggestions = routeSuggestions
-        self.voiceLogs = voiceLogs
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -217,14 +199,7 @@ extension Trip {
         startTime: Calendar.current.date(byAdding: .hour, value: -2, to: Date()),
         distance: 148.5,
         purpose: "Urgent Delivery",
-        createdBy: User.mockFleetManager.id,
-        pickupLocationName: "Distribution Center",
-        dropoffLocationName: "Retail Store 5",
-        routeSuggestions: [
-            RouteSuggestion(name: "Fastest", duration: 900, distance: 18, tag: .standard),
-            RouteSuggestion(name: "Fuel Saver", duration: 1320, distance: 16, tag: .low),
-            RouteSuggestion(name: "Balanced", duration: 1080, distance: 17, tag: .optimal, isRecommended: true)
-        ]
+        createdBy: User.mockFleetManager.id
     )
     
     static let mockCompletedTrip = Trip(
@@ -241,9 +216,7 @@ extension Trip {
         endTime: Calendar.current.date(byAdding: .day, value: -1, to: Date())?.addingTimeInterval(3600 * 6),
         distance: 280.0,
         purpose: "Retail Stock",
-        createdBy: User.mockFleetManager.id,
-        pickupLocationName: "Warehouse A, Industrial Zone",
-        dropoffLocationName: "Client Site B, Downtown"
+        createdBy: User.mockFleetManager.id
     )
     
     static let mockTrips: [Trip] = [

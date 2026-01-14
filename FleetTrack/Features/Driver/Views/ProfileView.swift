@@ -2,150 +2,72 @@
 //  ProfileView.swift
 //  FleetTrack
 //
-//  Created for Driver
-//
 
 import SwiftUI
 
 struct ProfileView: View {
     @Binding var user: User
     @Binding var driver: Driver
-    @State private var showEditProfile = false
-    @State private var isLoggingOut = false
+    @State private var isShowingEditProfile = false
     @Environment(\.dismiss) var dismiss
-    @ObservedObject private var sessionManager = SessionManager.shared
     
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground.ignoresSafeArea()
+                AppTheme.backgroundPrimary
+                    .ignoresSafeArea()
                 
                 ScrollView {
-                    VStack(spacing: 32) {
-                        // Header
-                        HStack {
-                            Text("Profile")
-                                .font(.system(size: 34, weight: .bold))
-                                .foregroundColor(.white)
-                            Spacer()
-                            Button(action: {
-                                dismiss()
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 30))
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, 20)
+                    VStack(spacing: 20) {
+                        ProfileHeaderView(user: user, driver: driver, isShowingEditProfile: $isShowingEditProfile)
                         
-                        // User Info Card
-                        VStack(spacing: 16) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.appEmerald.opacity(0.1))
-                                    .frame(width: 100, height: 100)
-                                
-                                Text(user.initials)
-                                    .font(.system(size: 40, weight: .bold))
-                                    .foregroundColor(.appEmerald)
-                            }
-                            
-                            VStack(spacing: 4) {
-                                Text(user.name)
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                
-                                Text(user.email)
-                                    .font(.subheadline)
-                                    .foregroundColor(.appSecondaryText)
-                                
-                                // Clean layout for driver info
-                                if let phone = driver.phoneNumber ?? user.phoneNumber {
-                                    Text(phone)
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                        .padding(.top, 2)
-                                }
-                            }
-                            
-                            Button(action: {
-                                showEditProfile = true
-                            }) {
-                                Text("Edit Profile")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 8)
-                                    .background(Color.appEmerald)
-                                    .cornerRadius(20)
-                            }
+                        // Account Settings
+                        SectionCard(title: "Account Settings") {
+                            SettingsRow(icon: "lock.fill", iconColor: AppTheme.iconDefault, title: "Change Password")
+                            Divider().background(AppTheme.dividerPrimary)
+                            SettingsRow(icon: "shield.fill", iconColor: AppTheme.iconDefault, title: "Privacy & Security")
+                            Divider().background(AppTheme.dividerPrimary)
+                            SettingsRow(icon: "bell.fill", iconColor: AppTheme.iconDefault, title: "Notification Settings", badgeCount: 3)
                         }
                         
-                        // Settings Sections
-                        VStack(spacing: 24) {
-
-                            
-                            // Security Section
-                            DriverProfileSection(title: "Security & Privacy") {
-                                NavigationLink(destination: DriverChangePasswordView()) {
-                                    DriverSettingRow(icon: "lock.fill", title: "Change Password", color: .orange)
-                                }
-                                NavigationLink(destination: DriverPrivacyView()) {
-                                    DriverSettingRow(icon: "shield.fill", title: "Privacy Policy", color: .green)
-                                }
-                            }
-
-                            
-                            // Support Section
-                            DriverProfileSection(title: "Support") {
-                                NavigationLink(destination: DriverHelpSupportView()) {
-                                    DriverSettingRow(icon: "questionmark.circle.fill", title: "Help & Support", color: .blue)
-                                }
-                                NavigationLink(destination: DriverAboutView()) {
-                                    DriverSettingRow(icon: "info.circle.fill", title: "About FleetTrack", color: .gray)
-                                }
-                            }
-
+                        // App Settings
+                        SectionCard(title: "App Settings") {
+                            SettingsRow(icon: "slider.horizontal.3", iconColor: AppTheme.iconDefault, title: "Preferences")
+                            Divider().background(AppTheme.dividerPrimary)
+                            SettingsRow(icon: "questionmark.circle.fill", iconColor: AppTheme.iconDefault, title: "Help & Support")
+                            Divider().background(AppTheme.dividerPrimary)
+                            SettingsRow(icon: "info.circle.fill", iconColor: AppTheme.iconDefault, title: "About")
                         }
-                        .padding(.horizontal)
                         
-                        // Logout Button
-                        Button(action: {
-                            isLoggingOut = true
-                            Task {
-                                try? await SupabaseAuthService.shared.logout()
-                                sessionManager.clearSession()
-                                isLoggingOut = false
-                                dismiss()
-                            }
-                        }) {
-                            HStack {
-                                if isLoggingOut {
-                                    ProgressView()
-                                        .tint(.white)
-                                } else {
-                                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    Text("Logout")
-                                        .fontWeight(.bold)
-                                }
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.red.opacity(0.8))
-                            .cornerRadius(12)
-                        }
-                        .disabled(isLoggingOut)
-                        .padding(.horizontal)
-                        .padding(.bottom, 40)
+                        LogoutButton(dismissRoot: dismiss)
+                        
+                        Spacer().frame(height: 100)
+                    }
+                    .padding()
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Text("Profile")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppTheme.textPrimary)
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(AppTheme.textSecondary)
                     }
                 }
             }
-            .navigationBarHidden(true)
-            .sheet(isPresented: $showEditProfile) {
-                EditProfileView(user: $user, driver: $driver, isPresented: $showEditProfile)
+            .sheet(isPresented: $isShowingEditProfile) {
+                EditProfileView(user: $user, driver: $driver, isPresented: $isShowingEditProfile)
+                    .preferredColorScheme(.dark)
             }
         }
     }
@@ -153,8 +75,128 @@ struct ProfileView: View {
 
 // MARK: - Subviews
 
-// Renamed to avoid redeclaration conflict with FleetManager version
-struct DriverProfileSection<Content: View>: View {
+struct ProfileHeaderView: View {
+    let user: User
+    let driver: Driver
+    @Binding var isShowingEditProfile: Bool
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                // Avatar
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.backgroundElevated)
+                        .frame(width: 80, height: 80)
+                    
+                    Text(user.initials)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(AppTheme.textPrimary)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(user.name)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    Text(user.role.rawValue)
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal)
+            .padding(.top, 20)
+            
+            Divider()
+                .background(AppTheme.dividerPrimary)
+                .padding(.vertical, 16)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "envelope")
+                        .foregroundColor(AppTheme.iconDefault)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Email")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textTertiary)
+                        Text(user.email)
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                }
+                
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "phone")
+                        .foregroundColor(AppTheme.iconDefault)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Phone")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textTertiary)
+                        Text(driver.phoneNumber ?? user.phoneNumber ?? "Not set")
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                }
+                
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .foregroundColor(AppTheme.iconDefault)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Address")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textTertiary)
+                        Text(driver.address ?? "Not set")
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                }
+                
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "car.fill")
+                        .foregroundColor(AppTheme.iconDefault)
+                        .frame(width: 20)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("License Number")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textTertiary)
+                        Text(driver.licenseNumber ?? driver.driverLicenseNumber ?? "Not Set")
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                }
+            }
+            .padding(.horizontal)
+            
+            Button(action: {
+                isShowingEditProfile = true
+            }) {
+                Text("Edit Profile")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppTheme.accentPrimary)
+                    .cornerRadius(12)
+            }
+            .padding(.all, 20)
+        }
+        .background(AppTheme.backgroundSecondary)
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+    }
+}
+
+struct SectionCard<Content: View>: View {
     let title: String
     let content: Content
     
@@ -164,52 +206,98 @@ struct DriverProfileSection<Content: View>: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding(.leading, 8)
+                .foregroundColor(AppTheme.textPrimary)
+                .padding(.horizontal)
+                .padding(.top, 16)
             
             VStack(spacing: 0) {
                 content
             }
-            .background(Color.appCardBackground)
-            .cornerRadius(12)
+            .background(AppTheme.backgroundSecondary)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         }
     }
 }
 
-
-// Renamed to avoid redeclaration conflict with FleetManager version
-struct DriverSettingRow: View {
+struct SettingsRow: View {
     let icon: String
+    let iconColor: Color
     let title: String
-    let color: Color
+    var badgeCount: Int? = nil
     
     var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
-                .frame(width: 30)
-            
-            Text(title)
-                .font(.body)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14))
-                .foregroundColor(.gray)
+        Button(action: {
+            // Navigation Action
+        }) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(iconColor.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 18))
+                        .foregroundColor(iconColor)
+                }
+                
+                Text(title)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(AppTheme.textPrimary)
+                
+                Spacer()
+                
+                if let count = badgeCount {
+                    Text("\(count)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(6)
+                        .background(Color.red)
+                        .clipShape(Circle())
+                }
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+            .padding()
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
     }
 }
 
-
+struct LogoutButton: View {
+    var dismissRoot: DismissAction
+    @ObservedObject private var sessionManager = SessionManager.shared
+    
+    var body: some View {
+        Button(action: {
+            Task {
+                try? await SupabaseAuthService.shared.logout()
+                sessionManager.clearSession()
+                dismissRoot()
+            }
+        }) {
+            HStack {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .rotationEffect(.degrees(180))
+                Text("Logout")
+            }
+            .font(.headline)
+            .foregroundColor(.red)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(AppTheme.backgroundSecondary)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        }
+    }
+}
 
 #Preview {
     ProfileView(user: .constant(.mockDriver), driver: .constant(.mockDriver1))
