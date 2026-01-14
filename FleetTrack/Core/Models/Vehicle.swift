@@ -12,16 +12,19 @@ import Foundation
 
 enum VehicleStatus: String, Codable, CaseIterable {
     case active = "Active"
-    case inMaintenance = "In Maintenance"
     case inactive = "Inactive"
-    case outOfService = "Out of Service"
+    case maintenance = "Maintenance"
+    case retired = "Retired"
+    case inTransit = "In Transit"
 }
 
 enum VehicleType: String, Codable, CaseIterable {
-    case lightCommercial = "Light Commercial"
-    case heavyCommercial = "Heavy Commercial"
-    case passenger = "Passenger"
-    case specialized = "Specialized"
+    case truck = "Truck"
+    case van = "Van"
+    case car = "Car"
+    case bus = "Bus"
+    case motorcycle = "Motorcycle"
+    case other = "Other"
 }
 
 // MARK: - Location Model (for convenience, not stored in DB)
@@ -223,7 +226,7 @@ extension Vehicle {
         registrationNumber: "MH-01-AB-1234",
         model: "Bolero",
         manufacturer: "Mahindra",
-        vehicleType: .lightCommercial,
+        vehicleType: .van,
         status: .active,
         currentSpeed: 45.0,
         fuelLevel: 75.0,
@@ -241,8 +244,8 @@ extension Vehicle {
         registrationNumber: "DL-01-XY-5678",
         model: "LPT 1613",
         manufacturer: "Tata",
-        vehicleType: .heavyCommercial,
-        status: .inMaintenance,
+        vehicleType: .truck,
+        status: .maintenance,
         currentSpeed: 0.0,
         fuelLevel: 45.0,
         totalMileage: 45000.0,

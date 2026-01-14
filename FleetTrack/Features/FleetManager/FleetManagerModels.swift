@@ -35,10 +35,10 @@ struct FMVehicle: Identifiable, Codable {
     var assignedDriverName: String?
     
     // Detailed Info
-    var vin: String
-    var mileage: String
-    var insuranceStatus: String
-    var lastService: String
+    var vin: String?
+    var mileage: Double?
+    var insuranceStatus: String?
+    var lastService: Date?
     var createdAt: Date
     
     enum CodingKeys: String, CodingKey {
@@ -72,10 +72,10 @@ struct FMVehicle: Identifiable, Codable {
         status: VehicleStatus = .active,
         assignedDriverId: UUID? = nil,
         assignedDriverName: String? = nil,
-        vin: String = "UNKNOWN",
-        mileage: String = "0 km",
-        insuranceStatus: String = "Pending",
-        lastService: String = "Never",
+        vin: String? = nil,
+        mileage: Double? = nil,
+        insuranceStatus: String? = nil,
+        lastService: Date? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -233,7 +233,7 @@ struct FMActivity: Identifiable, Codable {
 
 struct VehicleCreationData {
     var registrationNumber: String = ""
-    var vehicleType: VehicleType = .lightCommercial
+    var vehicleType: VehicleType = .truck
     var manufacturer: String = ""
     var model: String = ""
     var fuelType: FuelType = .diesel

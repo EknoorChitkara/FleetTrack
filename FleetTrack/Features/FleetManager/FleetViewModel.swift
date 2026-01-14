@@ -131,6 +131,21 @@ class FleetViewModel: ObservableObject {
         }
     }
     
+    func addMaintenanceStaff(_ data: MaintenanceStaffCreationData) {
+        isLoading = true
+        Task { @MainActor in
+            // For now, we'll just log the activity
+            // In a real app, this would call a service to save to the database
+            self.logActivity(
+                title: "New Maintenance Staff Added",
+                description: "Staff member \(data.fullName) (\(data.specialization)) was added.",
+                icon: "wrench.and.screwdriver.fill",
+                color: "orange"
+            )
+            self.isLoading = false
+        }
+    }
+    
     func deleteVehicle(at offsets: IndexSet) {
         vehicles.remove(atOffsets: offsets)
     }
@@ -139,6 +154,13 @@ class FleetViewModel: ObservableObject {
         if let registration = vehicles.first(where: { $0.id == id })?.registrationNumber {
             vehicles.removeAll(where: { $0.id == id })
             logActivity(title: "Vehicle Removed", description: "Vehicle \(registration) was removed from fleet.", icon: "trash.fill", color: "red")
+        }
+    }
+    
+    func deleteDriver(byId id: UUID) {
+        if let driverName = drivers.first(where: { $0.id == id })?.displayName {
+            drivers.removeAll(where: { $0.id == id })
+            logActivity(title: "Driver Removed", description: "Driver \(driverName) was removed from fleet.", icon: "person.fill.badge.minus", color: "red")
         }
     }
     
