@@ -16,6 +16,8 @@ final class DriverDashboardViewModel: ObservableObject {
     @Published var driver: Driver?
     @Published var assignedVehicle: Vehicle?
     @Published var recentTrips: [Trip] = []
+    @Published var completedTripsCount: Int = 0
+    @Published var totalDistance: Double = 0.0
     @Published var isLoading = false
     @Published var errorMessage: String?
     
@@ -48,6 +50,12 @@ final class DriverDashboardViewModel: ObservableObject {
             // 3. Fetch Recent Trips
             self.recentTrips = try await driverService.getRecentTrips(driverId: driverProfile.id)
             
+            // 4. Fetch Completed Trips Count
+            self.completedTripsCount = try await driverService.getCompletedTripsCount(driverId: driverProfile.id)
+            
+            // 5. Fetch Total Distance
+            self.totalDistance = try await driverService.getCompletedTripsTotalDistance(driverId: driverProfile.id)
+            
             isLoading = false
         } catch {
             print("❌ Error loading driver dashboard: \(error)")
@@ -67,6 +75,8 @@ final class DriverDashboardViewModel: ObservableObject {
                 )
                 self.assignedVehicle = nil
                 self.recentTrips = []
+                self.completedTripsCount = 0
+                self.totalDistance = 0.0
                 self.errorMessage = nil // Clear error to show empty UI
             } else {
                 self.errorMessage = "Failed to load dashboard data. Please try again."

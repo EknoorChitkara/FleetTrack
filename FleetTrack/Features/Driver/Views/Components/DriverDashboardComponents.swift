@@ -236,3 +236,110 @@ struct DriverTabBarItem: View {
         }
     }
 }
+
+struct AnimatedRingView: View {
+    let title: String
+    let value: String
+    let subValue: String?
+    let progress: Double
+    let color: Color
+    
+    @State private var animatedProgress: Double = 0.0
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                // Background Track
+                Circle()
+                    .stroke(color.opacity(0.15), lineWidth: 8)
+                    .frame(width: 80, height: 80)
+                
+                // Progress Circle
+                Circle()
+                    .trim(from: 0, to: animatedProgress)
+                    .stroke(
+                        color,
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 80, height: 80)
+                
+                // Value Text
+                VStack(spacing: 2) {
+                    Text(value)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    
+                    if let sub = subValue {
+                        Text(sub)
+                            .font(.system(size: 10))
+                            .foregroundColor(.appSecondaryText)
+                    }
+                }
+            }
+            
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.appSecondaryText)
+                .multilineTextAlignment(.center)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.5)) {
+                animatedProgress = progress
+            }
+        }
+    }
+}
+
+struct PerformanceMetricsChart: View {
+    let driver: Driver?
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Performance Metrics")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            HStack(spacing: 20) {
+                // 1. On-Time Delivery
+                AnimatedRingView(
+                    title: "On-Time",
+                    value: "\(Int(driver?.onTimeDeliveryRate ?? 0))%",
+                    subValue: nil,
+                    progress: (driver?.onTimeDeliveryRate ?? 0) / 100.0,
+                    color: .appEmerald
+                )
+                
+                Spacer()
+                
+                // 2. Safety Score
+                AnimatedRingView(
+                    title: "Safety Score",
+                    value: driver?.formattedRating ?? "0.0",
+                    subValue: "/ 5.0",
+                    progress: (driver?.rating ?? 0) / 5.0,
+                    color: .purple // Distinct color
+                )
+                
+                Spacer()
+                
+                // 3. Fuel Efficiency
+                AnimatedRingView(
+                    title: "Fuel Eff.",
+                    value: String(format: "%.1f", driver?.fuelEfficiency ?? 0.0),
+                    subValue: "L/100km",
+                    progress: (driver?.fuelEfficiency ?? 0.0) > 0 ? 0.7 : 0.0, // Arbitrary progress for fuel as it's not a 0-100 metric
+                    color: .blue // Distinct color
+                )
+            }
+            .padding(.horizontal, 8)
+        }
+        .padding()
+        .background(Color.appCardBackground)
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+        )
+    }
+}
