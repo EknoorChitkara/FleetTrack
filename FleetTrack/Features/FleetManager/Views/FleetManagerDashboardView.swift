@@ -19,11 +19,13 @@ struct FleetManagerDashboardView: View {
     @State private var showAddVehicle = false
     @State private var showAddDriver = false
     @State private var showProfile = false
+    @State private var showAddMaintenanceStaff = false
     
     // Enums for Tabs
     enum Tab {
         case dashboard
         case vehicles
+        case trips
         case alerts
     }
     
@@ -41,12 +43,15 @@ struct FleetManagerDashboardView: View {
                             showCreateTrip: $showCreateTrip,
                             showAddVehicle: $showAddVehicle,
                             showAddDriver: $showAddDriver,
-                            showProfile: $showProfile
-                            
+                            showProfile: $showProfile,
+                            showAddMaintenanceStaff: $showAddMaintenanceStaff
                         )
                         .environmentObject(fleetVM)
                     case .vehicles:
                         FleetManagerVehiclesView()
+                            .environmentObject(fleetVM)
+                    case .trips:
+                        AllTripsView()
                             .environmentObject(fleetVM)
                     case .alerts:
                         FleetManagerAlertsView()
@@ -72,6 +77,9 @@ struct FleetManagerDashboardView: View {
             .sheet(isPresented: $showProfile) {
                 FleetManagerProfileView(user: user).environmentObject(fleetVM)
             }
+            .sheet(isPresented: $showAddMaintenanceStaff) {
+                AddMaintenanceStaffView().environmentObject(fleetVM)
+            }
         }
     }
 }
@@ -86,6 +94,9 @@ struct CustomTabBar: View {
             }
             TabBarItem(icon: "car.fill", title: "Vehicles", isSelected: selectedTab == .vehicles) {
                 selectedTab = .vehicles
+            }
+            TabBarItem(icon: "map.fill", title: "Trips", isSelected: selectedTab == .trips) {
+                selectedTab = .trips
             }
             TabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == .alerts) {
                 selectedTab = .alerts
