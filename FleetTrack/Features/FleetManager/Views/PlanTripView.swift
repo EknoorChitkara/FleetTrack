@@ -13,200 +13,86 @@ struct PlanTripView: View {
     @EnvironmentObject var fleetVM: FleetViewModel
     @State private var formData = TripCreationData()
     
-    @State private var selectedVehicleString = "Choose a vehicle"
-    @State private var selectedDriverString = "Choose a driver"
     @State private var distanceString = ""
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.appBackground.ignoresSafeArea()
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                    Text("New Trip")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button(action: {
+                        formData.distance = Double(distanceString)
+                        fleetVM.addTrip(formData)
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("Create")
+                            .fontWeight(.bold)
+                            .foregroundColor(!isFormValid ? .gray : .appEmerald)
+                    }
+                    .disabled(!isFormValid)
+                }
+                .padding()
                 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        // Header
-                        HStack {
-                            Button(action: {
-                                presentationMode.wrappedValue.dismiss()
-                            }) {
-                                Text("Cancel")
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(Color(white: 0.15))
-                                    .cornerRadius(20)
-                                    .foregroundColor(.white)
-                            }
-                            Spacer()
-                        }
-                        .padding(.top)
+                    VStack(spacing: 24) {
+                        ModernFormHeader(
+                            title: "Plan Trip",
+                            subtitle: "Configure route and schedule",
+                            iconName: "map.fill"
+                        )
                         
-                        Text("Plan a New Trip")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        
-                        VStack(spacing: 20) {
-                            // Vehicle Selection
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Select Vehicle")
-                                    .foregroundColor(.appSecondaryText)
-                                
-                                Menu {
-                                    ForEach(fleetVM.vehicles) { vehicle in
-                                        Button(action: {
-                                            formData.vehicleId = vehicle.id
-                                            selectedVehicleString = "\(vehicle.model) (\(vehicle.registrationNumber))"
-                                        }) {
-                                            Text("\(vehicle.model) (\(vehicle.registrationNumber))")
-                                        }
+                        VStack(spacing: 16) {
+                            ModernVehiclePicker(icon: "car.fill", selection: $formData.vehicleId, vehicles: fleetVM.vehicles, placeholder: "Select Vehicle")
+                                .onChange(of: formData.vehicleId) { newValue in
+                                    if let vehicleId = newValue,
+                                       let vehicle = fleetVM.vehicles.first(where: { $0.id == vehicleId }),
+                                       let driverId = vehicle.assignedDriverId {
+                                        formData.driverId = driverId
                                     }
-                                } label: {
-                                    HStack {
-                                        Text(selectedVehicleString)
-                                            .foregroundColor(selectedVehicleString == "Choose a vehicle" ? .gray : .white)
-                                        Spacer()
-                                        Image(systemName: "chevron.down")
-                                            .foregroundColor(.gray)
-                                    }
-                                    .padding()
-                                    .background(Color.appBackground)
-                                    .cornerRadius(8)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color(white: 0.2), lineWidth: 1)
-                                    )
                                 }
+                            
+                            ModernDriverPicker(icon: "person.fill", selection: $formData.driverId, drivers: fleetVM.drivers, placeholder: "Select Driver")
+                            
+                            ModernTextField(icon: "mappin.and.ellipse", placeholder: "Start Location", text: $formData.startAddress, isRequired: true)
+                            
+                            ModernTextField(icon: "flag.checkered", placeholder: "Destination", text: $formData.endAddress, isRequired: true)
+                            
+                            HStack(spacing: 16) {
+                                ModernTextField(icon: "arrow.left.and.right", placeholder: "Distance (km)", text: $distanceString, keyboardType: .decimalPad)
+                                    .frame(maxWidth: .infinity)
+                                
+                                ModernTextField(icon: "info.circle", placeholder: "Purpose", text: $formData.purpose)
+                                    .frame(maxWidth: .infinity)
                             }
                             
-                            // Driver Selection
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Select Driver")
-                                    .foregroundColor(.appSecondaryText)
+                            HStack(spacing: 16) {
+                                ModernDatePicker(icon: "calendar", title: "Date", selection: $formData.startTime, components: .date, fromDate: Date())
+                                    .frame(maxWidth: .infinity)
                                 
-                                Menu {
-                                    ForEach(fleetVM.drivers) { driver in
-                                        Button(action: {
-                                            formData.driverId = driver.id
-                                            selectedDriverString = driver.displayName
-                                        }) {
-                                            Text(driver.displayName)
-                                        }
-                                    }
-                                } label: {
-                                    HStack {
-                                        Text(selectedDriverString)
-                                            .foregroundColor(selectedDriverString == "Choose a driver" ? .gray : .white)
-                                        Spacer()
-                                        Image(systemName: "chevron.down")
-                                            .foregroundColor(.gray)
-                                    }
-                                    .padding()
-                                    .background(Color.appBackground)
-                                    .cornerRadius(8)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color(white: 0.2), lineWidth: 1)
-                                    )
-                                }
-                            }
-                            
-                            // Route Details
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Route Details")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                
-                                TripTextField(title: "Start Location", text: $formData.startAddress)
-                                TripTextField(title: "Destination", text: $formData.endAddress)
-                                TripTextField(title: "Distance (e.g. 350)", text: $distanceString)
-                                TripTextField(title: "Purpose", text: $formData.purpose)
-                            }
-                            
-                            // Date & Time
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Start Date & Time")
-                                    .foregroundColor(.appSecondaryText)
-                                
-                                HStack(spacing: 16) {
-                                    HStack {
-                                        Text(formData.startTime, style: .date)
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                        Image(systemName: "calendar")
-                                            .foregroundColor(.gray)
-                                    }
-                                    .padding()
-                                    .background(Color.appBackground)
-                                    .cornerRadius(8)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color(white: 0.2), lineWidth: 1)
-                                    )
-                                    .overlay(
-                                        ZStack {
-                                            DatePicker("", selection: $formData.startTime, displayedComponents: .date)
-                                                .datePickerStyle(.compact)
-                                                .labelsHidden()
-                                                .opacity(0.011)
-                                        }
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        .contentShape(Rectangle())
-                                    )
-                                    
-                                    HStack {
-                                        Text(formData.startTime, style: .time)
-                                            .foregroundColor(.white)
-                                        Spacer()
-                                        Image(systemName: "clock")
-                                            .foregroundColor(.gray)
-                                    }
-                                    .padding()
-                                    .background(Color.appBackground)
-                                    .cornerRadius(8)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(Color(white: 0.2), lineWidth: 1)
-                                    )
-                                    .overlay(
-                                        ZStack {
-                                            DatePicker("", selection: $formData.startTime, displayedComponents: .hourAndMinute)
-                                                .datePickerStyle(.compact)
-                                                .labelsHidden()
-                                                .opacity(0.011)
-                                        }
-                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                        .contentShape(Rectangle())
-                                    )
-                                }
+                                ModernDatePicker(icon: "clock", title: "Time", selection: $formData.startTime, components: .hourAndMinute)
+                                    .frame(maxWidth: .infinity)
                             }
                         }
-                        .padding()
-                        .background(Color.appCardBackground)
-                        .cornerRadius(16)
+                        .padding(.horizontal)
                         
-                        Spacer(minLength: 20)
-                        
-                        // Create Button
-                        Button(action: {
-                            // Parse distance string to Double
-                            formData.distance = Double(distanceString)
-                            fleetVM.addTrip(formData)
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Text("Create Trip")
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(isFormValid ? Color.appEmerald : Color.gray)
-                                .cornerRadius(12)
-                        }
-                        .disabled(!isFormValid)
+                        Spacer(minLength: 40)
                     }
-                    .padding()
                 }
             }
-            .navigationBarHidden(true)
         }
     }
     
@@ -215,27 +101,5 @@ struct PlanTripView: View {
         formData.driverId != nil && 
         !formData.startAddress.isEmpty && 
         !formData.endAddress.isEmpty
-    }
-}
-
-struct TripTextField: View {
-    let title: String
-    @Binding var text: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.appSecondaryText)
-            TextField("", text: $text)
-                .padding()
-                .background(Color.appBackground)
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(white: 0.2), lineWidth: 1)
-                )
-                .foregroundColor(.white)
-        }
     }
 }

@@ -13,43 +13,56 @@ struct AddMaintenanceStaffView: View {
     @State private var formData = MaintenanceStaffCreationData()
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color.appBackground.ignoresSafeArea()
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                    Text("Add Staff")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button(action: {
+                        fleetVM.addMaintenanceStaff(formData)
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("Save")
+                            .fontWeight(.bold)
+                            .foregroundColor(!isFormValid ? .gray : .appEmerald)
+                    }
+                    .disabled(!isFormValid)
+                }
+                .padding()
                 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Header
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Add Maintenance Staff")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                            
-                            Text("Staff Details")
-                                .font(.headline)
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.vertical)
+                    VStack(spacing: 24) {
+                        ModernFormHeader(
+                            title: "Staff Details",
+                            subtitle: "Register new maintenance personnel",
+                            iconName: "wrench.and.screwdriver.fill"
+                        )
                         
-                        // Form Fields
-                        VStack(spacing: 20) {
-                            VStack(spacing: 0) {
-                                MSTextField(title: "Full Name", placeholder: "", text: $formData.fullName, isLast: false)
-                                Divider().background(Color.gray.opacity(0.3))
-                                MSTextField(title: "Specialization (e.g., Mechanic, Electrician)", placeholder: "", text: $formData.specialization, isLast: false)
-                                Divider().background(Color.gray.opacity(0.3))
-                                MSTextField(title: "Phone (e.g., +91 9876543210)", placeholder: "", text: $formData.phoneNumber, isLast: false)
-                                Divider().background(Color.gray.opacity(0.3))
-                                MSTextField(title: "Email", placeholder: "", text: $formData.email, isLast: false)
-                                Divider().background(Color.gray.opacity(0.3))
-                                MSTextField(title: "Employee ID", placeholder: "", text: $formData.employeeId, isLast: false)
-                                Divider().background(Color.gray.opacity(0.3))
-                                MSTextField(title: "Years of Experience", placeholder: "", text: $formData.yearsOfExperience, isLast: true)
-                            }
-                            .background(Color(white: 0.15))
-                            .cornerRadius(12)
+                        VStack(spacing: 16) {
+                            ModernTextField(icon: "person.fill", placeholder: "Full Name", text: $formData.fullName, isRequired: true)
+                            
+                            ModernTextField(icon: "star.fill", placeholder: "Specialization (e.g., Mechanic)", text: $formData.specialization, isRequired: true)
+                            
+                            ModernTextField(icon: "phone.fill", placeholder: "Phone (e.g., +91 9876543210)", text: $formData.phoneNumber, isRequired: true, keyboardType: .phonePad)
+                            
+                            ModernTextField(icon: "envelope.fill", placeholder: "Email", text: $formData.email, isRequired: true, keyboardType: .emailAddress)
+                            
+                            ModernTextField(icon: "briefcase.fill", placeholder: "Experience (Yrs)", text: $formData.yearsOfExperience, keyboardType: .numberPad)
                         }
+                        .padding(.horizontal)
                         
                         if !formData.fullName.isEmpty && !isFormValid {
                             VStack(alignment: .leading, spacing: 4) {
@@ -68,9 +81,6 @@ struct AddMaintenanceStaffView: View {
                                     if formData.specialization.isEmpty {
                                         Text("• Specialization is required")
                                     }
-                                    if formData.employeeId.isEmpty {
-                                        Text("• Employee ID is required")
-                                    }
                                 }
                                 .font(.caption)
                                 .foregroundColor(.red.opacity(0.8))
@@ -80,27 +90,7 @@ struct AddMaintenanceStaffView: View {
                         
                         Spacer(minLength: 40)
                     }
-                    .padding()
                 }
-                .navigationBarItems(
-                    leading: Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Text("Cancel")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white)
-                    },
-                    
-                    trailing: Button(action: {
-                        fleetVM.addMaintenanceStaff(formData)
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Text("Save")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(!isFormValid ? .gray : .appEmerald)
-                    }
-                    .disabled(!isFormValid)
-                )
             }
         }
     }
@@ -108,7 +98,6 @@ struct AddMaintenanceStaffView: View {
     private var isFormValid: Bool {
         guard !formData.fullName.isEmpty else { return false }
         guard !formData.specialization.isEmpty else { return false }
-        guard !formData.employeeId.isEmpty else { return false }
         
         // Phone: +91 9876543210
         let phoneRegEx = "^\\+\\d{2} \\d{10}$"
@@ -121,32 +110,6 @@ struct AddMaintenanceStaffView: View {
         guard emailPred.evaluate(with: formData.email) else { return false }
         
         return true
-    }
-}
-
-// Helper text field component for Maintenance Staff form
-private struct MSTextField: View {
-    let title: String
-    let placeholder: String
-    @Binding var text: String
-    let isLast: Bool
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.gray)
-                .padding(.top, 12)
-            
-            TextField(placeholder, text: $text)
-                .foregroundColor(.white)
-                .padding(.bottom, 12)
-            
-            if !isLast {
-                // Divider handled by parent
-            }
-        }
-        .padding(.horizontal)
     }
 }
 

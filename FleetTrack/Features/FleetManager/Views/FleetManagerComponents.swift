@@ -150,12 +150,14 @@ struct VehicleCard: View {
         case .inactive: return .gray
         case .inMaintenance: return .orange
         case .outOfService: return .red
+        case .inTransit: return .blue
         }
     }
 }
 
 struct DriverCard: View {
     let driver: FMDriver
+    var onDelete: (() -> Void)? = nil
     
     var body: some View {
         HStack(spacing: 16) {
@@ -188,6 +190,17 @@ struct DriverCard: View {
                     Text(phone)
                         .font(.system(size: 10))
                         .foregroundColor(.gray)
+                }
+            }
+            
+            if let onDelete = onDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "trash.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.red)
+                        .padding(10)
+                        .background(Color.red.opacity(0.1))
+                        .clipShape(Circle())
                 }
             }
         }

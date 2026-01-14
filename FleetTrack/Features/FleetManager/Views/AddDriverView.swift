@@ -17,121 +17,85 @@ struct AddDriverView: View {
     let statuses = DriverStatus.allCases
     
     var body: some View {
-        NavigationView {
         ZStack {
             Color.appBackground.ignoresSafeArea()
             
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Header
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Add New Driver")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        
-                        Text("Driver Details")
-                            .font(.headline)
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
                             .foregroundColor(.gray)
                     }
-                    .padding(.vertical)
-                    
-                    // Form Fields
-                    VStack(spacing: 20) {
-                        VStack(spacing: 0) {
-                            FMTextField(title: "Full Name", placeholder: "", text: $formData.fullName, isLast: false)
-                            Divider().background(Color.gray.opacity(0.3))
-                            FMTextField(title: "License Number (e.g., MH1420110062821)", placeholder: "", text: $formData.licenseNumber, isLast: false)
-                            Divider().background(Color.gray.opacity(0.3))
-                            FMTextField(title: "Phone (e.g., +91 9876543210)", placeholder: "", text: $formData.phoneNumber, isLast: false)
-                            Divider().background(Color.gray.opacity(0.3))
-                            FMTextField(title: "Email", placeholder: "", text: $formData.email, isLast: false)
-                            Divider().background(Color.gray.opacity(0.3))
-                            FMTextField(title: "Address", placeholder: "", text: $formData.address, isLast: true)
-                        }
-                        .background(Color(white: 0.15))
-                        .cornerRadius(12)
-                        
-                        // Status Picker
-                        HStack {
-                            Text("Status")
-                                .foregroundColor(.white)
-                            Spacer()
-                            Picker("Status", selection: $formData.status) {
-                                ForEach(statuses, id: \.self) { status in
-                                    Text(status.rawValue).tag(status)
-                                }
-                            }
-                            .pickerStyle(MenuPickerStyle())
-                            .accentColor(.white)
-                        }
-                        .padding()
-                        .background(Color(white: 0.15))
-                        .cornerRadius(12)
+                    Spacer()
+                    Text("Add Driver")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button(action: {
+                        fleetVM.addDriver(formData)
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("Save")
+                            .fontWeight(.bold)
+                            .foregroundColor(!isFormValid ? .gray : .appEmerald)
                     }
-                    
-                    if !formData.fullName.isEmpty && !isFormValid {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Please correct the following:")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.red)
-                            
-                            Group {
-                                if !NSPredicate(format:"SELF MATCHES %@", "^[A-Z]{2}\\d{13}$").evaluate(with: formData.licenseNumber) {
-                                    Text("• License must be 2 letters + 13 digits")
-                                }
-                                if !NSPredicate(format:"SELF MATCHES %@", "^\\+\\d{2} \\d{10}$").evaluate(with: formData.phoneNumber) {
-                                    Text("• Phone must be in format +91 9876543210")
-                                }
-                                if !NSPredicate(format:"SELF MATCHES %@", "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}").evaluate(with: formData.email) {
-                                    Text("• Invalid email format")
-                                }
-                            }
-                            .font(.caption)
-                            .foregroundColor(.red.opacity(0.8))
-                        }
-                        .padding(.horizontal)
-                    }
-                    
-                    Spacer(minLength: 40)
+                    .disabled(!isFormValid)
                 }
                 .padding()
-            }
-            .navigationBarItems(
-                leading: Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("Cancel")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
-                },
                 
-                trailing: Button(action: {
-                    fleetVM.addDriver(formData)
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("Save")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(!isFormValid ? .gray : .appEmerald)
-                }
-                .disabled(!isFormValid)
-            )
-            .alert(isPresented: $showError) {
-                Alert(
-                    title: Text("Error"),
-                    message: Text(fleetVM.errorMessage ?? "An unknown error occurred"),
-                    dismissButton: .default(Text("OK")) {
-                        fleetVM.errorMessage = nil
+                ScrollView {
+                    VStack(spacing: 24) {
+                        ModernFormHeader(
+                            title: "Driver Details",
+                            subtitle: "Enter personal and license information",
+                            iconName: "person.badge.plus.fill"
+                        )
+                        
+                        VStack(spacing: 16) {
+                            ModernTextField(icon: "person.fill", placeholder: "Full Name", text: $formData.fullName, isRequired: true)
+                            
+                            ModernTextField(icon: "creditcard.fill", placeholder: "License Number (e.g., MH1420110062821)", text: $formData.licenseNumber, isRequired: true)
+                            
+                            ModernTextField(icon: "phone.fill", placeholder: "Phone (e.g., +91 9876543210)", text: $formData.phoneNumber, isRequired: true, keyboardType: .phonePad)
+                            
+                            ModernTextField(icon: "envelope.fill", placeholder: "Email", text: $formData.email, isRequired: true, keyboardType: .emailAddress)
+                            
+                            ModernTextField(icon: "house.fill", placeholder: "Address", text: $formData.address, isRequired: true)
+                        }
+                        .padding(.horizontal)
+                        
+                        if !formData.fullName.isEmpty && !isFormValid {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Please correct the following:")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.red)
+                                
+                                Group {
+                                    if !NSPredicate(format:"SELF MATCHES %@", "^[A-Z]{2}\\d{13}$").evaluate(with: formData.licenseNumber) {
+                                        Text("• License must be 2 letters + 13 digits")
+                                    }
+                                    if !NSPredicate(format:"SELF MATCHES %@", "^\\+\\d{2} \\d{10}$").evaluate(with: formData.phoneNumber) {
+                                        Text("• Phone must be in format +91 9876543210")
+                                    }
+                                    if !NSPredicate(format:"SELF MATCHES %@", "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}").evaluate(with: formData.email) {
+                                        Text("• Invalid email format")
+                                    }
+                                }
+                                .font(.caption)
+                                .foregroundColor(.red.opacity(0.8))
+                            }
+                            .padding(.horizontal)
+                        }
+                        
+                        Spacer(minLength: 40)
                     }
-                )
-            }
-            .onChange(of: fleetVM.errorMessage) { newValue in
-                if newValue != nil {
-                    showError = true
                 }
             }
-        }
         }
     }
     
@@ -154,31 +118,5 @@ struct AddDriverView: View {
         guard emailPred.evaluate(with: formData.email) else { return false }
         
         return true
-    }
-}
-
-// Renamed helper to avoid collision with AddVehicleView's CustomTextField
-private struct FMTextField: View {
-    let title: String
-    let placeholder: String
-    @Binding var text: String
-    let isLast: Bool
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title) // In the screenshot, the title acts more like a placeholder or label inside
-                .font(.subheadline)
-                .foregroundColor(.gray)
-                .padding(.top, 12)
-            
-            TextField(placeholder, text: $text)
-                .foregroundColor(.white)
-                .padding(.bottom, 12)
-            
-            if !isLast {
-                // Divider handled by parent
-            }
-        }
-        .padding(.horizontal)
     }
 }
