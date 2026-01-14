@@ -89,11 +89,14 @@ class FleetManagerService {
     
     // MARK: - Vehicle Management
     
-    func addVehicle(_ data: VehicleCreationData) async throws {
+    func addVehicle(_ data: VehicleCreationData, id: UUID? = nil) async throws {
         print("🚀 [addVehicle] Starting vehicle creation")
         print("   Registration: \(data.registrationNumber)")
         print("   Type: \(data.vehicleType)")
         print("   Assigned Driver ID: \(data.assignedDriverId?.uuidString ?? "nil")")
+        
+        // Use provided ID or generate a new one
+        let vehicleId = id ?? UUID()
         
         // Fetch Driver Name if assigned
         var driverName: String? = nil
@@ -156,7 +159,7 @@ class FleetManagerService {
         }
         
         let vehicleDTO = VehicleInsertDTO(
-            id: UUID(),
+            id: vehicleId,
             registrationNumber: data.registrationNumber,
             vehicleType: data.vehicleType.rawValue,  // Convert enum to String
             manufacturer: data.manufacturer,
