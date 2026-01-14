@@ -2,18 +2,14 @@
 //  DriverTripsView.swift
 //  FleetTrack
 //
-<<<<<<< HEAD
-//  Shows driver's assigned trips with ability to view on map and start trip
-=======
-//  Created for Driver
->>>>>>> 7ebedc4 (error)
+
 //
 
 import SwiftUI
 import Supabase
 
 struct DriverTripsView: View {
-<<<<<<< HEAD
+
     @State private var trips: [Trip] = []
     @State private var isLoading = true
     @State private var selectedFilter: TripFilter = .upcoming
@@ -38,25 +34,14 @@ struct DriverTripsView: View {
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
-=======
-    @StateObject private var viewModel: DriverTripsViewModel
-    @State private var selectedSegment = 0 // 0: Upcoming, 1: History
-    
-    // Mock user ID for now
-    init() {
-        _viewModel = StateObject(wrappedValue: DriverTripsViewModel(driverId: User.mockDriver.id))
-    }
-    
-    var body: some View {
-        NavigationView {
->>>>>>> 7ebedc4 (error)
+
             ZStack {
                 Color.appBackground.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
                     // Header
                     HStack {
-<<<<<<< HEAD
+
                         Text("My Trips")
                             .font(.system(size: 34, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
