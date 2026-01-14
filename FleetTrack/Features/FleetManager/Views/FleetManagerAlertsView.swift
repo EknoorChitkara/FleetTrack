@@ -18,7 +18,7 @@ struct FleetManagerAlertsView: View {
                 // Header
                 HStack(spacing: 8) {
                     Text("Alerts")
-                        .font(.system(size: 34, weight: .bold))
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                     
                     Text("0")
