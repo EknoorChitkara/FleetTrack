@@ -33,6 +33,9 @@ struct MaintenanceTabView: View {
                 
                 AlertsView()
                     .tag(2)
+                
+                InventoryView()
+                    .tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             
@@ -69,6 +72,14 @@ struct MaintenanceTabView: View {
             ) {
                 selectedTab = 2
             }
+            
+            MaintenanceTabBarItem(
+                icon: "shippingbox.fill",
+                title: "Inventory",
+                isSelected: selectedTab == 3
+            ) {
+                selectedTab = 3
+            }
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 6)
@@ -81,7 +92,7 @@ struct MaintenanceTabView: View {
                 )
         )
         .shadow(color: .black.opacity(0.4), radius: 15, y: 8)
-        .padding(.horizontal, 60)
+        .padding(.horizontal, 40)
         .padding(.bottom, 12)
     }
 }
