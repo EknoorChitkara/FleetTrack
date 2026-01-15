@@ -30,103 +30,98 @@ class FleetManagerService {
     /// 5. Driver can now login with their password
     func addDriver(_ data: DriverCreationData) async throws {
         print("🚀 [addDriver] Starting driver creation for: \(data.fullName)")
-        print("📧 [addDriver] Email: \(data.email)")
         
         // Generate password for the driver
         let temporaryPassword = generateTemporaryPassword()
         
-        // Step 1: Create user in auth.users via RPC (email NOT confirmed)
-        try await createUserViaRPC(
+        // Step 1: Create user via Ghost Client (Standard Auth flow)
+        try await createUserViaGhostClient(
             email: data.email,
             password: temporaryPassword,
             fullName: data.fullName,
-            role: "Driver",
             phoneNumber: data.phoneNumber,
             licenseNumber: data.licenseNumber,
             address: data.address
         )
         
-        // Step 2: Send verification email using Supabase OTP
-        try await sendVerificationEmail(email: data.email)
-        
-        print("✅ [addDriver] Driver created in auth.users")
-        print("📧 [addDriver] Verification email sent to \(data.email)")
+        print("✅ [addDriver] Driver created and invitation sent")
         print("🔑 [addDriver] Temporary Password: \(temporaryPassword)")
         print("⚠️ [addDriver] IMPORTANT: Share this password with the driver securely!")
-        print("ℹ️  [addDriver] Flow: Driver verifies email → public.users → drivers table created automatically")
     }
     
-    /// Creates a user in auth.users via the Supabase RPC database function
-    /// Email is NOT confirmed - user must verify via email link first
-    private func createUserViaRPC(
+    /// Creates a user using a secondary Supabase client with no persistence.
+    /// This triggers the official Supabase invitation email automatically.
+    private func createUserViaGhostClient(
         email: String,
         password: String,
         fullName: String,
-        role: String,
         phoneNumber: String?,
         licenseNumber: String? = nil,
         address: String? = nil
     ) async throws {
-        print("🔐 [createUserViaRPC] Calling RPC function for: \(email)")
+        print("🔐 [GhostClient] Initializing isolated sign-up for: \(email)")
         
-        let params: [String: AnyJSON] = [
-            "p_email": .string(email),
-            "p_password": .string(password),
-            "p_full_name": .string(fullName),
-            "p_role": .string(role),
-            "p_phone_number": .string(phoneNumber ?? ""),
-            "p_license_number": .string(licenseNumber ?? ""),
-            "p_address": .string(address ?? "")
-        ]
-        
-        // 1. Create the user in auth.users via RPC
-        do {
-            let response = try await client
-                .rpc("create_fleet_user_rpc", params: params)
-                .execute()
-            
-            let data = response.data
-            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let success = json["success"] as? Bool, success else {
-                let error = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
-                throw NSError(domain: "FleetManager", code: 400, userInfo: [NSLocalizedDescriptionKey: error ?? "Failed to create user"])
-            }
-            
-            print("✅ [createUserViaRPC] User created in database")
-            
-            // 2. Trigger the invitation email using resendu
-            do {
-                try await client.auth.resend(
-                    email: email,
-                    type: .signup
+        // 1. Create a "Ghost" client with PKCE DISABLED
+        // PKCE is great for security but causes 'bad_code_verifier' when 
+        // one client starts a signup and another finishes it.
+        let ghostClient = SupabaseClient(
+            supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
+            supabaseKey: SupabaseConfig.supabaseAnonKey,
+            options: SupabaseClientOptions(
+                auth: .init(
+                    storage: NSLockingNoOpStorage(),
+                    flowType: .implicit // Uses stable tokens in URL instead of PKCE
                 )
-                print("📧 [createUserViaRPC] Invitation email triggered successfully")
-            } catch {
-                let errorMsg = error.localizedDescription
-                if errorMsg.contains("rate_limit") || errorMsg.contains("59 seconds") {
-                    print("⚠️ [createUserViaRPC] User created, but email rate limited. Driver will need a manual resend in 1 minute.")
-                    // Don't throw - the user is already created, which is the main part.
-                } else {
-                    print("❌ [createUserViaRPC] Failed to send email: \(errorMsg)")
-                    throw error
-                }
+            )
+        )
+        
+        // 2. Perform a standard signUp
+        do {
+            // Check if user already exists to avoid duplicate trigger
+            let existingUsers: [FMDriver] = try await client
+                .from("drivers")
+                .select()
+                .eq("email", value: email)
+                .execute()
+                .value
+            
+            if !existingUsers.isEmpty {
+                print("⚠️ User already exists. Sending a resend instead.")
+                try await client.auth.resend(email: email, type: .signup)
+                return
             }
+
+            _ = try await ghostClient.auth.signUp(
+                email: email,
+                password: password,
+                data: [
+                    "full_name": AnyJSON.string(fullName),
+                    "role": AnyJSON.string("Driver"),
+                    "phone_number": AnyJSON.string(phoneNumber ?? ""),
+                    "license_number": AnyJSON.string(licenseNumber ?? ""),
+                    "address": AnyJSON.string(address ?? "")
+                ],
+                redirectTo: URL(string: "fleettrack://auth/callback")
+            )
+            
+            print("📧 [GhostClient] Invitation sent successfully via Implicit Flow.")
             
         } catch {
-            print("❌ [createUserViaRPC] Error: \(error.localizedDescription)")
+            print("❌ [GhostClient] failed: \(error.localizedDescription)")
             throw error
         }
     }
     
-    // sendVerificationEmail is no longer needed as signUp handles it
-    private func sendVerificationEmail(email: String) async throws {
-        // No-op: signUp already sent the email
+    /// A simple storage class that does nothing
+    private class NSLockingNoOpStorage: @unchecked Sendable, AuthLocalStorage {
+        func store(key: String, value: Data) throws {}
+        func retrieve(key: String) throws -> Data? { return nil }
+        func remove(key: String) throws {}
     }
     
     /// Generates a temporary password for the new user
     private func generateTemporaryPassword() -> String {
         let characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
-        return String((0..<16).map { _ in characters.randomElement()! })
         return String((0..<16).map { _ in characters.randomElement()! })
     }
     
