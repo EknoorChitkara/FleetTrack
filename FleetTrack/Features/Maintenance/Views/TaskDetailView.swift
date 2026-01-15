@@ -684,11 +684,44 @@ struct FailureSheet: View {
 
 struct AddPartSheetForTask: View {
     @ObservedObject var viewModel: TaskDetailViewModel
+    @StateObject private var inventoryViewModel = InventoryViewModel()
     @Environment(\.dismiss) var dismiss
     
-    @State private var partName: String = ""
+    @State private var selectedCategory: PartCategory = .engine
+    @State private var selectedPart: InventoryPart? = nil
     @State private var quantity: String = "1"
-    @State private var unitPrice: String = ""
+    @State private var isCustomPart: Bool = false
+    
+    // Custom part fields
+    @State private var customPartName: String = ""
+    @State private var customUnitPrice: String = ""
+    
+    var availableParts: [InventoryPart] {
+        inventoryViewModel.parts(for: selectedCategory)
+    }
+    
+    var calculatedUnitPrice: Double {
+        if isCustomPart {
+            return Double(customUnitPrice) ?? 0.0
+        } else {
+            return selectedPart?.unitPrice ?? 0.0
+        }
+    }
+    
+    var calculatedTotalCost: Double {
+        guard let qty = Int(quantity) else { return 0.0 }
+        return Double(qty) * calculatedUnitPrice
+    }
+    
+    var isValid: Bool {
+        if isCustomPart {
+            return !customPartName.isEmpty && 
+                   Int(quantity) != nil && 
+                   Double(customUnitPrice) != nil
+        } else {
+            return selectedPart != nil && Int(quantity) != nil
+        }
+    }
     
     var body: some View {
         NavigationView {
@@ -696,20 +729,173 @@ struct AddPartSheetForTask: View {
                 AppTheme.backgroundPrimary
                     .ignoresSafeArea()
                 
-                VStack(spacing: AppTheme.spacing.lg) {
-                    VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
-                        Text("Part Name *")
-                            .font(.caption)
-                            .foregroundColor(AppTheme.textSecondary)
+                ScrollView {
+                    VStack(spacing: AppTheme.spacing.lg) {
+                        // Toggle between inventory and custom part
+                        Picker("Part Source", selection: $isCustomPart) {
+                            Text("From Inventory").tag(false)
+                            Text("Custom Part").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: isCustomPart) { _ in
+                            // Reset fields when switching
+                            selectedPart = nil
+                            customPartName = ""
+                            customUnitPrice = ""
+                        }
                         
-                        TextField("e.g., Brake Pads", text: $partName)
-                            .padding(12)
-                            .background(AppTheme.backgroundSecondary)
-                            .cornerRadius(AppTheme.cornerRadius.small)
-                            .foregroundColor(AppTheme.textPrimary)
-                    }
-                    
-                    HStack(spacing: AppTheme.spacing.md) {
+                        if !isCustomPart {
+                            // Inventory Part Selection
+                            VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
+                                Text("Category *")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                                
+                                Menu {
+                                    ForEach(inventoryViewModel.allCategories) { category in
+                                        Button(action: {
+                                            selectedCategory = category
+                                            selectedPart = nil // Reset selection when category changes
+                                        }) {
+                                            HStack {
+                                                Image(systemName: inventoryViewModel.icon(for: category))
+                                                Text(inventoryViewModel.displayName(for: category))
+                                                if selectedCategory.id == category.id {
+                                                    Spacer()
+                                                    Image(systemName: "checkmark")
+                                                }
+                                            }
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: inventoryViewModel.icon(for: selectedCategory))
+                                            .foregroundColor(AppTheme.accentPrimary)
+                                        Text(inventoryViewModel.displayName(for: selectedCategory))
+                                            .foregroundColor(AppTheme.textPrimary)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                            .font(.caption)
+                                            .foregroundColor(AppTheme.iconDefault)
+                                    }
+                                    .padding(12)
+                                    .background(AppTheme.backgroundSecondary)
+                                    .cornerRadius(AppTheme.cornerRadius.small)
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
+                                Text("Select Part *")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                                
+                                if availableParts.isEmpty {
+                                    HStack {
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .foregroundColor(AppTheme.statusWarning)
+                                        Text("No parts in this category")
+                                            .font(.subheadline)
+                                            .foregroundColor(AppTheme.textSecondary)
+                                    }
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(AppTheme.backgroundSecondary)
+                                    .cornerRadius(AppTheme.cornerRadius.small)
+                                } else {
+                                    Menu {
+                                        ForEach(availableParts) { part in
+                                            Button(action: {
+                                                selectedPart = part
+                                            }) {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    HStack {
+                                                        Text(part.name)
+                                                        if selectedPart?.id == part.id {
+                                                            Spacer()
+                                                            Image(systemName: "checkmark")
+                                                        }
+                                                    }
+                                                    Text("\(part.partNumber) • ₹\(String(format: "%.2f", part.unitPrice)) • Stock: \(part.quantityInStock)")
+                                                        .font(.caption)
+                                                        .foregroundColor(AppTheme.textSecondary)
+                                                }
+                                            }
+                                        }
+                                    } label: {
+                                        HStack {
+                                            if let part = selectedPart {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(part.name)
+                                                        .foregroundColor(AppTheme.textPrimary)
+                                                    HStack {
+                                                        Text(part.partNumber)
+                                                        Text("•")
+                                                        Text("₹\(String(format: "%.2f", part.unitPrice))")
+                                                        Text("•")
+                                                        Text("Stock: \(part.quantityInStock)")
+                                                    }
+                                                    .font(.caption)
+                                                    .foregroundColor(AppTheme.textSecondary)
+                                                }
+                                            } else {
+                                                Text("Select a part")
+                                                    .foregroundColor(AppTheme.textSecondary)
+                                            }
+                                            Spacer()
+                                            Image(systemName: "chevron.down")
+                                                .font(.caption)
+                                                .foregroundColor(AppTheme.iconDefault)
+                                        }
+                                        .padding(12)
+                                        .background(AppTheme.backgroundSecondary)
+                                        .cornerRadius(AppTheme.cornerRadius.small)
+                                    }
+                                }
+                            }
+                            
+                            // Show stock warning if low
+                            if let part = selectedPart, part.isLowStock {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(AppTheme.statusWarning)
+                                    Text("Low stock: only \(part.quantityInStock) available")
+                                        .font(.caption)
+                                        .foregroundColor(AppTheme.statusWarning)
+                                }
+                                .padding(8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(AppTheme.statusWarningBackground)
+                                .cornerRadius(6)
+                            }
+                        } else {
+                            // Custom Part Entry
+                            VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
+                                Text("Part Name *")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                                
+                                TextField("e.g., Brake Pads", text: $customPartName)
+                                    .padding(12)
+                                    .background(AppTheme.backgroundSecondary)
+                                    .cornerRadius(AppTheme.cornerRadius.small)
+                                    .foregroundColor(AppTheme.textPrimary)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
+                                Text("Unit Price (₹) *")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                                
+                                TextField("0.00", text: $customUnitPrice)
+                                    .keyboardType(.decimalPad)
+                                    .padding(12)
+                                    .background(AppTheme.backgroundSecondary)
+                                    .cornerRadius(AppTheme.cornerRadius.small)
+                                    .foregroundColor(AppTheme.textPrimary)
+                            }
+                        }
+                        
+                        // Quantity input
                         VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
                             Text("Quantity *")
                                 .font(.caption)
@@ -723,68 +909,77 @@ struct AddPartSheetForTask: View {
                                 .foregroundColor(AppTheme.textPrimary)
                         }
                         
-                        VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
-                            Text("Unit Price (₹) *")
-                                .font(.caption)
-                                .foregroundColor(AppTheme.textSecondary)
-                            
-                            TextField("0.00", text: $unitPrice)
-                                .keyboardType(.decimalPad)
-                                .padding(12)
-                                .background(AppTheme.backgroundSecondary)
-                                .cornerRadius(AppTheme.cornerRadius.small)
-                                .foregroundColor(AppTheme.textPrimary)
-                        }
-                    }
-                    
-                    if let qty = Int(quantity), let price = Double(unitPrice), !partName.isEmpty {
-                        HStack {
-                            Text("Total Cost")
-                                .font(.subheadline)
-                            
-                            Spacer()
-                            
-                            Text("₹\(Int(Double(qty) * price))")
-                                .font(.headline)
-                                .foregroundColor(AppTheme.accentPrimary)
-                        }
-                        .padding(12)
-                        .background(AppTheme.backgroundElevated)
-                        .cornerRadius(AppTheme.cornerRadius.small)
-                    }
-                    
-                    Spacer()
-                    
-                    Button(action: {
-                        if !partName.isEmpty,
-                           let qty = Int(quantity),
-                           let price = Double(unitPrice) {
-                            let newPart = PartUsage(
-                                partName: partName,
-                                quantity: qty,
-                                unitPrice: price
-                            )
-                            Task {
-                                await viewModel.addPart(newPart)
-                                dismiss()
+                        // Cost summary
+                        if isValid {
+                            VStack(spacing: 12) {
+                                Divider()
+                                    .background(AppTheme.dividerPrimary)
+                                
+                                HStack {
+                                    Text("Unit Price")
+                                        .font(.subheadline)
+                                        .foregroundColor(AppTheme.textSecondary)
+                                    
+                                    Spacer()
+                                    
+                                    Text("₹\(String(format: "%.2f", calculatedUnitPrice))")
+                                        .font(.subheadline)
+                                        .foregroundColor(AppTheme.textPrimary)
+                                }
+                                
+                                HStack {
+                                    Text("Quantity")
+                                        .font(.subheadline)
+                                        .foregroundColor(AppTheme.textSecondary)
+                                    
+                                    Spacer()
+                                    
+                                    Text(quantity)
+                                        .font(.subheadline)
+                                        .foregroundColor(AppTheme.textPrimary)
+                                }
+                                
+                                Divider()
+                                    .background(AppTheme.dividerPrimary)
+                                
+                                HStack {
+                                    Text("Total Cost")
+                                        .font(.headline)
+                                        .foregroundColor(AppTheme.textPrimary)
+                                    
+                                    Spacer()
+                                    
+                                    Text("₹\(String(format: "%.2f", calculatedTotalCost))")
+                                        .font(.title3)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(AppTheme.accentPrimary)
+                                }
                             }
-                        }
-                    }) {
-                        Text("Add Part")
-                            .font(.headline)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                (!partName.isEmpty && Int(quantity) != nil && Double(unitPrice) != nil)
-                                    ? AppTheme.accentPrimary
-                                    : AppTheme.textTertiary
-                            )
+                            .padding(16)
+                            .background(AppTheme.backgroundElevated)
                             .cornerRadius(AppTheme.cornerRadius.medium)
+                        }
+                        
+                        Spacer(minLength: 20)
+                        
+                        // Add button
+                        Button(action: addPart) {
+                            Text("Add Part")
+                                .font(.headline)
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(
+                                    isValid
+                                        ? AppTheme.accentPrimary
+                                        : AppTheme.textTertiary
+                                )
+                                .cornerRadius(AppTheme.cornerRadius.medium)
+                        }
+                        .disabled(!isValid)
                     }
-                    .disabled(partName.isEmpty || Int(quantity) == nil || Double(unitPrice) == nil)
+                    .padding(AppTheme.spacing.md)
                 }
-                .padding(AppTheme.spacing.md)
             }
             .navigationTitle("Add Part")
             .navigationBarTitleDisplayMode(.inline)
@@ -796,6 +991,30 @@ struct AddPartSheetForTask: View {
                     .foregroundColor(AppTheme.accentPrimary)
                 }
             }
+        }
+    }
+    
+    private func addPart() {
+        guard let qty = Int(quantity) else { return }
+        
+        let partName: String
+        if isCustomPart {
+            partName = customPartName
+        } else if let part = selectedPart {
+            partName = part.name
+        } else {
+            return
+        }
+        
+        let newPart = PartUsage(
+            partName: partName,
+            quantity: qty,
+            unitPrice: calculatedUnitPrice
+        )
+        
+        Task {
+            await viewModel.addPart(newPart)
+            dismiss()
         }
     }
 }

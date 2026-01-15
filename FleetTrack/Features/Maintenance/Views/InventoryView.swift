@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct InventoryView: View {
-    @State private var searchText: String = ""
+    @StateObject private var viewModel = InventoryViewModel()
+    @State private var showingAddPart = false
     
     var body: some View {
         ZStack {
@@ -17,17 +18,28 @@ struct InventoryView: View {
             
             VStack(spacing: 0) {
                 // Header
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Inventory")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(AppTheme.textPrimary)
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Inventory")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(AppTheme.textPrimary)
+                        
+                        Text("Parts & supplies management")
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
                     
-                    Text("Parts & supplies management")
-                        .font(.subheadline)
-                        .foregroundColor(AppTheme.textSecondary)
+                    Spacer()
+                    
+                    Button(action: {
+                        showingAddPart = true
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(AppTheme.accentPrimary)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, AppTheme.spacing.md)
                 .padding(.vertical, AppTheme.spacing.sm)
                 
@@ -36,7 +48,7 @@ struct InventoryView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(AppTheme.iconDefault)
                     
-                    TextField("Search parts...", text: $searchText)
+                    TextField("Search parts...", text: $viewModel.searchText)
                         .foregroundColor(AppTheme.textPrimary)
                 }
                 .padding(12)
@@ -55,28 +67,17 @@ struct InventoryView: View {
                         categoriesSection
                         
                         // Low Stock Alert
-                        lowStockSection
-                        
-                        // Coming Soon Message
-                        VStack(spacing: 12) {
-                            Image(systemName: "shippingbox.fill")
-                                .font(.system(size: 48))
-                                .foregroundColor(AppTheme.iconDefault)
-                            
-                            Text("Inventory Management")
-                                .font(.headline)
-                                .foregroundColor(AppTheme.textPrimary)
-                            
-                            Text("Full inventory features coming soon")
-                                .font(.subheadline)
-                                .foregroundColor(AppTheme.textSecondary)
+                        if !viewModel.lowStockParts.isEmpty {
+                            lowStockSection
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
                     }
                     .padding(AppTheme.spacing.md)
                 }
             }
+        }
+        .sheet(isPresented: $showingAddPart) {
+            AddEditPartView()
+                .environmentObject(viewModel)
         }
     }
     
@@ -84,23 +85,23 @@ struct InventoryView: View {
     
     private var quickStatsSection: some View {
         HStack(spacing: AppTheme.spacing.sm) {
-            StatCard(
+            InventoryStatCard(
                 title: "Total Items",
-                value: "156",
+                value: "\(viewModel.totalItems)",
                 icon: "shippingbox.fill",
                 color: AppTheme.accentPrimary
             )
             
-            StatCard(
+            InventoryStatCard(
                 title: "Low Stock",
-                value: "12",
+                value: "\(viewModel.lowStockParts.count)",
                 icon: "exclamationmark.triangle.fill",
                 color: AppTheme.statusWarning
             )
             
-            StatCard(
+            InventoryStatCard(
                 title: "Out of Stock",
-                value: "3",
+                value: "\(viewModel.outOfStockParts.count)",
                 icon: "xmark.circle.fill",
                 color: AppTheme.statusError
             )
@@ -116,11 +117,14 @@ struct InventoryView: View {
                 .foregroundColor(AppTheme.textPrimary)
             
             VStack(spacing: AppTheme.spacing.sm) {
-                CategoryRow(name: "Engine Parts", count: 45, icon: "engine.combustion.fill")
-                CategoryRow(name: "Brake Components", count: 32, icon: "brake.signal")
-                CategoryRow(name: "Electrical", count: 28, icon: "bolt.fill")
-                CategoryRow(name: "Tires & Wheels", count: 24, icon: "circle.circle.fill")
-                CategoryRow(name: "Fluids & Oils", count: 27, icon: "drop.fill")
+                // Display all categories dynamically
+                ForEach(viewModel.allCategories) { category in
+                    CategoryRowButton(
+                        viewModel: viewModel,
+                        category: category,
+                        displayName: viewModel.displayName(for: category)
+                    )
+                }
             }
         }
     }
@@ -136,53 +140,117 @@ struct InventoryView: View {
                 
                 Spacer()
                 
-                Text("12 items")
+                Text("\(viewModel.lowStockParts.count) items")
                     .font(.caption)
                     .foregroundColor(AppTheme.statusWarning)
             }
             
             VStack(spacing: AppTheme.spacing.sm) {
-                LowStockItem(name: "Brake Pads", current: 4, minimum: 10)
-                LowStockItem(name: "Oil Filter", current: 6, minimum: 15)
-                LowStockItem(name: "Air Filter", current: 3, minimum: 10)
+                ForEach(viewModel.lowStockParts.prefix(3)) { part in
+                    LowStockItemButton(
+                        part: part,
+                        viewModel: viewModel
+                    )
+                }
             }
         }
     }
 }
 
-// MARK: - Category Row Component
+// MARK: - Category Row Button Component
 
-struct CategoryRow: View {
-    let name: String
-    let count: Int
-    let icon: String
+struct CategoryRowButton: View {
+    @ObservedObject var viewModel: InventoryViewModel
+    let category: PartCategory
+    let displayName: String
+    
+    var count: Int {
+        viewModel.categoryCount(for: category)
+    }
+    
+    var icon: String {
+        viewModel.icon(for: category)
+    }
     
     var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(AppTheme.accentPrimary)
-                .frame(width: 32)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name)
-                    .font(.subheadline)
-                    .foregroundColor(AppTheme.textPrimary)
+        NavigationLink(destination: CategoryDetailView(category: category).environmentObject(viewModel)) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(AppTheme.accentPrimary)
+                    .frame(width: 32)
                 
-                Text("\(count) items")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(displayName)
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    Text("\(count) items")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
                     .font(.caption)
-                    .foregroundColor(AppTheme.textSecondary)
+                    .foregroundColor(AppTheme.iconDefault)
             }
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(AppTheme.iconDefault)
+            .padding(12)
+            .background(AppTheme.backgroundSecondary)
+            .cornerRadius(AppTheme.cornerRadius.small)
         }
-        .padding(12)
-        .background(AppTheme.backgroundSecondary)
-        .cornerRadius(AppTheme.cornerRadius.small)
+    }
+}
+
+// MARK: - Low Stock Item Button Component
+
+struct LowStockItemButton: View {
+    let part: InventoryPart
+    @ObservedObject var viewModel: InventoryViewModel
+    @State private var showingEditSheet = false
+    
+    var body: some View {
+        Button(action: {
+            showingEditSheet = true
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(part.name)
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    Text("Current: \(part.quantityInStock) | Min: \(part.minimumStockLevel)")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                
+                Spacer()
+                
+                HStack(spacing: 8) {
+                    Text("Low")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.statusWarning)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppTheme.statusWarningBackground)
+                        .cornerRadius(6)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.iconDefault)
+                }
+            }
+            .padding(12)
+            .background(AppTheme.backgroundSecondary)
+            .cornerRadius(AppTheme.cornerRadius.small)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingEditSheet) {
+            AddEditPartView(partToEdit: part)
+                .environmentObject(viewModel)
+        }
     }
 }
 
@@ -219,6 +287,36 @@ struct LowStockItem: View {
         .padding(12)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.small)
+    }
+}
+
+// MARK: - Inventory Stat Card Component
+
+struct InventoryStatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(color)
+            
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(AppTheme.textPrimary)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(AppTheme.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .background(AppTheme.backgroundSecondary)
+        .cornerRadius(AppTheme.cornerRadius.medium)
     }
 }
 
