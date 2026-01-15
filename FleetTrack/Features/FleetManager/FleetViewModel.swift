@@ -41,31 +41,47 @@ class FleetViewModel: ObservableObject {
     // MARK: - Actions
     
     func addVehicle(_ data: VehicleCreationData) {
-        isLoading = true
+        let vehicleId = UUID() // Pre-generate ID for sync
+        
+        // 1. Optimistic Update (Immediate UI Reflection)
+        let newVehicle = FMVehicle(
+            id: vehicleId,
+            registrationNumber: data.registrationNumber,
+            vehicleType: data.vehicleType,
+            manufacturer: data.manufacturer,
+            model: data.model,
+            fuelType: data.fuelType,
+            capacity: data.capacity,
+            registrationDate: data.registrationDate,
+            status: data.status,
+            assignedDriverId: data.assignedDriverId,
+            assignedDriverName: getDriverName(for: data.assignedDriverId)
+        )
+        
+        vehicles.append(newVehicle)
+        
+        // 2. Optimistically update driver status
+        if let driverId = data.assignedDriverId, 
+           let dIndex = drivers.firstIndex(where: { $0.id == driverId }) {
+            drivers[dIndex].status = .onTrip
+        }
+        
+        print("🚀 [FleetViewModel] Optimistically added vehicle: \(data.registrationNumber)")
+        
+        // 3. Perform Backend Call
         Task { @MainActor in
             do {
-                try await FleetManagerService.shared.addVehicle(data)
-                
-                // Construct a local model for immediate UI reflection (Optimistic Update)
-                let newVehicle = FMVehicle(
-                    id: UUID(),
-                    registrationNumber: data.registrationNumber,
-                    vehicleType: data.vehicleType,
-                    manufacturer: data.manufacturer,
-                    model: data.model,
-                    fuelType: data.fuelType,
-                    capacity: data.capacity,
-                    registrationDate: data.registrationDate,
-                    status: data.status,
-                    assignedDriverId: data.assignedDriverId,
-                    assignedDriverName: getDriverName(for: data.assignedDriverId)
-                )
-                self.vehicles.append(newVehicle)
+                try await FleetManagerService.shared.addVehicle(data, id: vehicleId)
                 self.logActivity(title: "New Vehicle Added", description: "Vehicle \(data.registrationNumber) was added to fleet.", icon: "car.fill", color: "blue")
-                self.isLoading = false
             } catch {
+                // 4. Rollback on failure
+                self.vehicles.removeAll(where: { $0.id == vehicleId })
+                if let driverId = data.assignedDriverId, 
+                   let dIndex = self.drivers.firstIndex(where: { $0.id == driverId }) {
+                    self.drivers[dIndex].status = .available
+                }
                 self.errorMessage = "Failed to add vehicle: \(error.localizedDescription)"
-                self.isLoading = false
+                print("❌ [FleetViewModel] Failed to add vehicle, rolled back: \(error)")
             }
         }
     }
@@ -161,6 +177,72 @@ class FleetViewModel: ObservableObject {
         if let driverName = drivers.first(where: { $0.id == id })?.displayName {
             drivers.removeAll(where: { $0.id == id })
             logActivity(title: "Driver Removed", description: "Driver \(driverName) was removed from fleet.", icon: "person.fill.badge.minus", color: "red")
+        }
+    }
+    
+    func reassignDriver(vehicleId: UUID, driverId: UUID?) {
+        isLoading = true
+        Task { @MainActor in
+            do {
+                if let index = vehicles.firstIndex(where: { $0.id == vehicleId }) {
+                    let oldDriverId = vehicles[index].assignedDriverId
+                    
+                    // Update vehicle
+                    vehicles[index].assignedDriverId = driverId
+                    vehicles[index].assignedDriverName = getDriverName(for: driverId)
+                    
+                    // Update old driver status to available
+                    if let oldId = oldDriverId, let dIndex = drivers.firstIndex(where: { $0.id == oldId }) {
+                        drivers[dIndex].status = .available
+                    }
+                    
+                    // Update new driver status to onTrip (Assigned)
+                    if let newId = driverId, let dIndex = drivers.firstIndex(where: { $0.id == newId }) {
+                        drivers[dIndex].status = .onTrip
+                    }
+                    
+                    let driverName = vehicles[index].assignedDriverName ?? "Unassigned"
+                    logActivity(title: "Driver Reassigned", description: "Vehicle \(vehicles[index].registrationNumber) assigned to \(driverName).", icon: "person.badge.plus.fill", color: "green")
+                }
+                isLoading = false
+            } catch {
+                self.errorMessage = "Failed to reassign driver: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        }
+    }
+    
+    func markForService(vehicleId: UUID, serviceTypes: [String], description: String = "") {
+        isLoading = true
+        Task { @MainActor in
+            do {
+                if let index = vehicles.firstIndex(where: { $0.id == vehicleId }) {
+                    vehicles[index].status = .inMaintenance
+                    let services = serviceTypes.joined(separator: ", ")
+                    let logDescription = description.isEmpty ? "Vehicle \(vehicles[index].registrationNumber) sent for \(services)." : "Vehicle \(vehicles[index].registrationNumber) sent for \(services). Notes: \(description)"
+                    logActivity(title: "Service Scheduled", description: logDescription, icon: "wrench.and.screwdriver.fill", color: "orange")
+                }
+                isLoading = false
+            } catch {
+                self.errorMessage = "Failed to schedule service: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        }
+    }
+    
+    static let maintenanceOptions = [
+        "Engine", "Oil", "Oil Change", "Tires", "Tire Replacement",
+        "Brakes", "Brake Inspection", "Battery", "Transmission",
+        "Suspension", "Electrical", "Cooling System", "Other"
+    ]
+    
+    // MARK: - Computed Helpers
+    
+    var unassignedDrivers: [FMDriver] {
+        let assignedIds = Set(vehicles.compactMap { $0.assignedDriverId })
+        return drivers.filter { driver in
+            // Must not be in the assigned IDs set AND must be marked as Available
+            !assignedIds.contains(driver.id) && (driver.status == .available || driver.status == nil)
         }
     }
     

@@ -11,6 +11,7 @@ import Foundation
 enum AlertType: String, Codable, CaseIterable {
     case system = "System"
     case emergency = "Emergency"
+    case inventory = "Inventory"
 }
 
 struct MaintenanceAlert: Identifiable, Codable, Hashable {
