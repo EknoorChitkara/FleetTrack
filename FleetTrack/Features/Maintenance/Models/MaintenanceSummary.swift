@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct MaintenanceSummary: Codable, Hashable {
-    var completedTasksThisMonth: Int
-    var averageCompletionTimeHours: Double
-    
-    init(
+public struct MaintenanceSummary: Codable, Hashable {
+    public var completedTasksThisMonth: Int
+    public var averageCompletionTimeHours: Double
+
+    public init(
         completedTasksThisMonth: Int = 0,
         averageCompletionTimeHours: Double = 0.0
     ) {

@@ -11,13 +11,13 @@ struct AlertsView: View {
     @StateObject private var inventoryViewModel = InventoryViewModel()
     @State private var selectedFilter: AlertFilter = .all
     @State private var partToEdit: InventoryPart?
-    
+
     enum AlertFilter: String, CaseIterable {
         case all = "All"
         case outOfStock = "Out of Stock"
         case lowStock = "Low Stock"
     }
-    
+
     var filteredParts: [InventoryPart] {
         switch selectedFilter {
         case .all:
@@ -28,12 +28,12 @@ struct AlertsView: View {
             return inventoryViewModel.lowStockParts
         }
     }
-    
+
     var body: some View {
         ZStack {
             AppTheme.backgroundPrimary
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 // Header
                 VStack(alignment: .leading, spacing: 4) {
@@ -41,7 +41,7 @@ struct AlertsView: View {
                         .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.textPrimary)
-                    
+
                     Text("Inventory alerts and notifications")
                         .font(.subheadline)
                         .foregroundColor(AppTheme.textSecondary)
@@ -49,7 +49,7 @@ struct AlertsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, AppTheme.spacing.md)
                 .padding(.vertical, AppTheme.spacing.sm)
-                
+
                 // Filter Picker
                 Picker("Filter", selection: $selectedFilter) {
                     ForEach(AlertFilter.allCases, id: \.self) { filter in
@@ -59,9 +59,21 @@ struct AlertsView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal, AppTheme.spacing.md)
                 .padding(.bottom, AppTheme.spacing.sm)
-                
+
                 // Alerts List
-                if filteredParts.isEmpty {
+                if inventoryViewModel.isLoading {
+                    VStack {
+                        Spacer()
+                        ProgressView()
+                            .tint(AppTheme.accentPrimary)
+                        Text("Checking inventory...")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                            .padding(.top, 8)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                } else if filteredParts.isEmpty {
                     emptyStateView
                 } else {
                     ScrollView {
@@ -76,6 +88,10 @@ struct AlertsView: View {
                             }
                         }
                         .padding(AppTheme.spacing.md)
+                        .padding(.bottom, 100)
+                    }
+                    .refreshable {
+                        await inventoryViewModel.loadInventory()
                     }
                 }
             }
@@ -85,18 +101,18 @@ struct AlertsView: View {
                 .environmentObject(inventoryViewModel)
         }
     }
-    
+
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 60))
                 .foregroundColor(AppTheme.statusActiveText)
-            
+
             Text("All Good!")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.textPrimary)
-            
+
             Text("No inventory alerts at this time")
                 .font(.subheadline)
                 .foregroundColor(AppTheme.textSecondary)
@@ -106,37 +122,12 @@ struct AlertsView: View {
     }
 }
 
-// MARK: - Alert Stat Card
-
-struct AlertStatCard: View {
-    let title: String
-    let count: Int
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 6) {
-            Text("\(count)")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(color)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(AppTheme.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(AppTheme.backgroundSecondary)
-        .cornerRadius(AppTheme.cornerRadius.medium)
-    }
-}
-
 // MARK: - Inventory Alert Card
 
 struct InventoryAlertCard: View {
     let part: InventoryPart
     let onTap: () -> Void
-    
+
     var alertType: String {
         if part.quantityInStock == 0 {
             return "OUT OF STOCK"
@@ -144,19 +135,15 @@ struct InventoryAlertCard: View {
             return "LOW STOCK"
         }
     }
-    
+
     var alertColor: Color {
         part.quantityInStock == 0 ? AppTheme.statusError : AppTheme.statusWarning
     }
-    
-    var alertBackground: Color {
-        part.quantityInStock == 0 ? AppTheme.statusErrorBackground : AppTheme.statusWarningBackground
-    }
-    
+
     var alertIcon: String {
         part.quantityInStock == 0 ? "xmark.circle.fill" : "exclamationmark.triangle.fill"
     }
-    
+
     var body: some View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: 12) {
@@ -165,14 +152,14 @@ struct InventoryAlertCard: View {
                     Image(systemName: alertIcon)
                         .font(.system(size: 14))
                         .foregroundColor(alertColor)
-                    
+
                     Text(alertType)
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundColor(alertColor)
-                    
+
                     Spacer()
-                    
+
                     Text(part.category.rawValue)
                         .font(.caption2)
                         .foregroundColor(AppTheme.textSecondary)
@@ -181,17 +168,17 @@ struct InventoryAlertCard: View {
                         .background(AppTheme.backgroundElevated)
                         .cornerRadius(6)
                 }
-                
+
                 // Part Info
                 VStack(alignment: .leading, spacing: 6) {
                     Text(part.name)
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
-                    
+
                     Text(part.partNumber)
                         .font(.caption)
                         .foregroundColor(AppTheme.textSecondary)
-                    
+
                     HStack(spacing: 16) {
                         HStack(spacing: 4) {
                             Image(systemName: "shippingbox.fill")
@@ -200,7 +187,7 @@ struct InventoryAlertCard: View {
                                 .font(.caption)
                         }
                         .foregroundColor(alertColor)
-                        
+
                         HStack(spacing: 4) {
                             Image(systemName: "chart.line.downtrend.xyaxis")
                                 .font(.caption)
@@ -210,31 +197,31 @@ struct InventoryAlertCard: View {
                         .foregroundColor(AppTheme.textSecondary)
                     }
                 }
-                
+
                 // Supplier Info (if available)
                 if let supplier = part.supplierName {
                     Divider()
                         .background(AppTheme.dividerPrimary)
-                    
+
                     HStack {
                         Image(systemName: "building.2.fill")
                             .font(.caption)
                             .foregroundColor(AppTheme.iconDefault)
-                        
+
                         Text(supplier)
                             .font(.caption)
                             .foregroundColor(AppTheme.textSecondary)
                     }
                 }
-                
+
                 // Action hint
                 HStack {
                     Text("Tap to update stock")
                         .font(.caption2)
                         .foregroundColor(AppTheme.textTertiary)
-                    
+
                     Spacer()
-                    
+
                     Image(systemName: "chevron.right")
                         .font(.caption2)
                         .foregroundColor(AppTheme.iconDefault)
