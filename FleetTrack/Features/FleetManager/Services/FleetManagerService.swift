@@ -22,69 +22,112 @@ class FleetManagerService {
     // MARK: - Driver Management
     
     /// Add a new driver to the system
-    /// 1. Sends invitation email via Edge Function (uses secret key)
-    /// 2. Creates a record in the 'drivers' table
+    /// Flow:
+    /// 1. Create user in auth.users via RPC database function (NOT confirmed)
+    /// 2. Send verification email to the driver
+    /// 3. Driver clicks verification link in email
+    /// 4. Trigger syncs to public.users → drivers table
+    /// 5. Driver can now login with their password
     func addDriver(_ data: DriverCreationData) async throws {
         print("🚀 [addDriver] Starting driver creation for: \(data.fullName)")
         print("📧 [addDriver] Email: \(data.email)")
         
-        // Send invitation email via Edge Function
-        // Uses secret key authentication (no JWT needed)
-        try await sendDriverInvite(email: data.email, fullName: data.fullName)
+        // Generate password for the driver
+        let temporaryPassword = generateTemporaryPassword()
         
-        // Create Driver Record with all required fields
-        let now = Date()
-        let newDriver = FMDriver(
-            id: UUID(),
-            userId: nil, // Will be linked when driver sets password and logs in
-            fullName: data.fullName,
-            licenseNumber: data.licenseNumber,
-            driverLicenseNumber: nil,
-            phoneNumber: data.phoneNumber,
+        // Step 1: Create user in auth.users via RPC (email NOT confirmed)
+        try await createUserViaRPC(
             email: data.email,
-            address: data.address,
-            status: data.status,
-            isActive: true,
-            createdAt: now,
-            updatedAt: now
+            password: temporaryPassword,
+            fullName: data.fullName,
+            role: "Driver",
+            phoneNumber: data.phoneNumber,
+            licenseNumber: data.licenseNumber,
+            address: data.address
         )
         
-        print("💾 [addDriver] Inserting driver record to database...")
-        try await client
-            .from("drivers")
-            .insert(newDriver)
-            .execute()
+        // Step 2: Send verification email using Supabase OTP
+        try await sendVerificationEmail(email: data.email)
         
-        print("✅ [addDriver] Driver record created successfully for \(data.fullName)")
+        print("✅ [addDriver] Driver created in auth.users")
+        print("📧 [addDriver] Verification email sent to \(data.email)")
+        print("🔑 [addDriver] Temporary Password: \(temporaryPassword)")
+        print("⚠️ [addDriver] IMPORTANT: Share this password with the driver securely!")
+        print("ℹ️  [addDriver] Flow: Driver verifies email → public.users → drivers table created automatically")
     }
     
-    /// Sends an invitation email to the driver using Supabase Magic Link
-    /// No Edge Function needed - uses built-in Supabase authentication
-    private func sendDriverInvite(email: String, fullName: String) async throws {
-        print("🔐 [sendDriverInvite] Starting invite for: \(email)")
-        print("📧 [sendDriverInvite] Using Supabase Magic Link (no Edge Function)")
+    /// Creates a user in auth.users via the Supabase RPC database function
+    /// Email is NOT confirmed - user must verify via email link first
+    private func createUserViaRPC(
+        email: String,
+        password: String,
+        fullName: String,
+        role: String,
+        phoneNumber: String?,
+        licenseNumber: String? = nil,
+        address: String? = nil
+    ) async throws {
+        print("🔐 [createUserViaRPC] Calling RPC function for: \(email)")
         
+        let params: [String: AnyJSON] = [
+            "p_email": .string(email),
+            "p_password": .string(password),
+            "p_full_name": .string(fullName),
+            "p_role": .string(role),
+            "p_phone_number": .string(phoneNumber ?? ""),
+            "p_license_number": .string(licenseNumber ?? ""),
+            "p_address": .string(address ?? "")
+        ]
+        
+        // 1. Create the user in auth.users via RPC
         do {
-            // Send magic link invitation
-            // This creates auth.users record and sends email automatically
-            try await client.auth.signInWithOTP(
-                email: email,
-                redirectTo: URL(string: "fleettrack://set-password")!,
-                shouldCreateUser: true
-            )
+            let response = try await client
+                .rpc("create_fleet_user_rpc", params: params)
+                .execute()
             
-            print("✅ [sendDriverInvite] Magic link sent to \(email)")
-            print("📧 [sendDriverInvite] Driver will receive email with login link")
-            print("ℹ️  [sendDriverInvite] Driver can use magic link to log in and set password")
+            let data = response.data
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let success = json["success"] as? Bool, success else {
+                let error = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
+                throw NSError(domain: "FleetManager", code: 400, userInfo: [NSLocalizedDescriptionKey: error ?? "Failed to create user"])
+            }
+            
+            print("✅ [createUserViaRPC] User created in database")
+            
+            // 2. Trigger the invitation email using resendu
+            do {
+                try await client.auth.resend(
+                    email: email,
+                    type: .signup
+                )
+                print("📧 [createUserViaRPC] Invitation email triggered successfully")
+            } catch {
+                let errorMsg = error.localizedDescription
+                if errorMsg.contains("rate_limit") || errorMsg.contains("59 seconds") {
+                    print("⚠️ [createUserViaRPC] User created, but email rate limited. Driver will need a manual resend in 1 minute.")
+                    // Don't throw - the user is already created, which is the main part.
+                } else {
+                    print("❌ [createUserViaRPC] Failed to send email: \(errorMsg)")
+                    throw error
+                }
+            }
             
         } catch {
-            print("❌ [sendDriverInvite] Failed to send magic link: \(error)")
-            print("   Error details: \(error.localizedDescription)")
-            // Don't block driver creation if invite fails
-            print("⚠️ [sendDriverInvite] Continuing without invite email")
+            print("❌ [createUserViaRPC] Error: \(error.localizedDescription)")
+            throw error
         }
-        
-        print("🏁 [sendDriverInvite] Function completed")
+    }
+    
+    // sendVerificationEmail is no longer needed as signUp handles it
+    private func sendVerificationEmail(email: String) async throws {
+        // No-op: signUp already sent the email
+    }
+    
+    /// Generates a temporary password for the new user
+    private func generateTemporaryPassword() -> String {
+        let characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
+        return String((0..<16).map { _ in characters.randomElement()! })
+        return String((0..<16).map { _ in characters.randomElement()! })
     }
     
     // MARK: - Vehicle Management
