@@ -13,12 +13,12 @@ import Foundation
 enum VehicleStatus: String, Codable, CaseIterable {
     case active = "Active"
     case inactive = "Inactive"
-    case maintenance = "Maintenance"
-    case retired = "Retired"
+    case inMaintenance = "In Maintenance"
+    case outOfService = "Out of Service"
     case inTransit = "In Transit"
 }
 
-enum VehicleType: String, Codable, CaseIterable {
+public enum VehicleType: String, Codable, CaseIterable {
     case truck = "Truck"
     case van = "Van"
     case car = "Car"
@@ -34,7 +34,7 @@ struct Location: Codable, Hashable {
     var longitude: Double
     var address: String
     var timestamp: Date
-    
+
     init(
         latitude: Double,
         longitude: Double,
@@ -57,33 +57,33 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var manufacturer: String
     var vehicleType: VehicleType
     var status: VehicleStatus
-    
+
     // Live tracking data
     var currentSpeed: Double
     var fuelLevel: Double
     var totalMileage: Double
     var averageFuelEfficiency: Double
-    
+
     // Location (flat columns in DB, not nested)
     var latitude: Double?
     var longitude: Double?
     var address: String?
     var lastLocationUpdate: Date?
-    
+
     // Assignment
     var assignedDriverId: UUID?
     var assignedDriverName: String?
-    
+
     // Maintenance
     var nextServiceDue: Date?
     var lastServiceDate: Date?
-    
+
     // Additional details
     var yearOfManufacture: Int?
     var vinNumber: String?
     var color: String?
     var capacity: String?
-    
+
     // Additional DB columns
     var fuelType: String?
     var registrationDate: Date?
@@ -91,11 +91,11 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var mileage: String?
     var insuranceStatus: String?
     var lastService: String?
-    
+
     // Timestamps
     var createdAt: Date
     var updatedAt: Date
-    
+
     enum CodingKeys: String, CodingKey {
         case id
         case registrationNumber = "registration_number"
@@ -128,7 +128,7 @@ struct Vehicle: Identifiable, Codable, Hashable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
-    
+
     init(
         id: UUID = UUID(),
         registrationNumber: String,
@@ -192,9 +192,9 @@ struct Vehicle: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
-    
+
     // MARK: - Computed Properties
-    
+
     /// Convenience property to get location as Location object
     var currentLocation: Location? {
         guard let lat = latitude, let lng = longitude else { return nil }
@@ -205,15 +205,15 @@ struct Vehicle: Identifiable, Codable, Hashable {
             timestamp: lastLocationUpdate ?? Date()
         )
     }
-    
+
     var formattedMileage: String {
         String(format: "%.1f km", totalMileage)
     }
-    
+
     var formattedEfficiency: String {
         String(format: "%.1f km/l", averageFuelEfficiency)
     }
-    
+
     var isServiceDue: Bool {
         guard let nextService = nextServiceDue else { return false }
         return nextService <= Date()
@@ -239,13 +239,13 @@ extension Vehicle {
         color: "White",
         capacity: "1.5 Ton"
     )
-    
+
     static let mockVehicle2 = Vehicle(
         registrationNumber: "DL-01-XY-5678",
         model: "LPT 1613",
         manufacturer: "Tata",
         vehicleType: .truck,
-        status: .maintenance,
+        status: .inMaintenance,
         currentSpeed: 0.0,
         fuelLevel: 45.0,
         totalMileage: 45000.0,
@@ -257,9 +257,9 @@ extension Vehicle {
         color: "Yellow",
         capacity: "10 Ton"
     )
-    
+
     static let mockVehicles: [Vehicle] = [
         mockVehicle1,
-        mockVehicle2
+        mockVehicle2,
     ]
 }

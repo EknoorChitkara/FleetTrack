@@ -2,26 +2,33 @@
 //  MaintenanceAlert.swift
 //  FleetTrack
 //
-//  Created by Anmolpreet Singh on 09/01/26.
-//
-
 
 import Foundation
 
-enum AlertType: String, Codable, CaseIterable {
+public enum AlertType: String, Codable, CaseIterable {
     case system = "System"
     case emergency = "Emergency"
+    case inventory = "Inventory"
 }
 
-struct MaintenanceAlert: Identifiable, Codable, Hashable {
-    let id: UUID
-    var title: String
-    var message: String
-    var date: Date
-    var isRead: Bool
-    var type: AlertType
-    
-    init(
+public struct MaintenanceAlert: Identifiable, Codable, Hashable {
+    public let id: UUID
+    public var title: String
+    public var message: String
+    public var date: Date
+    public var isRead: Bool
+    public var type: AlertType
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case message
+        case date
+        case isRead = "is_read"
+        case type
+    }
+
+    public init(
         id: UUID = UUID(),
         title: String,
         message: String,

@@ -89,7 +89,7 @@ struct FleetManagerVehiclesView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             ForEach(filteredVehicles) { vehicle in
-                                NavigationLink(destination: VehicleDetailView(vehicle: vehicle)) {
+                                NavigationLink(destination: VehicleDetailView(vehicle: vehicle).environmentObject(fleetVM)) {
                                     VehicleCard(vehicle: vehicle)
                                 }
                             }
@@ -106,89 +106,6 @@ struct FleetManagerVehiclesView: View {
     }
 }
 
-struct VehicleCard: View {
-    @EnvironmentObject var fleetVM: FleetViewModel
-    let vehicle: FMVehicle
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(vehicle.registrationNumber)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                    Text(vehicle.model)
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                }
-                
-                Spacer()
-                
-                Button(action: {
-                    fleetVM.deleteVehicle(byId: vehicle.id)
-                }) {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
-                        .padding(8)
-                        .background(Color.red.opacity(0.1))
-                        .clipShape(Circle())
-                }
-            }
-            
-            HStack(spacing: 12) {
-                Image(systemName: "truck.box.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(.appEmerald)
-                    .padding(10)
-                    .background(Color.appEmerald.opacity(0.1))
-                    .cornerRadius(8)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(vehicle.vehicleType.rawValue)
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 10))
-                        Text(vehicle.assignedDriverName ?? "Unassigned")
-                            .font(.caption)
-                    }
-                    .foregroundColor(.gray)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(vehicle.status.rawValue)
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(statusColor(vehicle.status).opacity(0.2))
-                        .foregroundColor(statusColor(vehicle.status))
-                        .cornerRadius(6)
-                    
-                    Text("Just now")
-                        .font(.system(size: 10))
-                        .foregroundColor(.gray)
-                }
-            }
-        }
-        .padding()
-        .background(Color.appCardBackground)
-        .cornerRadius(16)
-    }
-    
-    private func statusColor(_ status: VehicleStatus) -> Color {
-        switch status {
-        case .active: return .green
-        case .inactive: return .gray
-        case .maintenance: return .orange
-        case .retired: return .red
-        case .inTransit: return .blue
-        }
-    }
-}
 
 struct FilterPill: View {
     let title: String
