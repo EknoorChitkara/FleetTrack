@@ -3,15 +3,17 @@
 //  FleetTrack
 //
 
-import SwiftUI
 import Supabase
+import SwiftUI
 
 struct RootView: View {
     @ObservedObject private var sessionManager = SessionManager.shared
-    
+
     var body: some View {
         ZStack {
-            if sessionManager.isAuthenticated, let user = sessionManager.currentUser {
+            if sessionManager.isLoading {
+                loadingView
+            } else if sessionManager.isAuthenticated, let user = sessionManager.currentUser {
                 // User is authenticated - show dashboard based on role
                 NavigationStack {
                     switch user.role {
@@ -29,7 +31,7 @@ struct RootView: View {
             }
         }
     }
-    
+
     private var loadingView: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
@@ -38,13 +40,13 @@ struct RootView: View {
                     .font(.system(size: 80))
                     .foregroundColor(.appEmerald)
                     .shadow(color: .appEmerald.opacity(0.3), radius: 10)
-                
+
                 ProgressView()
                     .tint(.appEmerald)
             }
         }
     }
-    
+
     private var logoutButton: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             Button {

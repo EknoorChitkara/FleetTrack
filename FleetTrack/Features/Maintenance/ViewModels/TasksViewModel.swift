@@ -5,12 +5,13 @@
 //  Created for Maintenance Module - Task Management
 //
 
-import Foundation
 import Combine
+import Foundation
+import SwiftUI
 
 // MARK: - Filter Options
 
-enum DateFilterOption: String, CaseIterable {
+public enum DateFilterOption: String, CaseIterable {
     case all = "All"
     case today = "Today"
     case thisWeek = "This Week"
@@ -20,7 +21,7 @@ enum DateFilterOption: String, CaseIterable {
 
 // MARK: - Sort Options
 
-enum TaskSortOption: String, CaseIterable {
+public enum TaskSortOption: String, CaseIterable {
     case dueDate = "Due Date"
     case priority = "Priority"
     case vehicle = "Vehicle"
@@ -29,34 +30,34 @@ enum TaskSortOption: String, CaseIterable {
 
 // MARK: - Tasks View Model
 
-class TasksViewModel: ObservableObject {
-    
+public class TasksViewModel: ObservableObject {
+
     // MARK: - Shared Instance
-    
+
     static let shared = TasksViewModel()
-    
+
     // MARK: - Published Properties
-    
+
     @Published var allTasks: [MaintenanceTask] = []
     @Published var filteredTasks: [MaintenanceTask] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    
+
     // MARK: - Filter State
-    
+
     @Published var dateFilter: DateFilterOption = .all
     @Published var selectedPriorities: Set<MaintenancePriority> = []
     @Published var selectedVehicleTypes: Set<VehicleType> = []
     @Published var selectedStatuses: Set<String> = []
     @Published var sortOption: TaskSortOption = .dueDate
-    
+
     // MARK: - Computed Properties
-    
+
     var availableVehicles: [String] {
         let vehicles = Set(allTasks.map { $0.vehicleRegistrationNumber })
         return Array(vehicles).sorted()
     }
-    
+
     var activeFilterCount: Int {
         var count = 0
         if dateFilter != .all { count += 1 }
@@ -65,127 +66,117 @@ class TasksViewModel: ObservableObject {
         if !selectedStatuses.isEmpty { count += 1 }
         return count
     }
-    
+
     var hasActiveFilters: Bool {
         activeFilterCount > 0
     }
-    
+
     // Group tasks by status
     var pendingTasks: [MaintenanceTask] {
         filteredTasks.filter { $0.status == "Pending" }
     }
-    
+
     var inProgressTasks: [MaintenanceTask] {
         filteredTasks.filter { $0.status == "In Progress" }
     }
-    
+
     var pausedTasks: [MaintenanceTask] {
         filteredTasks.filter { $0.status == "Paused" }
     }
-    
+
     var completedTasks: [MaintenanceTask] {
         filteredTasks.filter { $0.status == "Completed" }
     }
-    
+
     var failedTasks: [MaintenanceTask] {
         filteredTasks.filter { $0.status == "Failed" }
     }
-    
+
     // MARK: - Initialization
-    
+
     init() {
         Task { await loadTasks() }
     }
-    
+
     // MARK: - Data Loading
-    
+
     @MainActor
     func loadTasks() async {
         isLoading = true
         errorMessage = nil
-        
-        // Simulate network delay
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        
-        // Use mock data for testing
-        self.allTasks = MaintenanceTask.mockTasks
-        applyFiltersAndSort()
-        isLoading = false
-        print("✅ Loaded \(MaintenanceTask.mockTasks.count) mock maintenance tasks")
-        
-        /* Uncomment this to use real data from Supabase:
+
+        // Fetch real data from Supabase
         do {
             let tasks = try await MaintenanceService.shared.fetchMaintenanceTasks()
             self.allTasks = tasks
             applyFiltersAndSort()
             isLoading = false
-            print("✅ Loaded \(tasks.count) maintenance tasks")
+            print("✅ Loaded \(tasks.count) maintenance tasks from Supabase")
         } catch {
             self.errorMessage = "Failed to load tasks: \(error.localizedDescription)"
             self.isLoading = false
             print("❌ Error loading tasks: \(error)")
         }
-        */
     }
-    
+
     // MARK: - Filtering and Sorting
-    
+
     func applyFiltersAndSort() {
         var tasks = allTasks
-        
+
         // Apply date filter
         tasks = filterByDate(tasks)
-        
+
         // Apply priority filter
         if !selectedPriorities.isEmpty {
             tasks = tasks.filter { selectedPriorities.contains($0.priority) }
         }
-        
+
         // Apply vehicle type filter (would need vehicle data)
         // Skipping for now as we don't have vehicle type in task
-        
+
         // Apply status filter
         if !selectedStatuses.isEmpty {
             tasks = tasks.filter { selectedStatuses.contains($0.status) }
         }
-        
+
         // Apply sorting
         tasks = sortTasks(tasks)
-        
+
         filteredTasks = tasks
     }
-    
+
     private func filterByDate(_ tasks: [MaintenanceTask]) -> [MaintenanceTask] {
         let calendar = Calendar.current
         let now = Date()
-        
+
         switch dateFilter {
         case .all:
             return tasks
-            
+
         case .today:
             return tasks.filter { calendar.isDateInToday($0.dueDate) }
-            
+
         case .thisWeek:
             let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: now)?.start ?? now
             let endOfWeek = calendar.date(byAdding: .day, value: 7, to: startOfWeek) ?? now
             return tasks.filter { $0.dueDate >= startOfWeek && $0.dueDate < endOfWeek }
-            
+
         case .thisMonth:
             let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
             let endOfMonth = calendar.date(byAdding: .month, value: 1, to: startOfMonth) ?? now
             return tasks.filter { $0.dueDate >= startOfMonth && $0.dueDate < endOfMonth }
-            
+
         case .overdue:
             return tasks.filter { $0.isOverdue }
         }
     }
-    
+
     private func sortTasks(_ tasks: [MaintenanceTask]) -> [MaintenanceTask] {
         switch sortOption {
         case .dueDate:
             return tasks.sorted { $0.dueDate < $1.dueDate }
-            
+
         case .priority:
             return tasks.sorted { task1, task2 in
                 let priorityOrder: [MaintenancePriority] = [.high, .medium, .low]
@@ -193,22 +184,22 @@ class TasksViewModel: ObservableObject {
                 let index2 = priorityOrder.firstIndex(of: task2.priority) ?? 999
                 return index1 < index2
             }
-            
+
         case .vehicle:
             return tasks.sorted { $0.vehicleRegistrationNumber < $1.vehicleRegistrationNumber }
-            
+
         case .status:
             return tasks.sorted { $0.status < $1.status }
         }
     }
-    
+
     // MARK: - Filter Actions
-    
+
     func updateDateFilter(_ filter: DateFilterOption) {
         dateFilter = filter
         applyFiltersAndSort()
     }
-    
+
     func togglePriority(_ priority: MaintenancePriority) {
         if selectedPriorities.contains(priority) {
             selectedPriorities.remove(priority)
@@ -217,7 +208,7 @@ class TasksViewModel: ObservableObject {
         }
         applyFiltersAndSort()
     }
-    
+
     func toggleStatus(_ status: String) {
         if selectedStatuses.contains(status) {
             selectedStatuses.remove(status)
@@ -226,12 +217,12 @@ class TasksViewModel: ObservableObject {
         }
         applyFiltersAndSort()
     }
-    
+
     func updateSortOption(_ option: TaskSortOption) {
         sortOption = option
         applyFiltersAndSort()
     }
-    
+
     func clearAllFilters() {
         dateFilter = .all
         selectedPriorities.removeAll()
@@ -239,19 +230,19 @@ class TasksViewModel: ObservableObject {
         selectedStatuses.removeAll()
         applyFiltersAndSort()
     }
-    
+
     // MARK: - Task Updates
-    
-    func updateTask(_ updatedTask: MaintenanceTask) {
+
+    public func updateTask(_ updatedTask: MaintenanceTask) {
         if let index = allTasks.firstIndex(where: { $0.id == updatedTask.id }) {
             allTasks[index] = updatedTask
             applyFiltersAndSort()
             print("✅ Task updated in list: \(updatedTask.id)")
         }
     }
-    
+
     // MARK: - Refresh
-    
+
     func refreshData() {
         Task { await loadTasks() }
     }

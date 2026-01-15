@@ -9,34 +9,54 @@ import Foundation
 
 // MARK: - Part Category
 
-struct PartCategory: Codable, Hashable, Identifiable {
-    let id: String
-    let rawValue: String
-    
-    init(id: String, rawValue: String) {
+public struct PartCategory: Codable, Hashable, Identifiable {
+    public let id: String
+    public let rawValue: String
+
+    public init(id: String, rawValue: String) {
         self.id = id
         self.rawValue = rawValue
     }
-    
+
+    // Custom encoding to send just the rawValue string to Supabase (matches DB enum)
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    // Custom decoding to reconstruct from a string
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        self.rawValue = value
+        // Attempt to find matching id or generate one
+        if let predefined = PartCategory.predefinedCategories.first(where: { $0.rawValue == value })
+        {
+            self.id = predefined.id
+        } else {
+            self.id = value.lowercased().replacingOccurrences(of: " ", with: "_")
+        }
+    }
+
     // Predefined categories
-    static let engine = PartCategory(id: "engine", rawValue: "Engine")
-    static let transmission = PartCategory(id: "transmission", rawValue: "Transmission")
-    static let brakes = PartCategory(id: "brakes", rawValue: "Brakes")
-    static let suspension = PartCategory(id: "suspension", rawValue: "Suspension")
-    static let electrical = PartCategory(id: "electrical", rawValue: "Electrical")
-    static let bodyWork = PartCategory(id: "bodyWork", rawValue: "Body Work")
-    static let tires = PartCategory(id: "tires", rawValue: "Tires")
-    static let fluids = PartCategory(id: "fluids", rawValue: "Fluids")
-    static let filters = PartCategory(id: "filters", rawValue: "Filters")
-    static let other = PartCategory(id: "other", rawValue: "Other")
-    
-    static let predefinedCategories: [PartCategory] = [
+    public static let engine = PartCategory(id: "engine", rawValue: "Engine")
+    public static let transmission = PartCategory(id: "transmission", rawValue: "Transmission")
+    public static let brakes = PartCategory(id: "brakes", rawValue: "Brakes")
+    public static let suspension = PartCategory(id: "suspension", rawValue: "Suspension")
+    public static let electrical = PartCategory(id: "electrical", rawValue: "Electrical")
+    public static let bodyWork = PartCategory(id: "bodyWork", rawValue: "Body Work")
+    public static let tires = PartCategory(id: "tires", rawValue: "Tires")
+    public static let fluids = PartCategory(id: "fluids", rawValue: "Fluids")
+    public static let filters = PartCategory(id: "filters", rawValue: "Filters")
+    public static let other = PartCategory(id: "other", rawValue: "Other")
+
+    public static let predefinedCategories: [PartCategory] = [
         .engine, .transmission, .brakes, .suspension, .electrical,
-        .bodyWork, .tires, .fluids, .filters, .other
+        .bodyWork, .tires, .fluids, .filters, .other,
     ]
-    
+
     // Create custom category
-    static func custom(_ name: String) -> PartCategory {
+    public static func custom(_ name: String) -> PartCategory {
         let id = name.lowercased().replacingOccurrences(of: " ", with: "_")
         return PartCategory(id: id, rawValue: name)
     }
@@ -44,23 +64,23 @@ struct PartCategory: Codable, Hashable, Identifiable {
 
 // MARK: - InventoryPart Model (Matches DB `parts` table)
 
-struct InventoryPart: Identifiable, Codable, Hashable {
-    let id: UUID
-    var name: String
-    var partNumber: String
-    var category: PartCategory
-    var description: String?
-    var quantityInStock: Int
-    var minimumStockLevel: Int
-    var unitPrice: Double
-    var supplierName: String?
-    var supplierContact: String?
-    var isActive: Bool
-    
+public struct InventoryPart: Identifiable, Codable, Hashable {
+    public let id: UUID
+    public var name: String
+    public var partNumber: String
+    public var category: PartCategory
+    public var description: String?
+    public var quantityInStock: Int
+    public var minimumStockLevel: Int
+    public var unitPrice: Double
+    public var supplierName: String?
+    public var supplierContact: String?
+    public var isActive: Bool
+
     // Timestamps
-    var createdAt: Date
-    var updatedAt: Date
-    
+    public var createdAt: Date
+    public var updatedAt: Date
+
     enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -76,7 +96,7 @@ struct InventoryPart: Identifiable, Codable, Hashable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
-    
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -106,13 +126,13 @@ struct InventoryPart: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
-    
+
     // MARK: - Computed Properties
-    
+
     var isLowStock: Bool {
         quantityInStock <= minimumStockLevel
     }
-    
+
     var stockStatus: String {
         if quantityInStock == 0 {
             return "Out of Stock"
@@ -122,7 +142,7 @@ struct InventoryPart: Identifiable, Codable, Hashable {
             return "In Stock"
         }
     }
-    
+
     var formattedPrice: String {
         String(format: "₹%.2f", unitPrice)
     }
@@ -141,7 +161,7 @@ extension InventoryPart {
         supplierName: "AutoParts India",
         supplierContact: "+91 98765 43210"
     )
-    
+
     static let mockPart2 = InventoryPart(
         name: "Brake Pads Set",
         partNumber: "BP-002",
@@ -153,7 +173,7 @@ extension InventoryPart {
         supplierName: "Brake Masters",
         supplierContact: "+91 98765 11111"
     )
-    
+
     static let mockPart3 = InventoryPart(
         name: "Engine Oil 15W-40",
         partNumber: "EO-003",
@@ -165,10 +185,10 @@ extension InventoryPart {
         supplierName: "Castrol Distributor",
         supplierContact: "+91 98765 22222"
     )
-    
+
     static let mockParts: [InventoryPart] = [
         mockPart1,
         mockPart2,
-        mockPart3
+        mockPart3,
     ]
 }

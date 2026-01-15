@@ -63,16 +63,22 @@ struct TripMapView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 statusBadge
             }
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Close") {
+                    dismiss()
+                }
+                .foregroundColor(.white)
+            }
         }
-        .alert("Arrived at Pickup?", isPresented: $showArriveAlert) {
+        .alert("Start Trip?", isPresented: $showArriveAlert) {
             Button("Cancel", role: .cancel) {}
-            Button("Start Delivery") { startDelivery() }
+            Button("Start Trip") { startDelivery() }
         } message: {
             Text("Confirm you've picked up the package and ready to deliver?")
         }
-        .alert("Complete Delivery?", isPresented: $showCompleteAlert) {
+        .alert("End Trip?", isPresented: $showCompleteAlert) {
             Button("Cancel", role: .cancel) {}
-            Button("Complete") { completeTrip() }
+            Button("End Trip") { completeTrip() }
         } message: {
             Text("Confirm delivery to \(trip.endAddress ?? "destination")?")
         }
@@ -254,7 +260,7 @@ struct TripMapView: View {
             // Action Buttons
             if isPickupPhase {
                 Button { showArriveAlert = true } label: {
-                    Label("Arrived at Pickup", systemImage: "checkmark.circle.fill")
+                    Label("Start Trip", systemImage: "play.circle.fill")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -264,11 +270,11 @@ struct TripMapView: View {
                 }
             } else if isDeliveryPhase {
                 Button { showCompleteAlert = true } label: {
-                    Label("Mark as Delivered", systemImage: "flag.checkered")
+                    Label("End Trip", systemImage: "stop.circle.fill")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color.orange)
+                        .background(Color.red)
                         .foregroundColor(.white)
                         .cornerRadius(12)
                 }
