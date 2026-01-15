@@ -44,7 +44,7 @@ final class DriverService {
     }
     
     /// Fetch recent trips for the driver
-    func getRecentTrips(driverId: UUID, limit: Int = 5) async throws -> [Trip] {
+    func getRecentTrips(driverId: UUID, limit: Int = 2) async throws -> [Trip] {
         let trips: [Trip] = try await client
             .from("trips")
             .select()
@@ -55,6 +55,60 @@ final class DriverService {
             .value
         return trips
     }
+    
+    /// Fetch the next scheduled trip for the driver (limit 1)
+    func getNextScheduledTrip(driverId: UUID) async throws -> Trip? {
+        let trips: [Trip] = try await client
+            .from("trips")
+            .select()
+            .eq("driver_id", value: driverId.uuidString)
+            .eq("status", value: TripStatus.scheduled.rawValue)
+            .order("start_time", ascending: true) // Closest start time first
+            .limit(1)
+            .execute()
+            .value
+        return trips.first
+    }
+    
+    /// Fetch the current ongoing trip for the driver (limit 1)
+    func getOngoingTrip(driverId: UUID) async throws -> Trip? {
+        let trips: [Trip] = try await client
+            .from("trips")
+            .select()
+            .eq("driver_id", value: driverId.uuidString)
+            .eq("status", value: TripStatus.ongoing.rawValue)
+            .limit(1)
+            .execute()
+            .value
+        return trips.first
+    }
+    
+    /// Calculate driver statistics from completed trips
+    func getDriverStats(driverId: UUID) async throws -> (totalDistance: Double, totalDuration: TimeInterval, tripCount: Int) {
+        struct TripStat: Decodable {
+            let distance: Double?
+            let start_time: Date?
+            let end_time: Date?
+        }
+        
+        let trips: [TripStat] = try await client
+            .from("trips")
+            .select("distance, start_time, end_time")
+            .eq("driver_id", value: driverId.uuidString)
+            .eq("status", value: TripStatus.completed.rawValue)
+            .execute()
+            .value
+        
+        let totalDistance = trips.compactMap { $0.distance }.reduce(0, +)
+        let totalDuration = trips.reduce(0) { result, trip in
+            guard let start = trip.start_time, let end = trip.end_time else { return result }
+            return result + end.timeIntervalSince(start)
+        }
+        
+        return (totalDistance, totalDuration, trips.count)
+    }
+    
+    /// Fetch the count of completed trips for the driver
     /// Fetch the count of completed trips for the driver
     func getCompletedTripsCount(driverId: UUID) async throws -> Int {
         let count = try await client

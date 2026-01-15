@@ -10,6 +10,7 @@ struct DriverDashboardView: View {
     @StateObject private var viewModel = DriverDashboardViewModel()
     @State private var selectedTab = 0
     @State private var isShowingProfile = false
+    @State private var tripToStart: Trip?
     
     init(user: User) {
         self._localUser = State(initialValue: user)
@@ -55,6 +56,15 @@ struct DriverDashboardView: View {
                     .padding()
             }
         }
+        .fullScreenCover(item: $tripToStart, onDismiss: {
+            Task {
+                await viewModel.loadDashboardData(user: localUser)
+            }
+        }) { trip in
+            NavigationStack {
+                TripMapView(trip: trip)
+            }
+        }
     }
     
     // Extracted dashboard content
@@ -88,6 +98,23 @@ struct DriverDashboardView: View {
                         .tint(.appEmerald)
                         .padding(.top, 100)
                 } else {
+                    // Active Ongoing Trip Card (High Priority)
+                    if let ongoingTrip = viewModel.ongoingTrip {
+                        ActiveTripCard(trip: ongoingTrip) {
+                            tripToStart = ongoingTrip
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                    }
+                    // Scheduled Upcoming Trip Card (if no ongoing trip)
+                    else if let upcomingTrip = viewModel.upcomingTrip {
+                        ScheduledTripCard(trip: upcomingTrip) {
+                            tripToStart = upcomingTrip
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                    }
+                    
                     // Stat Cards
                     HStack(spacing: 16) {
                         DriverStatCard(
@@ -105,7 +132,11 @@ struct DriverDashboardView: View {
                     .padding(.horizontal)
                     
                     // Performance Metrics (Animated Category Chart)
-                    PerformanceMetricsChart(driver: viewModel.driver)
+                    PerformanceMetricsChart(
+                        onTimeRate: viewModel.driver?.onTimeDeliveryRate ?? 0,
+                        avgSpeed: viewModel.avgSpeed,
+                        avgTripDist: viewModel.avgTripDistance
+                    )
                         .padding(.horizontal)
                     
                     // Assigned Vehicle
