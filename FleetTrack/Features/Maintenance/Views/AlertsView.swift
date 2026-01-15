@@ -8,247 +8,234 @@
 import SwiftUI
 
 struct AlertsView: View {
-    @StateObject private var viewModel = AlertsViewModel()
+    @StateObject private var inventoryViewModel = InventoryViewModel()
+    @State private var selectedFilter: AlertFilter = .all
+    @State private var partToEdit: InventoryPart?
+
+    enum AlertFilter: String, CaseIterable {
+        case all = "All"
+        case outOfStock = "Out of Stock"
+        case lowStock = "Low Stock"
+    }
+
+    var filteredParts: [InventoryPart] {
+        switch selectedFilter {
+        case .all:
+            return inventoryViewModel.lowStockParts + inventoryViewModel.outOfStockParts
+        case .outOfStock:
+            return inventoryViewModel.outOfStockParts
+        case .lowStock:
+            return inventoryViewModel.lowStockParts
+        }
+    }
 
     var body: some View {
         ZStack {
             AppTheme.backgroundPrimary
                 .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(spacing: 0) {
                 // Header
-                headerSection
-
-                // Filters
-                filterSection
-
-                // Content
-                contentSection
-            }
-        }
-        .navigationBarHidden(true)
-    }
-
-    // MARK: - Header Section
-
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Alerts")
-                .font(.title)
-                .fontWeight(.bold)
-                .foregroundColor(AppTheme.textPrimary)
-
-            Text("System alerts and notifications")
-                .font(.subheadline)
-                .foregroundColor(AppTheme.textSecondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, AppTheme.spacing.md)
-        .padding(.vertical, AppTheme.spacing.md)
-    }
-
-    // MARK: - Filter Section
-
-    private var filterSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: AppTheme.spacing.sm) {
-                ForEach(AlertsViewModel.AlertFilter.allCases, id: \.self) { filter in
-                    Button(action: {
-                        withAnimation {
-                            viewModel.filter = filter
-                        }
-                    }) {
-                        Text(filter.rawValue)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                viewModel.filter == filter
-                                    ? AppTheme.accentPrimary : AppTheme.backgroundSecondary
-                            )
-                            .foregroundColor(
-                                viewModel.filter == filter ? .black : AppTheme.textPrimary
-                            )
-                            .cornerRadius(20)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .stroke(
-                                        AppTheme.dividerPrimary,
-                                        lineWidth: viewModel.filter == filter ? 0 : 1)
-                            )
-                    }
-                }
-            }
-            .padding(.horizontal, AppTheme.spacing.md)
-            .padding(.bottom, AppTheme.spacing.md)
-        }
-    }
-
-    // MARK: - Content Section
-
-    private var contentSection: some View {
-        Group {
-            if viewModel.isLoading && viewModel.alerts.isEmpty {
-                VStack {
-                    Spacer()
-                    ProgressView()
-                        .tint(AppTheme.accentPrimary)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-            } else if viewModel.filteredAlerts.isEmpty {
-                VStack(spacing: 20) {
-                    Spacer()
-                    Image(systemName: "bell.slash.fill")
-                        .font(.system(size: 64))
-                        .foregroundColor(AppTheme.iconDisabled)
-
-                    Text("No alerts found")
-                        .font(.headline)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Alerts")
+                        .font(.title)
+                        .fontWeight(.bold)
                         .foregroundColor(AppTheme.textPrimary)
 
-                    Text(
-                        viewModel.filter == .all
-                            ? "We'll notify you when there's an update"
-                            : "No \(viewModel.filter.rawValue.lowercased()) alerts at this time"
-                    )
-                    .font(.subheadline)
-                    .foregroundColor(AppTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    Text("Inventory alerts and notifications")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, AppTheme.spacing.md)
+                .padding(.vertical, AppTheme.spacing.sm)
 
-                    Button(action: { Task { await viewModel.loadAlerts() } }) {
-                        Text("Refresh")
-                            .foregroundColor(AppTheme.accentPrimary)
-                            .fontWeight(.semibold)
+                // Filter Picker
+                Picker("Filter", selection: $selectedFilter) {
+                    ForEach(AlertFilter.allCases, id: \.self) { filter in
+                        Text(filter.rawValue).tag(filter)
                     }
-                    Spacer()
                 }
-                .frame(maxWidth: .infinity)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: AppTheme.spacing.sm) {
-                        ForEach(viewModel.filteredAlerts) { alert in
-                            AlertRow(
-                                alert: alert,
-                                onMarkRead: {
-                                    Task { await viewModel.markAsRead(alertId: alert.id) }
-                                },
-                                onDelete: {
-                                    Task { await viewModel.deleteAlert(alertId: alert.id) }
-                                })
+                .pickerStyle(.segmented)
+                .padding(.horizontal, AppTheme.spacing.md)
+                .padding(.bottom, AppTheme.spacing.sm)
+
+                // Alerts List
+                if inventoryViewModel.isLoading {
+                    VStack {
+                        Spacer()
+                        ProgressView()
+                            .tint(AppTheme.accentPrimary)
+                        Text("Checking inventory...")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                            .padding(.top, 8)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                } else if filteredParts.isEmpty {
+                    emptyStateView
+                } else {
+                    ScrollView {
+                        VStack(spacing: AppTheme.spacing.sm) {
+                            ForEach(filteredParts) { part in
+                                InventoryAlertCard(
+                                    part: part,
+                                    onTap: {
+                                        partToEdit = part
+                                    }
+                                )
+                            }
                         }
+                        .padding(AppTheme.spacing.md)
+                        .padding(.bottom, 100)
                     }
-                    .padding(.horizontal, AppTheme.spacing.md)
-                    .padding(.bottom, 100)  // Space for floating tab bar
-                }
-                .refreshable {
-                    await viewModel.loadAlerts()
+                    .refreshable {
+                        await inventoryViewModel.loadInventory()
+                    }
                 }
             }
         }
+        .sheet(item: $partToEdit) { part in
+            AddEditPartView(partToEdit: part)
+                .environmentObject(inventoryViewModel)
+        }
+    }
+
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(AppTheme.statusActiveText)
+
+            Text("All Good!")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(AppTheme.textPrimary)
+
+            Text("No inventory alerts at this time")
+                .font(.subheadline)
+                .foregroundColor(AppTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
-// MARK: - Alert Row Component
+// MARK: - Inventory Alert Card
 
-struct AlertRow: View {
-    let alert: MaintenanceAlert
-    let onMarkRead: () -> Void
-    let onDelete: () -> Void
+struct InventoryAlertCard: View {
+    let part: InventoryPart
+    let onTap: () -> Void
+
+    var alertType: String {
+        if part.quantityInStock == 0 {
+            return "OUT OF STOCK"
+        } else {
+            return "LOW STOCK"
+        }
+    }
+
+    var alertColor: Color {
+        part.quantityInStock == 0 ? AppTheme.statusError : AppTheme.statusWarning
+    }
+
+    var alertIcon: String {
+        part.quantityInStock == 0 ? "xmark.circle.fill" : "exclamationmark.triangle.fill"
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                // Icon/Status Indicator
-                ZStack {
-                    Circle()
-                        .fill(alertColor.opacity(0.15))
-                        .frame(width: 40, height: 40)
-
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 12) {
+                // Alert Type Badge
+                HStack {
                     Image(systemName: alertIcon)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 14))
                         .foregroundColor(alertColor)
-                }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(alert.title)
-                            .font(.headline)
-                            .foregroundColor(AppTheme.textPrimary)
+                    Text(alertType)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(alertColor)
 
-                        Spacer()
+                    Spacer()
 
-                        if !alert.isRead {
-                            Circle()
-                                .fill(AppTheme.accentPrimary)
-                                .frame(width: 8, height: 8)
-                        }
-                    }
-
-                    Text(alert.message)
-                        .font(.subheadline)
+                    Text(part.category.rawValue)
+                        .font(.caption2)
                         .foregroundColor(AppTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppTheme.backgroundElevated)
+                        .cornerRadius(6)
                 }
-            }
 
-            HStack {
-                Text(formatDate(alert.date))
-                    .font(.caption2)
-                    .foregroundColor(AppTheme.textTertiary)
+                // Part Info
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(part.name)
+                        .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
 
-                Spacer()
+                    Text(part.partNumber)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
 
-                HStack(spacing: 16) {
-                    if !alert.isRead {
-                        Button(action: onMarkRead) {
-                            Text("Mark Read")
+                    HStack(spacing: 16) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "shippingbox.fill")
                                 .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundColor(AppTheme.accentPrimary)
+                            Text("Current: \(part.quantityInStock)")
+                                .font(.caption)
                         }
-                    }
+                        .foregroundColor(alertColor)
 
-                    Button(action: onDelete) {
-                        Image(systemName: "trash")
-                            .font(.caption)
-                            .foregroundColor(AppTheme.statusError)
+                        HStack(spacing: 4) {
+                            Image(systemName: "chart.line.downtrend.xyaxis")
+                                .font(.caption)
+                            Text("Min: \(part.minimumStockLevel)")
+                                .font(.caption)
+                        }
+                        .foregroundColor(AppTheme.textSecondary)
                     }
                 }
+
+                // Supplier Info (if available)
+                if let supplier = part.supplierName {
+                    Divider()
+                        .background(AppTheme.dividerPrimary)
+
+                    HStack {
+                        Image(systemName: "building.2.fill")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.iconDefault)
+
+                        Text(supplier)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                }
+
+                // Action hint
+                HStack {
+                    Text("Tap to update stock")
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.textTertiary)
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(AppTheme.iconDefault)
+                }
             }
+            .padding(AppTheme.spacing.md)
+            .background(AppTheme.backgroundSecondary)
+            .overlay(
+                RoundedRectangle(cornerRadius: AppTheme.cornerRadius.medium)
+                    .stroke(alertColor.opacity(0.3), lineWidth: 1)
+            )
+            .cornerRadius(AppTheme.cornerRadius.medium)
         }
-        .padding(AppTheme.spacing.md)
-        .background(AppTheme.backgroundSecondary)
-        .cornerRadius(AppTheme.cornerRadius.medium)
-        .overlay(
-            RoundedRectangle(cornerRadius: AppTheme.cornerRadius.medium)
-                .stroke(alert.isRead ? Color.clear : alertColor.opacity(0.2), lineWidth: 1)
-        )
-        .opacity(alert.isRead ? 0.7 : 1.0)
-    }
-
-    private var alertIcon: String {
-        switch alert.type {
-        case .emergency: return "exclamationmark.triangle.fill"
-        case .inventory: return "shippingbox.fill"
-        case .system: return "bell.fill"
-        }
-    }
-
-    private var alertColor: Color {
-        switch alert.type {
-        case .emergency: return AppTheme.statusError
-        case .inventory: return AppTheme.statusWarning
-        case .system: return AppTheme.accentPrimary
-        }
-    }
-
-    private func formatDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: date, relativeTo: Date())
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

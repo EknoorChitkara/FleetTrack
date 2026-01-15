@@ -22,6 +22,7 @@ class AlertsViewModel: ObservableObject {
         case unread = "Unread"
         case system = "System"
         case emergency = "Emergency"
+        case inventory = "Inventory"
     }
 
     // MARK: - Initialization
@@ -85,6 +86,8 @@ class AlertsViewModel: ObservableObject {
             return alerts.filter { $0.type == .system }
         case .emergency:
             return alerts.filter { $0.type == .emergency }
+        case .inventory:
+            return alerts.filter { $0.type == .inventory }
         }
     }
 }

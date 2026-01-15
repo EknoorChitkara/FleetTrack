@@ -479,10 +479,57 @@ public class MaintenanceService {
         return history
     }
 
+    // MARK: - Inventory Operations
+
+    /// Fetch all inventory parts
+    public func fetchInventoryParts() async throws -> [InventoryPart] {
+        let parts: [InventoryPart] =
+            try await client
+            .from("parts")
+            .select()
+            .execute()
+            .value
+
+        print("✅ Fetched \(parts.count) inventory parts from Supabase")
+        return parts
+    }
+
+    /// Add a new inventory part
+    public func addInventoryPart(_ part: InventoryPart) async throws {
+        try await client
+            .from("parts")
+            .insert(part)
+            .execute()
+
+        print("✅ Inventory part added: \(part.name)")
+    }
+
+    /// Update an inventory part
+    public func updateInventoryPart(_ part: InventoryPart) async throws {
+        try await client
+            .from("parts")
+            .update(part)
+            .eq("id", value: part.id)
+            .execute()
+
+        print("✅ Inventory part updated: \(part.name)")
+    }
+
+    /// Delete an inventory part
+    public func deleteInventoryPart(partId: UUID) async throws {
+        try await client
+            .from("parts")
+            .delete()
+            .eq("id", value: partId)
+            .execute()
+
+        print("✅ Inventory part \(partId) deleted")
+    }
+
     // MARK: - Alerts Operations
 
     /// Fetch all maintenance alerts
-    func fetchAlerts() async throws -> [MaintenanceAlert] {
+    public func fetchAlerts() async throws -> [MaintenanceAlert] {
         let alerts: [MaintenanceAlert] =
             try await client
             .from("maintenance_alerts")
@@ -495,7 +542,7 @@ public class MaintenanceService {
     }
 
     /// Mark an alert as read
-    func markAlertAsRead(alertId: UUID) async throws {
+    public func markAlertAsRead(alertId: UUID) async throws {
         try await client
             .from("maintenance_alerts")
             .update(["is_read": true])
@@ -506,7 +553,7 @@ public class MaintenanceService {
     }
 
     /// Delete an alert
-    func deleteAlert(alertId: UUID) async throws {
+    public func deleteAlert(alertId: UUID) async throws {
         try await client
             .from("maintenance_alerts")
             .delete()
