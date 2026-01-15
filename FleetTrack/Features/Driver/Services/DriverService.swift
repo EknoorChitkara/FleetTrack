@@ -55,6 +55,37 @@ final class DriverService {
             .value
         return trips
     }
+    /// Fetch the count of completed trips for the driver
+    func getCompletedTripsCount(driverId: UUID) async throws -> Int {
+        let count = try await client
+            .from("trips")
+            .select("id", head: true, count: .exact)
+            .eq("driver_id", value: driverId.uuidString)
+            .eq("status", value: TripStatus.completed.rawValue)
+            .execute()
+            .count
+        
+        return count ?? 0
+    }
+    
+    /// Fetch the total distance of completed trips for the driver
+    func getCompletedTripsTotalDistance(driverId: UUID) async throws -> Double {
+        struct TripDistance: Decodable {
+            let distance: Double?
+        }
+        
+        let trips: [TripDistance] = try await client
+            .from("trips")
+            .select("distance")
+            .eq("driver_id", value: driverId.uuidString)
+            .eq("status", value: TripStatus.completed.rawValue)
+            .execute()
+            .value
+        
+        let totalDistance = trips.compactMap { $0.distance }.reduce(0, +)
+        return totalDistance
+    }
+    
     /// Update driver profile
     func updateDriverProfile<T: Encodable>(driverId: UUID, updates: T) async throws -> Driver {
         let updated: Driver = try await client

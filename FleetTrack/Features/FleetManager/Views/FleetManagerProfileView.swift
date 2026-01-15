@@ -7,6 +7,7 @@ import SwiftUI
 
 struct FleetManagerProfileView: View {
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var fleetVM: FleetViewModel
     @ObservedObject private var sessionManager = SessionManager.shared
     let user: User
     @State private var showEditProfile = false
@@ -76,10 +77,10 @@ struct FleetManagerProfileView: View {
                         VStack(spacing: 24) {
                             // Account Section
                             ProfileSection(title: "Account") {
-                                NavigationLink(destination: FleetManagerManageDriversView()) {
+                                NavigationLink(destination: FleetManagerManageDriversView().environmentObject(fleetVM)) {
                                     SettingRow(icon: "person.2.fill", title: "Manage Drivers", color: .blue)
                                 }
-                                NavigationLink(destination: AllTripsView()) {
+                                NavigationLink(destination: AllTripsView().environmentObject(fleetVM)) {
                                     SettingRow(icon: "map.fill", title: "Trip History", color: .purple)
                                 }
                             }

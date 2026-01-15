@@ -53,7 +53,11 @@ struct AlertsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: AppTheme.spacing.sm) {
                 ForEach(AlertsViewModel.AlertFilter.allCases, id: \.self) { filter in
-                    Button(action: { viewModel.filter = filter }) {
+                    Button(action: {
+                        withAnimation {
+                            viewModel.filter = filter
+                        }
+                    }) {
                         Text(filter.rawValue)
                             .font(.subheadline)
                             .fontWeight(.medium)
@@ -67,6 +71,12 @@ struct AlertsView: View {
                                 viewModel.filter == filter ? .black : AppTheme.textPrimary
                             )
                             .cornerRadius(20)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        AppTheme.dividerPrimary,
+                                        lineWidth: viewModel.filter == filter ? 0 : 1)
+                            )
                     }
                 }
             }
@@ -79,7 +89,7 @@ struct AlertsView: View {
 
     private var contentSection: some View {
         Group {
-            if viewModel.isLoading {
+            if viewModel.isLoading && viewModel.alerts.isEmpty {
                 VStack {
                     Spacer()
                     ProgressView()
@@ -98,9 +108,15 @@ struct AlertsView: View {
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
 
-                    Text("We'll notify you when there's an update")
-                        .font(.subheadline)
-                        .foregroundColor(AppTheme.textSecondary)
+                    Text(
+                        viewModel.filter == .all
+                            ? "We'll notify you when there's an update"
+                            : "No \(viewModel.filter.rawValue.lowercased()) alerts at this time"
+                    )
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
 
                     Button(action: { Task { await viewModel.loadAlerts() } }) {
                         Text("Refresh")
@@ -111,31 +127,22 @@ struct AlertsView: View {
                 }
                 .frame(maxWidth: .infinity)
             } else {
-                List {
-                    ForEach(viewModel.filteredAlerts) { alert in
-                        AlertRow(alert: alert)
-                            .listRowInsets(EdgeInsets())
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .swipeActions(edge: .trailing) {
-                                Button(role: .destructive) {
+                ScrollView {
+                    LazyVStack(spacing: AppTheme.spacing.sm) {
+                        ForEach(viewModel.filteredAlerts) { alert in
+                            AlertRow(
+                                alert: alert,
+                                onMarkRead: {
+                                    Task { await viewModel.markAsRead(alertId: alert.id) }
+                                },
+                                onDelete: {
                                     Task { await viewModel.deleteAlert(alertId: alert.id) }
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-
-                                if !alert.isRead {
-                                    Button {
-                                        Task { await viewModel.markAsRead(alertId: alert.id) }
-                                    } label: {
-                                        Label("Mark Read", systemImage: "envelope.open")
-                                    }
-                                    .tint(AppTheme.accentPrimary)
-                                }
-                            }
+                                })
+                        }
                     }
+                    .padding(.horizontal, AppTheme.spacing.md)
+                    .padding(.bottom, 100)  // Space for floating tab bar
                 }
-                .listStyle(.plain)
                 .refreshable {
                     await viewModel.loadAlerts()
                 }
@@ -148,61 +155,94 @@ struct AlertsView: View {
 
 struct AlertRow: View {
     let alert: MaintenanceAlert
+    let onMarkRead: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Icon
-            VStack {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                // Icon/Status Indicator
                 ZStack {
                     Circle()
-                        .fill(
-                            alert.type == .emergency
-                                ? AppTheme.statusErrorBackground : AppTheme.statusActiveBackground
-                        )
-                        .frame(width: 44, height: 44)
+                        .fill(alertColor.opacity(0.15))
+                        .frame(width: 40, height: 40)
 
-                    Image(
-                        systemName: alert.type == .emergency
-                            ? "exclamationmark.triangle.fill" : "bell.fill"
-                    )
-                    .foregroundColor(
-                        alert.type == .emergency ? AppTheme.statusError : AppTheme.accentPrimary)
+                    Image(systemName: alertIcon)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(alertColor)
                 }
 
-                if !alert.isRead {
-                    Circle()
-                        .fill(AppTheme.accentPrimary)
-                        .frame(width: 8, height: 8)
-                        .padding(.top, 4)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(alert.title)
+                            .font(.headline)
+                            .foregroundColor(AppTheme.textPrimary)
+
+                        Spacer()
+
+                        if !alert.isRead {
+                            Circle()
+                                .fill(AppTheme.accentPrimary)
+                                .frame(width: 8, height: 8)
+                        }
+                    }
+
+                    Text(alert.message)
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
-            // Content
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(alert.title)
-                        .font(.headline)
-                        .foregroundColor(AppTheme.textPrimary)
+            HStack {
+                Text(formatDate(alert.date))
+                    .font(.caption2)
+                    .foregroundColor(AppTheme.textTertiary)
 
-                    Spacer()
+                Spacer()
 
-                    Text(formatDate(alert.date))
-                        .font(.caption)
-                        .foregroundColor(AppTheme.textTertiary)
+                HStack(spacing: 16) {
+                    if !alert.isRead {
+                        Button(action: onMarkRead) {
+                            Text("Mark Read")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(AppTheme.accentPrimary)
+                        }
+                    }
+
+                    Button(action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.statusError)
+                    }
                 }
-
-                Text(alert.message)
-                    .font(.subheadline)
-                    .foregroundColor(AppTheme.textSecondary)
-                    .lineLimit(2)
             }
         }
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
-        .padding(.horizontal, AppTheme.spacing.md)
-        .padding(.vertical, 6)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.cornerRadius.medium)
+                .stroke(alert.isRead ? Color.clear : alertColor.opacity(0.2), lineWidth: 1)
+        )
         .opacity(alert.isRead ? 0.7 : 1.0)
+    }
+
+    private var alertIcon: String {
+        switch alert.type {
+        case .emergency: return "exclamationmark.triangle.fill"
+        case .inventory: return "shippingbox.fill"
+        case .system: return "bell.fill"
+        }
+    }
+
+    private var alertColor: Color {
+        switch alert.type {
+        case .emergency: return AppTheme.statusError
+        case .inventory: return AppTheme.statusWarning
+        case .system: return AppTheme.accentPrimary
+        }
     }
 
     private func formatDate(_ date: Date) -> String {

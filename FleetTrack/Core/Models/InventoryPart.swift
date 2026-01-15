@@ -7,19 +7,39 @@
 
 import Foundation
 
-// MARK: - Part Category Enum
+// MARK: - Part Category
 
-enum PartCategory: String, Codable, CaseIterable {
-    case engine = "Engine"
-    case transmission = "Transmission"
-    case brakes = "Brakes"
-    case suspension = "Suspension"
-    case electrical = "Electrical"
-    case bodyWork = "Body Work"
-    case tires = "Tires"
-    case fluids = "Fluids"
-    case filters = "Filters"
-    case other = "Other"
+struct PartCategory: Codable, Hashable, Identifiable {
+    let id: String
+    let rawValue: String
+    
+    init(id: String, rawValue: String) {
+        self.id = id
+        self.rawValue = rawValue
+    }
+    
+    // Predefined categories
+    static let engine = PartCategory(id: "engine", rawValue: "Engine")
+    static let transmission = PartCategory(id: "transmission", rawValue: "Transmission")
+    static let brakes = PartCategory(id: "brakes", rawValue: "Brakes")
+    static let suspension = PartCategory(id: "suspension", rawValue: "Suspension")
+    static let electrical = PartCategory(id: "electrical", rawValue: "Electrical")
+    static let bodyWork = PartCategory(id: "bodyWork", rawValue: "Body Work")
+    static let tires = PartCategory(id: "tires", rawValue: "Tires")
+    static let fluids = PartCategory(id: "fluids", rawValue: "Fluids")
+    static let filters = PartCategory(id: "filters", rawValue: "Filters")
+    static let other = PartCategory(id: "other", rawValue: "Other")
+    
+    static let predefinedCategories: [PartCategory] = [
+        .engine, .transmission, .brakes, .suspension, .electrical,
+        .bodyWork, .tires, .fluids, .filters, .other
+    ]
+    
+    // Create custom category
+    static func custom(_ name: String) -> PartCategory {
+        let id = name.lowercased().replacingOccurrences(of: " ", with: "_")
+        return PartCategory(id: id, rawValue: name)
+    }
 }
 
 // MARK: - InventoryPart Model (Matches DB `parts` table)

@@ -8,6 +8,7 @@ import Foundation
 public enum AlertType: String, Codable, CaseIterable {
     case system = "System"
     case emergency = "Emergency"
+    case inventory = "Inventory"
 }
 
 public struct MaintenanceAlert: Identifiable, Codable, Hashable {

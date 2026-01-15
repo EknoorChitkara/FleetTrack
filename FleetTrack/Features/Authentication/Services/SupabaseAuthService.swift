@@ -104,7 +104,7 @@ class SupabaseAuthService: AuthServiceProtocol {
     
     private func fetchUser(id: UUID) async throws -> User {
         // Fetch user profile from 'public.users' table
-        let user: User = try await client.database
+        let user: User = try await client
             .from("users")
             .select()
             .eq("id", value: id)

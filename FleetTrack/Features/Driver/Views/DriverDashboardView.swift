@@ -40,6 +40,13 @@ struct DriverDashboardView: View {
         .task {
             await viewModel.loadDashboardData(user: localUser)
         }
+        .onChange(of: selectedTab) { newValue in
+            if newValue == 0 {
+                Task {
+                    await viewModel.loadDashboardData(user: localUser)
+                }
+            }
+        }
         .sheet(isPresented: $isShowingProfile) {
             if let driver = viewModel.driver {
                 ProfileView(user: $localUser, driver: .constant(driver))
@@ -57,13 +64,9 @@ struct DriverDashboardView: View {
                 // Header
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Driver Dashboard")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                        Text("Welcome, \(localUser.name.components(separatedBy: " ").first ?? localUser.name)!")
+                            .font(.system(size: 25, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
-                        
-                        Text("Welcome back, \(localUser.name.components(separatedBy: " ").first ?? localUser.name)!")
-                            .font(.subheadline)
-                            .foregroundColor(.appSecondaryText)
                     }
                     
                     Spacer()
@@ -89,50 +92,21 @@ struct DriverDashboardView: View {
                     HStack(spacing: 16) {
                         DriverStatCard(
                             title: "Trips Completed",
-                            value: "\(viewModel.driver?.totalTrips ?? 0)",
+                            value: "\(viewModel.completedTripsCount)",
                             unit: ""
                         )
                         
                         DriverStatCard(
                             title: "Distance",
-                            value: "\(Int(viewModel.driver?.totalDistanceDriven ?? 0))",
+                            value: "\(Int(viewModel.totalDistance))",
                             unit: "km"
                         )
                     }
                     .padding(.horizontal)
                     
-                    // Performance Metrics
-                    VStack(alignment: .leading, spacing: 20) {
-                        Text("Performance Metrics")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        
-                        MetricRow(
-                            title: "On-Time Delivery",
-                            value: "\(Int(viewModel.driver?.onTimeDeliveryRate ?? 0))%",
-                            progress: (viewModel.driver?.onTimeDeliveryRate ?? 0) / 100.0
-                        )
-                        
-                        MetricRow(
-                            title: "Safety Score",
-                            value: "\(viewModel.driver?.formattedRating ?? "0.0")/5.0",
-                            progress: (viewModel.driver?.rating ?? 0) / 5.0
-                        )
-                        
-                        MetricRow(
-                            title: "Fuel Efficiency",
-                            value: "\(String(format: "%.1f", viewModel.driver?.fuelEfficiency ?? 0.0)) L/100km",
-                            progress: (viewModel.driver?.fuelEfficiency ?? 0.0) > 0 ? 0.7 : 0.0
-                        )
-                    }
-                    .padding()
-                    .background(Color.appCardBackground)
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.05), lineWidth: 1)
-                    )
-                    .padding(.horizontal)
+                    // Performance Metrics (Animated Category Chart)
+                    PerformanceMetricsChart(driver: viewModel.driver)
+                        .padding(.horizontal)
                     
                     // Assigned Vehicle
                     AssignedVehicleCard(vehicle: viewModel.assignedVehicle)
@@ -168,6 +142,7 @@ struct DriverDashboardView: View {
                             .stroke(Color.white.opacity(0.05), lineWidth: 1)
                     )
                     .padding(.bottom, 100) // Space for TabBar
+                    .padding(.horizontal)
                 }
             }
         }
