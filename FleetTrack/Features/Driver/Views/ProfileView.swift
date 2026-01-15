@@ -2,7 +2,7 @@
 //  ProfileView.swift
 //  FleetTrack
 //
-//  Created for Driver
+//  Created for Driver App
 //
 
 import SwiftUI
@@ -10,10 +10,11 @@ import SwiftUI
 struct ProfileView: View {
     @Binding var user: User
     @Binding var driver: Driver
-    @State private var showEditProfile = false
-    @State private var isLoggingOut = false
     @Environment(\.dismiss) var dismiss
     @ObservedObject private var sessionManager = SessionManager.shared
+    
+    @State private var isShowingEditProfile = false
+    @State private var isLoggingOut = false
     
     var body: some View {
         NavigationStack {
@@ -60,18 +61,10 @@ struct ProfileView: View {
                                 Text(user.email)
                                     .font(.subheadline)
                                     .foregroundColor(.appSecondaryText)
-                                
-                                // Clean layout for driver info
-                                if let phone = driver.phoneNumber ?? user.phoneNumber {
-                                    Text(phone)
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                        .padding(.top, 2)
-                                }
                             }
                             
                             Button(action: {
-                                showEditProfile = true
+                                isShowingEditProfile = true
                             }) {
                                 Text("Edit Profile")
                                     .font(.system(size: 14, weight: .semibold))
@@ -88,26 +81,24 @@ struct ProfileView: View {
 
                             
                             // Security Section
-                            DriverProfileSection(title: "Security & Privacy") {
-                                NavigationLink(destination: DriverChangePasswordView()) {
-                                    DriverSettingRow(icon: "lock.fill", title: "Change Password", color: .orange)
+                            ProfileSection(title: "Security & Privacy") {
+                                NavigationLink(destination: FleetManagerChangePasswordView()) {
+                                    SettingRow(icon: "lock.fill", title: "Change Password", color: .orange)
                                 }
-                                NavigationLink(destination: DriverPrivacyView()) {
-                                    DriverSettingRow(icon: "shield.fill", title: "Privacy Policy", color: .green)
+                                NavigationLink(destination: FleetManagerPrivacyView()) {
+                                    SettingRow(icon: "shield.fill", title: "Privacy Policy", color: .green)
                                 }
                             }
-
                             
                             // Support Section
-                            DriverProfileSection(title: "Support") {
-                                NavigationLink(destination: DriverHelpSupportView()) {
-                                    DriverSettingRow(icon: "questionmark.circle.fill", title: "Help & Support", color: .blue)
+                            ProfileSection(title: "Support") {
+                                NavigationLink(destination: FleetManagerHelpSupportView()) {
+                                    SettingRow(icon: "questionmark.circle.fill", title: "Help & Support", color: .blue)
                                 }
-                                NavigationLink(destination: DriverAboutView()) {
-                                    DriverSettingRow(icon: "info.circle.fill", title: "About FleetTrack", color: .gray)
+                                NavigationLink(destination: FleetManagerAboutView()) {
+                                    SettingRow(icon: "info.circle.fill", title: "About FleetTrack", color: .gray)
                                 }
                             }
-
                         }
                         .padding(.horizontal)
                         
@@ -144,68 +135,11 @@ struct ProfileView: View {
                 }
             }
             .navigationBarHidden(true)
-            .sheet(isPresented: $showEditProfile) {
-                EditProfileView(user: $user, driver: $driver, isPresented: $showEditProfile)
+            .sheet(isPresented: $isShowingEditProfile) {
+                EditProfileView(user: $user, driver: $driver, isPresented: $isShowingEditProfile)
+                    .preferredColorScheme(.dark)
             }
         }
-    }
-}
-
-// MARK: - Subviews
-
-// Renamed to avoid redeclaration conflict with FleetManager version
-struct DriverProfileSection<Content: View>: View {
-    let title: String
-    let content: Content
-    
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding(.leading, 8)
-            
-            VStack(spacing: 0) {
-                content
-            }
-            .background(Color.appCardBackground)
-            .cornerRadius(12)
-        }
-    }
-}
-
-
-// Renamed to avoid redeclaration conflict with FleetManager version
-struct DriverSettingRow: View {
-    let icon: String
-    let title: String
-    let color: Color
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(color)
-                .frame(width: 30)
-            
-            Text(title)
-                .font(.body)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14))
-                .foregroundColor(.gray)
-        }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
     }
 }
 
