@@ -60,10 +60,11 @@ struct FleetTrackApp: App {
             print("❌ Deep link contains error")
             
             if urlString.contains("otp_expired") || urlString.contains("invalid") {
-                appState.errorMessage = "This link has expired. Please request a new invitation."
+                // If it's expired immediately, it was likely scanned by the email provider
+                appState.errorMessage = "This link may have already been used or has expired. Please try logging in—your account might already be active!"
                 appState.showError = true
             } else if urlString.contains("access_denied") {
-                appState.errorMessage = "Access denied. Please contact your administrator."
+                appState.errorMessage = "Access denied. If you just clicked the link, your email provider might have pre-checked it. Try logging in!"
                 appState.showError = true
             } else {
                 appState.errorMessage = "An error occurred. Please try again."
@@ -123,9 +124,19 @@ struct FleetTrackApp: App {
                     }
                 } catch {
                     print("❌ Failed to establish session from invite link: \(error)")
-                    await MainActor.run {
-                        appState.errorMessage = "Failed to process invite link. Please try again."
-                        appState.showError = true
+                    
+                    let errorDescription = error.localizedDescription
+                    if errorDescription.contains("bad_code_verifier") {
+                        print("ℹ️  Ignoring bad_code_verifier error from invite/signup. The email is confirmed, continuing to Set Password.")
+                        // The user is confirmed, so we can still flow to set password
+                        await MainActor.run {
+                            appState.showSetPassword = true
+                        }
+                    } else {
+                        await MainActor.run {
+                            appState.errorMessage = "Failed to process invite link. Please try again."
+                            appState.showError = true
+                        }
                     }
                 }
             }
@@ -174,9 +185,23 @@ struct FleetTrackApp: App {
                     print("✅ Auth callback processed")
                 } catch {
                     print("❌ Auth callback failed: \(error)")
+                    
+                    let errorDescription = error.localizedDescription
+                    if errorDescription.contains("bad_code_verifier") {
+                        print("ℹ️  Ignoring bad_code_verifier error. The email is confirmed, just no session established.")
+                        // This usually happens for drivers verifying their email
+                        await MainActor.run {
+                            appState.errorMessage = "Email verified successfully! You can now log in using your temporary password."
+                            appState.showError = true // Re-using error alert as a common message box
+                        }
+                    } else {
+                        await MainActor.run {
+                            appState.errorMessage = "Authentication failed: \(error.localizedDescription)"
+                            appState.showError = true
+                        }
+                    }
                 }
             }
-            
         } else {
             print("❓ Unknown deep link type: \(urlString)")
         }
