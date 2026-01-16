@@ -26,6 +26,9 @@ struct TripMapView: View {
     @State private var routeDistance: Double?
     @State private var isNavigating = false
     
+    // Geofencing Manager
+    @StateObject private var routeMonitor = RouteMonitoringManager.shared
+    
     // Trip phases
     var isCompleted: Bool { trip.status == .completed }
     var isPickupPhase: Bool { trip.status == .scheduled }
@@ -37,7 +40,8 @@ struct TripMapView: View {
             UnifiedTripMap(
                 trip: trip,
                 provider: locationProvider,
-                routePolyline: routePolyline
+                routePolyline: routePolyline,
+                isOffRoute: routeMonitor.isOffRoute
             )
             .edgesIgnoringSafeArea(.all)
             
@@ -255,6 +259,20 @@ struct TripMapView: View {
                 .cornerRadius(10)
             }
             
+            // Route Deviation Warning
+            if routeMonitor.isOffRoute {
+                 HStack {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.white)
+                    Text("Off Route Alert!").fontWeight(.bold).foregroundColor(.white)
+                    Spacer()
+                    Text("\(Int(routeMonitor.currentDistanceFromRoute))m deviation").foregroundColor(.white)
+                }
+                .padding()
+                .background(Color.red)
+                .cornerRadius(10)
+                .padding(.horizontal)
+            }
+            
             // Destination Info
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -332,14 +350,49 @@ struct TripMapView: View {
     
     private func startDelivery() {
         Task {
+            // 1. Update Trip Status
             try? await supabase.from("trips")
                 .update(["status": "In Progress", "start_time": ISO8601DateFormatter().string(from: Date())])
                 .eq("id", value: trip.id).execute()
-            await MainActor.run { dismiss() }
+            
+            // 2. Start Geofencing
+            if let startLat = trip.startLat, let startLong = trip.startLong,
+               let endLat = trip.endLat, let endLong = trip.endLong {
+                
+                let start = CLLocationCoordinate2D(latitude: startLat, longitude: startLong)
+                let end = CLLocationCoordinate2D(latitude: endLat, longitude: endLong)
+                
+                do {
+                    print("📍 Fetching route for geofencing...")
+                    let mkRoute = try await RouteService.shared.fetchRoute(from: start, to: end)
+                    
+                    let geofenceRoute = try RouteService.shared.createGeofenceRoute(
+                        from: mkRoute,
+                        routeId: trip.id,
+                        start: start,
+                        end: end,
+                        corridorRadius: 100 // 100 meter corridor
+                    )
+                    
+                    await MainActor.run {
+                        RouteMonitoringManager.shared.startMonitoring(route: geofenceRoute)
+                        dismiss()
+                    }
+                    
+                } catch {
+                    print("❌ Failed to start route monitoring: \(error)")
+                     await MainActor.run { dismiss() }
+                }
+            } else {
+                 await MainActor.run { dismiss() }
+            }
         }
     }
     
     private func completeTrip() {
+        // Stop Geofencing
+        RouteMonitoringManager.shared.stopMonitoring()
+        
         Task {
             try? await supabase.from("trips")
                 .update(["status": "Completed", "end_time": ISO8601DateFormatter().string(from: Date())])
