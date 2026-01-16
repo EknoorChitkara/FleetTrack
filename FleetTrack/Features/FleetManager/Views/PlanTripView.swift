@@ -275,9 +275,6 @@ struct PlanTripView: View {
                     .background(.ultraThinMaterial)
                     .cornerRadius(12)
                     
-                    // Driver Selector
-                    driverSelector
-                    
                     // Vehicle Selector
                     vehicleSelector
                     
@@ -371,21 +368,40 @@ struct PlanTripView: View {
         Menu {
             Button("Select Vehicle") {
                 viewModel.vehicleId = nil
+                viewModel.driverId = nil
             }
             ForEach(availableVehicles) { vehicle in
                 Button(action: {
                     viewModel.vehicleId = vehicle.id
-                    // Auto-assign driver if vehicle has one
+                    // Enforce driver assignment from vehicle
                     if let driverId = vehicle.assignedDriverId {
                         viewModel.driverId = driverId
+                    } else {
+                        viewModel.driverId = nil // Should not happen if filtered correctly
                     }
                 }) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(vehicle.manufacturer) \(vehicle.model)")
-                            .font(.system(size: 15, weight: .medium))
-                        Text(vehicle.registrationNumber)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(vehicle.manufacturer) \(vehicle.model)")
+                                .font(.system(size: 15, weight: .medium))
+                            Text(vehicle.registrationNumber)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        // Show assigned driver name
+                        if let driverId = vehicle.assignedDriverId,
+                           let driver = fleetVM.drivers.first(where: { $0.id == driverId }) {
+                            Text("Driver: \(driver.displayName)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("No Driver")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
                     }
                 }
             }
@@ -397,24 +413,24 @@ struct PlanTripView: View {
                 if let vehicleId = viewModel.vehicleId,
                    let vehicle = fleetVM.vehicles.first(where: { $0.id == vehicleId }) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(vehicle.registrationNumber)
+                        Text("\(vehicle.manufacturer) \(vehicle.model) (\(vehicle.registrationNumber))")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.white)
                         
-                        HStack(spacing: 4) {
-                            Text("\(vehicle.manufacturer) • \(vehicle.model)")
-                                .font(.system(size: 12))
-                                .foregroundColor(.appSecondaryText)
-                            
-                            Spacer()
-                            
+                        // Show assigned driver below vehicle
+                        if let driverId = viewModel.driverId,
+                           let driver = fleetVM.drivers.first(where: { $0.id == driverId }) {
                             HStack(spacing: 4) {
-                                Image(systemName: "fuelpump.fill")
+                                Image(systemName: "person.fill")
                                     .font(.system(size: 10))
-                                Text(vehicle.fuelType.rawValue)
-                                    .font(.system(size: 11))
+                                Text("Driver: \(driver.displayName)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.appEmerald)
                             }
-                            .foregroundColor(.green)
+                        } else {
+                            Text("No Driver Assigned")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
                         }
                     }
                 } else {
@@ -438,8 +454,8 @@ struct PlanTripView: View {
     // Filter vehicles based on availability and proximity to pickup
     private var availableVehicles: [FMVehicle] {
         fleetVM.vehicles.filter { vehicle in
-            // Only show active vehicles
-            vehicle.status == .active
+            // Only show active vehicles that have an assigned driver
+            vehicle.status == .active && vehicle.assignedDriverId != nil
         }
     }
     
