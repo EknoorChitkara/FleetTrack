@@ -77,7 +77,10 @@ struct AllTripsView: View {
                     ScrollView {
                         VStack(spacing: 16) {
                             ForEach(displayedTrips.sorted(by: { ($0.startTime ?? Date.distantPast) > ($1.startTime ?? Date.distantPast) })) { trip in
-                                TripRow(trip: trip)
+                                NavigationLink(destination: FleetManagerTripMapView(trip: trip)) {
+                                    TripRow(trip: trip)
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                         .padding(.horizontal)

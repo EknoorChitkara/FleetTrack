@@ -17,13 +17,17 @@ import Supabase
 struct TripMapView: View {
     let trip: Trip
     @Environment(\.dismiss) var dismiss
-    @StateObject private var locationManager = DriverLocationManager()
+    @StateObject private var locationProvider = DeviceLocationProvider()
+    @State private var routePolyline: MKPolyline?
     
     @State private var showArriveAlert = false
     @State private var showCompleteAlert = false
     @State private var estimatedTime: String?
     @State private var routeDistance: Double?
     @State private var isNavigating = false
+    
+    // Geofencing Manager
+    @StateObject private var routeMonitor = RouteMonitoringManager.shared
     
     // Trip phases
     var isCompleted: Bool { trip.status == .completed }
@@ -32,23 +36,14 @@ struct TripMapView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Map view based on status
-            if isCompleted {
-                // Completed trip: Show static route summary
-                CompletedTripMap(trip: trip)
-                    .ignoresSafeArea(edges: .bottom)
-            } else {
-                // Active trip: Show live tracking
-                LiveTripMap(
-                    trip: trip,
-                    locationManager: locationManager,
-                    showPickupRoute: isPickupPhase,
-                    isNavigating: isNavigating,
-                    estimatedTime: $estimatedTime,
-                    routeDistance: $routeDistance
-                )
-                .ignoresSafeArea(edges: .bottom)
-            }
+            // Map view
+            UnifiedTripMap(
+                trip: trip,
+                provider: locationProvider,
+                routePolyline: routePolyline,
+                isOffRoute: routeMonitor.isOffRoute
+            )
+            .edgesIgnoringSafeArea(.all)
             
             // Bottom Card
             if isCompleted {
@@ -84,11 +79,53 @@ struct TripMapView: View {
         }
         .onAppear {
             if !isCompleted {
-                locationManager.startTracking()
+                locationProvider.startTracking()
             }
+            // Initial route calculation
+            calculateRoute()
         }
         .onDisappear {
-            locationManager.stopTracking()
+            locationProvider.stopTracking()
+        }
+        .onChange(of: locationProvider.currentLocation) { newLoc in
+            // Recalculate if needed (throttling logic can go here or in service)
+             if let loc = newLoc, !isCompleted {
+                 calculateRoute(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+             }
+        }
+    }
+    
+    private func calculateRoute(from userLoc: CLLocationCoordinate2D? = nil) {
+        let start: CLLocationCoordinate2D
+        let end: CLLocationCoordinate2D
+        
+        if let userLoc = userLoc {
+            start = userLoc
+        } else if let lat = trip.startLat, let lon = trip.startLong {
+            start = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        } else {
+            return
+        }
+        
+        if isPickupPhase {
+            guard let lat = trip.startLat, let lon = trip.startLong else { return }
+            end = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        } else {
+            guard let lat = trip.endLat, let lon = trip.endLong else { return }
+            end = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+        }
+        
+        Task {
+            do {
+                let result = try await RouteCalculationService.shared.calculateRoute(from: start, to: end)
+                await MainActor.run {
+                    self.routePolyline = result.polyline
+                    self.routeDistance = result.distanceInKilometers
+                    self.estimatedTime = result.formattedDuration
+                }
+            } catch {
+                print("Route calculation failed: \(error)")
+            }
         }
     }
     
@@ -222,6 +259,20 @@ struct TripMapView: View {
                 .cornerRadius(10)
             }
             
+            // Route Deviation Warning
+            if routeMonitor.isOffRoute {
+                 HStack {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.white)
+                    Text("Off Route Alert!").fontWeight(.bold).foregroundColor(.white)
+                    Spacer()
+                    Text("\(Int(routeMonitor.currentDistanceFromRoute))m deviation").foregroundColor(.white)
+                }
+                .padding()
+                .background(Color.red)
+                .cornerRadius(10)
+                .padding(.horizontal)
+            }
+            
             // Destination Info
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -299,14 +350,49 @@ struct TripMapView: View {
     
     private func startDelivery() {
         Task {
+            // 1. Update Trip Status
             try? await supabase.from("trips")
                 .update(["status": "In Progress", "start_time": ISO8601DateFormatter().string(from: Date())])
                 .eq("id", value: trip.id).execute()
-            await MainActor.run { dismiss() }
+            
+            // 2. Start Geofencing
+            if let startLat = trip.startLat, let startLong = trip.startLong,
+               let endLat = trip.endLat, let endLong = trip.endLong {
+                
+                let start = CLLocationCoordinate2D(latitude: startLat, longitude: startLong)
+                let end = CLLocationCoordinate2D(latitude: endLat, longitude: endLong)
+                
+                do {
+                    print("📍 Fetching route for geofencing...")
+                    let mkRoute = try await RouteService.shared.fetchRoute(from: start, to: end)
+                    
+                    let geofenceRoute = try RouteService.shared.createGeofenceRoute(
+                        from: mkRoute,
+                        routeId: trip.id,
+                        start: start,
+                        end: end,
+                        corridorRadius: 100 // 100 meter corridor
+                    )
+                    
+                    await MainActor.run {
+                        RouteMonitoringManager.shared.startMonitoring(route: geofenceRoute)
+                        dismiss()
+                    }
+                    
+                } catch {
+                    print("❌ Failed to start route monitoring: \(error)")
+                     await MainActor.run { dismiss() }
+                }
+            } else {
+                 await MainActor.run { dismiss() }
+            }
         }
     }
     
     private func completeTrip() {
+        // Stop Geofencing
+        RouteMonitoringManager.shared.stopMonitoring()
+        
         Task {
             try? await supabase.from("trips")
                 .update(["status": "Completed", "end_time": ISO8601DateFormatter().string(from: Date())])
@@ -316,240 +402,14 @@ struct TripMapView: View {
     }
 }
 
-// MARK: - Completed Trip Map (Static)
-
-struct CompletedTripMap: UIViewRepresentable {
-    let trip: Trip
+    // MARK: - Completed Trip Map (Static)
+    // Deprecated: Replaced by UnifiedTripMap
     
-    func makeUIView(context: Context) -> MKMapView {
-        let mapView = MKMapView()
-        mapView.delegate = context.coordinator
-        mapView.mapType = .standard
-        mapView.isUserInteractionEnabled = true
-        return mapView
-    }
+    // MARK: - Driver Location Manager
+    // Deprecated: Replaced by DeviceLocationProvider
     
-    func updateUIView(_ mapView: MKMapView, context: Context) {
-        guard !context.coordinator.isConfigured else { return }
-        context.coordinator.isConfigured = true
-        
-        guard let startLat = trip.startLat, let startLong = trip.startLong,
-              let endLat = trip.endLat, let endLong = trip.endLong else { return }
-        
-        let startCoord = CLLocationCoordinate2D(latitude: startLat, longitude: startLong)
-        let endCoord = CLLocationCoordinate2D(latitude: endLat, longitude: endLong)
-        
-        // Add annotations
-        let pickupAnnotation = MKPointAnnotation()
-        pickupAnnotation.coordinate = startCoord
-        pickupAnnotation.title = "Pickup"
-        pickupAnnotation.subtitle = trip.startAddress
-        
-        let dropoffAnnotation = MKPointAnnotation()
-        dropoffAnnotation.coordinate = endCoord
-        dropoffAnnotation.title = "Dropoff"
-        dropoffAnnotation.subtitle = trip.endAddress
-        
-        mapView.addAnnotations([pickupAnnotation, dropoffAnnotation])
-        
-        // Calculate route
-        let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: startCoord))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: endCoord))
-        request.transportType = .automobile
-        
-        MKDirections(request: request).calculate { response, _ in
-            guard let route = response?.routes.first else {
-                mapView.showAnnotations(mapView.annotations, animated: true)
-                return
-            }
-            mapView.addOverlay(route.polyline, level: .aboveRoads)
-            let padding = UIEdgeInsets(top: 80, left: 40, bottom: 280, right: 40)
-            mapView.setVisibleMapRect(route.polyline.boundingMapRect, edgePadding: padding, animated: true)
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator { Coordinator() }
-    
-    class Coordinator: NSObject, MKMapViewDelegate {
-        var isConfigured = false
-        
-        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let polyline = overlay as? MKPolyline {
-                let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = .systemGreen // Green for completed
-                renderer.lineWidth = 5
-                renderer.lineCap = .round
-                return renderer
-            }
-            return MKOverlayRenderer(overlay: overlay)
-        }
-        
-        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            guard !(annotation is MKUserLocation) else { return nil }
-            let view = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "pin")
-            view.canShowCallout = true
-            if annotation.title == "Pickup" {
-                view.markerTintColor = .systemGreen
-                view.glyphImage = UIImage(systemName: "shippingbox.fill")
-            } else {
-                view.markerTintColor = .systemRed
-                view.glyphImage = UIImage(systemName: "flag.fill")
-            }
-            return view
-        }
-    }
-}
-
-// MARK: - Driver Location Manager
-
-class DriverLocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private let manager = CLLocationManager()
-    @Published var location: CLLocationCoordinate2D?
-    
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.distanceFilter = 10
-    }
-    
-    func startTracking() {
-        manager.requestWhenInUseAuthorization()
-        manager.startUpdatingLocation()
-    }
-    
-    func stopTracking() {
-        manager.stopUpdatingLocation()
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        location = locations.last?.coordinate
-    }
-    
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("❌ Location error: \(error)")
-    }
-}
-
-// MARK: - Live Trip Map
-
-struct LiveTripMap: UIViewRepresentable {
-    let trip: Trip
-    @ObservedObject var locationManager: DriverLocationManager
-    let showPickupRoute: Bool
-    let isNavigating: Bool
-    @Binding var estimatedTime: String?
-    @Binding var routeDistance: Double?
-    
-    func makeUIView(context: Context) -> MKMapView {
-        let mapView = MKMapView()
-        mapView.delegate = context.coordinator
-        mapView.showsUserLocation = true
-        mapView.showsCompass = true
-        if isNavigating {
-            mapView.userTrackingMode = .followWithHeading
-        }
-        return mapView
-    }
-    
-    func updateUIView(_ mapView: MKMapView, context: Context) {
-        if !context.coordinator.isConfigured {
-            setupMap(mapView: mapView, context: context)
-            context.coordinator.isConfigured = true
-        }
-        
-        // Recalculate route when location updates significantly
-        if let loc = locationManager.location, context.coordinator.shouldRecalculate(from: loc) {
-            calculateRoute(mapView: mapView, from: loc, context: context)
-        }
-    }
-    
-    private func setupMap(mapView: MKMapView, context: Context) {
-        guard let startLat = trip.startLat, let startLong = trip.startLong,
-              let endLat = trip.endLat, let endLong = trip.endLong else { return }
-        
-        let pickupAnnotation = MKPointAnnotation()
-        pickupAnnotation.coordinate = CLLocationCoordinate2D(latitude: startLat, longitude: startLong)
-        pickupAnnotation.title = "Pickup"
-        
-        let dropoffAnnotation = MKPointAnnotation()
-        dropoffAnnotation.coordinate = CLLocationCoordinate2D(latitude: endLat, longitude: endLong)
-        dropoffAnnotation.title = "Dropoff"
-        
-        mapView.addAnnotations([pickupAnnotation, dropoffAnnotation])
-    }
-    
-    private func calculateRoute(mapView: MKMapView, from userLoc: CLLocationCoordinate2D, context: Context) {
-        context.coordinator.lastLocation = userLoc
-        mapView.removeOverlays(mapView.overlays)
-        
-        let destCoord: CLLocationCoordinate2D
-        if showPickupRoute {
-            guard let lat = trip.startLat, let lon = trip.startLong else { return }
-            destCoord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        } else {
-            guard let lat = trip.endLat, let lon = trip.endLong else { return }
-            destCoord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        }
-        
-        let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: userLoc))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: destCoord))
-        request.transportType = .automobile
-        
-        MKDirections(request: request).calculate { response, _ in
-            guard let route = response?.routes.first else { return }
-            mapView.addOverlay(route.polyline, level: .aboveRoads)
-            
-            DispatchQueue.main.async {
-                let formatter = DateComponentsFormatter()
-                formatter.allowedUnits = [.hour, .minute]
-                formatter.unitsStyle = .abbreviated
-                self.estimatedTime = formatter.string(from: route.expectedTravelTime)
-                self.routeDistance = route.distance / 1000
-            }
-            
-            if !self.isNavigating {
-                let padding = UIEdgeInsets(top: 80, left: 40, bottom: 280, right: 40)
-                mapView.setVisibleMapRect(route.polyline.boundingMapRect, edgePadding: padding, animated: true)
-            }
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator { Coordinator() }
-    
-    class Coordinator: NSObject, MKMapViewDelegate {
-        var isConfigured = false
-        var lastLocation: CLLocationCoordinate2D?
-        
-        func shouldRecalculate(from newLoc: CLLocationCoordinate2D) -> Bool {
-            guard let last = lastLocation else { return true }
-            let dist = CLLocation(latitude: last.latitude, longitude: last.longitude)
-                .distance(from: CLLocation(latitude: newLoc.latitude, longitude: newLoc.longitude))
-            return dist > 200
-        }
-        
-        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let polyline = overlay as? MKPolyline {
-                let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = .systemBlue
-                renderer.lineWidth = 5
-                return renderer
-            }
-            return MKOverlayRenderer(overlay: overlay)
-        }
-        
-        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-            guard !(annotation is MKUserLocation) else { return nil }
-            let view = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: "pin")
-            view.canShowCallout = true
-            view.markerTintColor = annotation.title == "Pickup" ? .systemGreen : .systemRed
-            view.glyphImage = UIImage(systemName: annotation.title == "Pickup" ? "shippingbox.fill" : "flag.fill")
-            return view
-        }
-    }
-}
+    // MARK: - Live Trip Map
+    // Deprecated: Replaced by UnifiedTripMap
 
 #Preview {
     NavigationStack {
