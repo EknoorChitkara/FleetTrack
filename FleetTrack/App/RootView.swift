@@ -30,6 +30,7 @@ struct RootView: View {
                 LoginView()
             }
         }
+        .preferredColorScheme(.dark)
     }
 
     private var loadingView: some View {
