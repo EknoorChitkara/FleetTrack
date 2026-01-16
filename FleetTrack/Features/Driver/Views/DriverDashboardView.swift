@@ -11,6 +11,8 @@ struct DriverDashboardView: View {
     @State private var selectedTab = 0
     @State private var isShowingProfile = false
     @State private var tripToStart: Trip?
+    @State private var isShowingInspection = false // New state
+    @State private var isShowingReportIssue = false // New state
     
     init(user: User) {
         self._localUser = State(initialValue: user)
@@ -64,6 +66,12 @@ struct DriverDashboardView: View {
             NavigationStack {
                 TripMapView(trip: trip)
             }
+        }
+        .fullScreenCover(isPresented: $isShowingInspection) {
+            DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: viewModel.assignedVehicle))
+        }
+        .fullScreenCover(isPresented: $isShowingReportIssue) {
+            ReportIssueView()
         }
     }
     
@@ -142,6 +150,23 @@ struct DriverDashboardView: View {
                     // Assigned Vehicle
                     AssignedVehicleCard(vehicle: viewModel.assignedVehicle)
                         .padding(.horizontal)
+                    
+                    // Dashboard Actions (Inspection, Report Issue)
+                    VStack(spacing: 12) {
+                        ForEach(viewModel.dashboardActions) { action in
+                            DashboardActionCard(action: action) {
+                                if action.type == .vehicleInspection {
+                                    isShowingInspection = true
+                                } else if action.type == .reportIssue {
+                                    isShowingReportIssue = true
+                                } else {
+                                    // Handle other actions or show "Coming Soon"
+                                    print("Tapped action: \(action.title)")
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
                     
                     // Recent Trips
                     VStack(alignment: .leading, spacing: 16) {
