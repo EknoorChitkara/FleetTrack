@@ -23,6 +23,10 @@ struct MaintenanceDashboardView: View {
                     // Header
                     headerView
                     
+                    // Quick Actions
+                    quickActionsSection
+                        .padding(.horizontal, AppTheme.spacing.md)
+                    
                     // Today's Tasks Card
                     TodaysTasksCard(
                         pendingCount: viewModel.pendingTasksCount,
@@ -63,9 +67,13 @@ struct MaintenanceDashboardView: View {
         .sheet(isPresented: $showProfile) {
             MaintenanceProfileView(user: user)
         }
+        .sheet(isPresented: $showingInspections) {
+            MaintenanceInspectionView()
+        }
     }
     
     @State private var showingTaskHistory = false
+    @State private var showingInspections = false
     @State private var showProfile = false
     
     // MARK: - Header View
@@ -101,6 +109,30 @@ struct MaintenanceDashboardView: View {
             }
         }
         .padding(.horizontal, AppTheme.spacing.md)
+    }
+    
+    // MARK: - Quick Actions
+    
+    private var quickActionsSection: some View {
+        HStack(spacing: 12) {
+            Button(action: {
+                showingInspections = true
+            }) {
+                HStack {
+                    Image(systemName: "checklist")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Daily Inspections")
+                        .fontWeight(.medium)
+                }
+                .foregroundColor(AppTheme.textInverse)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity)
+                .background(AppTheme.accentPrimary)
+                .cornerRadius(10)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
     }
     
     // MARK: - Priority Tasks Section

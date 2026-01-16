@@ -86,3 +86,16 @@ final class SupabaseClientManager: @unchecked Sendable {
         print("✅ Supabase client initialized with URL: \(SupabaseConfig.supabaseURL)")
     }
 }
+
+/// A type-erasing Encodable wrapper to allow dictionaries with mixed types to be sent to Supabase
+struct AnyEncodable: Encodable {
+    private let encode: (Encoder) throws -> Void
+
+    init<T: Encodable>(_ value: T) {
+        self.encode = value.encode
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try encode(encoder)
+    }
+}

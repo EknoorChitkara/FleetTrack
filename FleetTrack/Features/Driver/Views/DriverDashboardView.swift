@@ -64,7 +64,11 @@ struct DriverDashboardView: View {
             }
         }) { trip in
             NavigationStack {
-                TripMapView(trip: trip)
+                TripMapView(
+                    trip: trip,
+                    driverName: localUser.name,
+                    vehicleInfo: viewModel.assignedVehicle.map { "\($0.manufacturer) \($0.model) (\($0.registrationNumber))" } ?? "Unassigned Vehicle"
+                )
             }
         }
         .fullScreenCover(isPresented: $isShowingInspection) {
