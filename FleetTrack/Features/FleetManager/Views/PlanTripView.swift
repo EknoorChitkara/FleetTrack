@@ -16,6 +16,12 @@ struct PlanTripView: View {
     @State private var bottomSheetHeight: CGFloat = 180
     @State private var dragOffset: CGFloat = 0
     
+    // Location input method states
+    @State private var showingStartSearch = false
+    @State private var showingEndSearch = false
+    @State private var showingStartPinSelection = false
+    @State private var showingEndPinSelection = false
+    
     private let minBottomSheetHeight: CGFloat = 180
     private let maxBottomSheetHeight: CGFloat = 500
     
@@ -69,6 +75,38 @@ struct PlanTripView: View {
             .edgesIgnoringSafeArea(.bottom)
         }
         .navigationBarHidden(true)
+        .sheet(isPresented: $showingStartSearch) {
+            LocationSearchView(
+                selectedLocation: $viewModel.startCoordinate,
+                selectedAddress: $viewModel.startAddress,
+                searchType: .pickup,
+                currentRegion: viewModel.mapRegion
+            )
+        }
+        .sheet(isPresented: $showingEndSearch) {
+            LocationSearchView(
+                selectedLocation: $viewModel.endCoordinate,
+                selectedAddress: $viewModel.endAddress,
+                searchType: .dropoff,
+                currentRegion: viewModel.mapRegion
+            )
+        }
+        .sheet(isPresented: $showingStartPinSelection) {
+            MapPinSelectionView(
+                selectedLocation: $viewModel.startCoordinate,
+                selectedAddress: $viewModel.startAddress,
+                searchType: .pickup,
+                initialRegion: viewModel.mapRegion
+            )
+        }
+        .sheet(isPresented: $showingEndPinSelection) {
+            MapPinSelectionView(
+                selectedLocation: $viewModel.endCoordinate,
+                selectedAddress: $viewModel.endAddress,
+                searchType: .dropoff,
+                initialRegion: viewModel.mapRegion
+            )
+        }
     }
     
     // MARK: - Floating Header
@@ -122,13 +160,25 @@ struct PlanTripView: View {
                     .foregroundColor(.white)
                     .padding(.vertical, 14)
                 
+                Spacer()
+                
                 if viewModel.isGeocodingStart {
                     ProgressView()
                         .tint(.appEmerald)
                 } else {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.appSecondaryText)
+                    // Search button
+                    Button(action: { showingStartSearch = true }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
+                    
+                    // Pin button
+                    Button(action: { showingStartPinSelection = true }) {
+                        Image(systemName: "mappin")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -147,13 +197,25 @@ struct PlanTripView: View {
                     .foregroundColor(.white)
                     .padding(.vertical, 14)
                 
+                Spacer()
+                
                 if viewModel.isGeocodingEnd {
                     ProgressView()
                         .tint(.appEmerald)
                 } else {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.appSecondaryText)
+                    // Search button
+                    Button(action: { showingEndSearch = true }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
+                    
+                    // Pin button
+                    Button(action: { showingEndPinSelection = true }) {
+                        Image(systemName: "mappin")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
                 }
             }
             .padding(.horizontal, 16)
