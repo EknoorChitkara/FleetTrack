@@ -59,10 +59,11 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var status: VehicleStatus
 
     // Live tracking data
-    var currentSpeed: Double
-    var fuelLevel: Double
-    var totalMileage: Double
-    var averageFuelEfficiency: Double
+    // Live tracking data
+    var currentSpeed: Double?
+    var fuelLevel: Double?
+    var totalMileage: Double?
+    var averageFuelEfficiency: Double?
 
     // Location (flat columns in DB, not nested)
     var latitude: Double?
@@ -88,9 +89,9 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var fuelType: String?
     var registrationDate: Date?
     var vin: String?
-    var mileage: String?
+    var mileage: Double?
     var insuranceStatus: String?
-    var lastService: String?
+    var lastService: Date?
 
     // Timestamps
     var createdAt: Date
@@ -136,10 +137,10 @@ struct Vehicle: Identifiable, Codable, Hashable {
         manufacturer: String,
         vehicleType: VehicleType,
         status: VehicleStatus = .active,
-        currentSpeed: Double = 0,
-        fuelLevel: Double = 100,
-        totalMileage: Double = 0,
-        averageFuelEfficiency: Double = 0,
+        currentSpeed: Double? = 0,
+        fuelLevel: Double? = 100,
+        totalMileage: Double? = 0,
+        averageFuelEfficiency: Double? = 0,
         latitude: Double? = nil,
         longitude: Double? = nil,
         address: String? = nil,
@@ -155,9 +156,9 @@ struct Vehicle: Identifiable, Codable, Hashable {
         fuelType: String? = "Diesel",
         registrationDate: Date? = nil,
         vin: String? = "UNKNOWN",
-        mileage: String? = "0 km",
+        mileage: Double? = 0,
         insuranceStatus: String? = "Pending",
-        lastService: String? = "Never",
+        lastService: Date? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -207,11 +208,11 @@ struct Vehicle: Identifiable, Codable, Hashable {
     }
 
     var formattedMileage: String {
-        String(format: "%.1f km", totalMileage)
+        String(format: "%.1f km", totalMileage ?? 0.0)
     }
 
     var formattedEfficiency: String {
-        String(format: "%.1f km/l", averageFuelEfficiency)
+        String(format: "%.1f km/l", averageFuelEfficiency ?? 0.0)
     }
 
     var isServiceDue: Bool {
