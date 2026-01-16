@@ -89,7 +89,7 @@ struct CustomTabBar: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            TabBarItem(icon: "house.fill", title: "Dashboard", isSelected: selectedTab == .dashboard) {
+            TabBarItem(icon: "house.fill", title: "Home", isSelected: selectedTab == .dashboard) {
                 selectedTab = .dashboard
             }
             TabBarItem(icon: "car.fill", title: "Vehicles", isSelected: selectedTab == .vehicles) {
@@ -102,10 +102,10 @@ struct CustomTabBar: View {
                 selectedTab = .alerts
             }
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 12)
         .background(Color(red: 0.15, green: 0.15, blue: 0.15))
         .clipShape(Capsule())
-        .padding(.horizontal, 40)
+        .padding(.horizontal, 30)
         .padding(.bottom, 8)
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
     }
