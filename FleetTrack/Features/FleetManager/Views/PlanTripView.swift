@@ -16,6 +16,12 @@ struct PlanTripView: View {
     @State private var bottomSheetHeight: CGFloat = 180
     @State private var dragOffset: CGFloat = 0
     
+    // Location input method states
+    @State private var showingStartSearch = false
+    @State private var showingEndSearch = false
+    @State private var showingStartPinSelection = false
+    @State private var showingEndPinSelection = false
+    
     private let minBottomSheetHeight: CGFloat = 180
     private let maxBottomSheetHeight: CGFloat = 500
     
@@ -69,6 +75,38 @@ struct PlanTripView: View {
             .edgesIgnoringSafeArea(.bottom)
         }
         .navigationBarHidden(true)
+        .sheet(isPresented: $showingStartSearch) {
+            LocationSearchView(
+                selectedLocation: $viewModel.startCoordinate,
+                selectedAddress: $viewModel.startAddress,
+                searchType: .pickup,
+                currentRegion: viewModel.mapRegion
+            )
+        }
+        .sheet(isPresented: $showingEndSearch) {
+            LocationSearchView(
+                selectedLocation: $viewModel.endCoordinate,
+                selectedAddress: $viewModel.endAddress,
+                searchType: .dropoff,
+                currentRegion: viewModel.mapRegion
+            )
+        }
+        .sheet(isPresented: $showingStartPinSelection) {
+            MapPinSelectionView(
+                selectedLocation: $viewModel.startCoordinate,
+                selectedAddress: $viewModel.startAddress,
+                searchType: .pickup,
+                initialRegion: viewModel.mapRegion
+            )
+        }
+        .sheet(isPresented: $showingEndPinSelection) {
+            MapPinSelectionView(
+                selectedLocation: $viewModel.endCoordinate,
+                selectedAddress: $viewModel.endAddress,
+                searchType: .dropoff,
+                initialRegion: viewModel.mapRegion
+            )
+        }
     }
     
     // MARK: - Floating Header
@@ -122,13 +160,25 @@ struct PlanTripView: View {
                     .foregroundColor(.white)
                     .padding(.vertical, 14)
                 
+                Spacer()
+                
                 if viewModel.isGeocodingStart {
                     ProgressView()
                         .tint(.appEmerald)
                 } else {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.appSecondaryText)
+                    // Search button
+                    Button(action: { showingStartSearch = true }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
+                    
+                    // Pin button
+                    Button(action: { showingStartPinSelection = true }) {
+                        Image(systemName: "mappin")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -147,13 +197,25 @@ struct PlanTripView: View {
                     .foregroundColor(.white)
                     .padding(.vertical, 14)
                 
+                Spacer()
+                
                 if viewModel.isGeocodingEnd {
                     ProgressView()
                         .tint(.appEmerald)
                 } else {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.appSecondaryText)
+                    // Search button
+                    Button(action: { showingEndSearch = true }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
+                    
+                    // Pin button
+                    Button(action: { showingEndPinSelection = true }) {
+                        Image(systemName: "mappin")
+                            .font(.system(size: 16))
+                            .foregroundColor(.appEmerald)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -212,9 +274,6 @@ struct PlanTripView: View {
                     .background(Color.black.opacity(0.2))
                     .background(.ultraThinMaterial)
                     .cornerRadius(12)
-                    
-                    // Driver Selector
-                    driverSelector
                     
                     // Vehicle Selector
                     vehicleSelector
@@ -309,21 +368,40 @@ struct PlanTripView: View {
         Menu {
             Button("Select Vehicle") {
                 viewModel.vehicleId = nil
+                viewModel.driverId = nil
             }
             ForEach(availableVehicles) { vehicle in
                 Button(action: {
                     viewModel.vehicleId = vehicle.id
-                    // Auto-assign driver if vehicle has one
+                    // Enforce driver assignment from vehicle
                     if let driverId = vehicle.assignedDriverId {
                         viewModel.driverId = driverId
+                    } else {
+                        viewModel.driverId = nil // Should not happen if filtered correctly
                     }
                 }) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(vehicle.manufacturer) \(vehicle.model)")
-                            .font(.system(size: 15, weight: .medium))
-                        Text(vehicle.registrationNumber)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(vehicle.manufacturer) \(vehicle.model)")
+                                .font(.system(size: 15, weight: .medium))
+                            Text(vehicle.registrationNumber)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        // Show assigned driver name
+                        if let driverId = vehicle.assignedDriverId,
+                           let driver = fleetVM.drivers.first(where: { $0.id == driverId }) {
+                            Text("Driver: \(driver.displayName)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("No Driver")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
                     }
                 }
             }
@@ -335,24 +413,24 @@ struct PlanTripView: View {
                 if let vehicleId = viewModel.vehicleId,
                    let vehicle = fleetVM.vehicles.first(where: { $0.id == vehicleId }) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(vehicle.registrationNumber)
+                        Text("\(vehicle.manufacturer) \(vehicle.model) (\(vehicle.registrationNumber))")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.white)
                         
-                        HStack(spacing: 4) {
-                            Text("\(vehicle.manufacturer) • \(vehicle.model)")
-                                .font(.system(size: 12))
-                                .foregroundColor(.appSecondaryText)
-                            
-                            Spacer()
-                            
+                        // Show assigned driver below vehicle
+                        if let driverId = viewModel.driverId,
+                           let driver = fleetVM.drivers.first(where: { $0.id == driverId }) {
                             HStack(spacing: 4) {
-                                Image(systemName: "fuelpump.fill")
+                                Image(systemName: "person.fill")
                                     .font(.system(size: 10))
-                                Text(vehicle.fuelType.rawValue)
-                                    .font(.system(size: 11))
+                                Text("Driver: \(driver.displayName)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.appEmerald)
                             }
-                            .foregroundColor(.green)
+                        } else {
+                            Text("No Driver Assigned")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
                         }
                     }
                 } else {
@@ -376,8 +454,8 @@ struct PlanTripView: View {
     // Filter vehicles based on availability and proximity to pickup
     private var availableVehicles: [FMVehicle] {
         fleetVM.vehicles.filter { vehicle in
-            // Only show active vehicles
-            vehicle.status == .active
+            // Only show active vehicles that have an assigned driver
+            vehicle.status == .active && vehicle.assignedDriverId != nil
         }
     }
     

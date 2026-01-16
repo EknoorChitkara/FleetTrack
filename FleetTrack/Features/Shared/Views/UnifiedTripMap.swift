@@ -14,16 +14,18 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
     let trip: Trip
     @ObservedObject var provider: Provider
     let routePolyline: MKPolyline?
+    let isOffRoute: Bool
     
     // Annotations
     private let pickupAnnotation = MKPointAnnotation()
     private let dropoffAnnotation = MKPointAnnotation()
     private let vehicleAnnotation = MKPointAnnotation()
     
-    init(trip: Trip, provider: Provider, routePolyline: MKPolyline? = nil) {
+    init(trip: Trip, provider: Provider, routePolyline: MKPolyline? = nil, isOffRoute: Bool = false) {
         self.trip = trip
         self.provider = provider
         self.routePolyline = routePolyline
+        self.isOffRoute = isOffRoute
         
         setupStaticAnnotations()
     }
@@ -65,7 +67,6 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
                 if let heading = provider.heading {
                     let view = mapView.view(for: vehicleAnnotation) as? MKMarkerAnnotationView
                     view?.markerTintColor = .systemBlue
-                    // Note: Rotating marker view requires more complex handling, keeping simple for now
                 }
             }
         }
@@ -81,13 +82,20 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
     }
     
     private func updatePolyline(mapView: MKMapView, context: Context) {
-        // Remove old polyline if changed
-        if let oldPolyline = context.coordinator.currentPolyline, oldPolyline !== routePolyline {
-            mapView.removeOverlay(oldPolyline)
+        // Check if color needs update
+        let needsColorUpdate = context.coordinator.lastIsOffRoute != isOffRoute
+        context.coordinator.lastIsOffRoute = isOffRoute
+        
+        // Remove old polyline if changed or color update needed
+        if let oldPolyline = context.coordinator.currentPolyline {
+             if oldPolyline !== routePolyline || needsColorUpdate {
+                 mapView.removeOverlay(oldPolyline)
+                 context.coordinator.currentPolyline = nil
+             }
         }
         
         // Add new polyline
-        if let polyline = routePolyline, mapView.overlays.isEmpty {
+        if let polyline = routePolyline, context.coordinator.currentPolyline == nil {
             mapView.addOverlay(polyline, level: .aboveRoads)
             context.coordinator.currentPolyline = polyline
         }
@@ -126,6 +134,7 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
         var parent: UnifiedTripMap
         var currentPolyline: MKPolyline?
         var hasInitialZoom = false
+        var lastIsOffRoute = false
         
         init(_ parent: UnifiedTripMap) {
             self.parent = parent
@@ -134,7 +143,9 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let polyline = overlay as? MKPolyline {
                 let renderer = MKPolylineRenderer(polyline: polyline)
-                renderer.strokeColor = .systemBlue
+                // START EDIT: Dynamic Color
+                renderer.strokeColor = parent.isOffRoute ? .systemRed : .systemBlue
+                // END EDIT
                 renderer.lineWidth = 5
                 renderer.lineCap = .round
                 return renderer

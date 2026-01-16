@@ -25,6 +25,7 @@ final class DriverDashboardViewModel: ObservableObject {
     @Published var avgTripDistance: Double = 0.0
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var dashboardActions: [DashboardAction] = []
     
     // MARK: - Dependencies
     
@@ -45,9 +46,18 @@ final class DriverDashboardViewModel: ObservableObject {
             let driverProfile = try await driverService.getDriverProfile(userId: user.id)
             self.driver = driverProfile
             
-            // 2. Fetch Assigned Vehicle if available
-            if let vehicleId = driverProfile.currentVehicleId {
-                self.assignedVehicle = try await driverService.getAssignedVehicle(vehicleId: vehicleId)
+            // 2. Fetch Assigned Vehicle (Query by Driver ID from Database)
+            do {
+                self.assignedVehicle = try await driverService.getAssignedVehicle(driverId: driverProfile.id)
+                if let vehicle = self.assignedVehicle {
+                    print("🚗 Assigned Vehicle: \(vehicle.manufacturer) \(vehicle.model) (\(vehicle.registrationNumber))")
+                } else {
+                    print("ℹ️ Driver has no vehicle assigned in 'vehicles' table.")
+                    self.assignedVehicle = nil
+                }
+            } catch {
+                print("❌ Failed to fetch assigned vehicle: \(error)")
+                // Don't clear nil here, let it be nil
                 self.assignedVehicle = nil
             }
             
@@ -84,6 +94,12 @@ final class DriverDashboardViewModel: ObservableObject {
             // For now, keep On-Time as is from profile, or default to 100%
             // self.completionRate = ... (Using existing onTimeDeliveryRate for now)
             
+            // For now, keep On-Time as is from profile, or default to 100%
+            // self.completionRate = ... (Using existing onTimeDeliveryRate for now)
+            
+            // 6. Load Dashboard Actions (Static for now, but data-driven via model)
+            self.dashboardActions = DashboardAction.allActions
+            
             isLoading = false
         } catch {
             print("❌ Error loading driver dashboard: \(error)")
@@ -109,6 +125,9 @@ final class DriverDashboardViewModel: ObservableObject {
                 self.totalDistance = 0.0
                 self.avgSpeed = 0.0
                 self.avgTripDistance = 0.0
+                self.avgSpeed = 0.0
+                self.avgTripDistance = 0.0
+                self.dashboardActions = DashboardAction.allActions // Still show actions even if profile fails? Maybe safer to show them so user can report issue.
                 self.errorMessage = nil // Clear error to show empty UI
             } else {
                 self.errorMessage = "Failed to load dashboard data. Please try again."

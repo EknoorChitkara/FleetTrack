@@ -175,6 +175,12 @@ class PlanTripViewModel: ObservableObject {
             purpose: purpose
         )
         
+        if let assignedDriverId = driverId,
+           let driver = fleetVM.drivers.first(where: { $0.id == assignedDriverId }) {
+            print("Assigning trip to driver: \(driver.fullName)")
+            print("Driver Email: \(driver.email)")
+        }
+        
         fleetVM.addTrip(tripData)
         completion(true)
     }
