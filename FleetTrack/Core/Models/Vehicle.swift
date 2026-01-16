@@ -218,6 +218,13 @@ struct Vehicle: Identifiable, Codable, Hashable {
         guard let nextService = nextServiceDue else { return false }
         return nextService <= Date()
     }
+    
+    var year: String {
+        if let y = yearOfManufacture {
+            return String(y)
+        }
+        return ""
+    }
 }
 
 // MARK: - Mock Data
