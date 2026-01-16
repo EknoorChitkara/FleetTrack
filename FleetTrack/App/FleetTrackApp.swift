@@ -34,6 +34,13 @@ struct FleetTrackApp: App {
                         .transition(.move(edge: .bottom))
                 }
             }
+            .task {
+                // Request Notification Permissions for Geofencing Alerts
+                try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+                
+                // Initialize Circular Geofencing (Stationary Zones)
+                await CircularGeofenceManager.shared.fetchAndMonitorGeofences()
+            }
             .onOpenURL { url in
                 handleDeepLink(url)
             }

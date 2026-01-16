@@ -31,39 +31,38 @@ class RouteService {
     
     /// Creates a GeofenceRoute model from an MKRoute
     /// Encodes the polyline as a JSON string of coordinates [[lat, lon], ...]
-    //    func createGeofenceRoute(
-    //        from route: MKRoute,
-    //        routeId: UUID,
-    //        start: CLLocationCoordinate2D,
-    //        end: CLLocationCoordinate2D,
-    //        corridorRadius: Double
-    //    ) throws -> GeofenceRoute {
-    //        let polyline = route.polyline
-    //        let pointCount = polyline.pointCount
-    //        let points = polyline.points()
-    //        
-    //        var coordinates: [[Double]] = []
-    //        coordinates.reserveCapacity(pointCount)
-    //        
-    //        for i in 0..<pointCount {
-    //            let coordinate = points[i].coordinate
-    //            coordinates.append([coordinate.latitude, coordinate.longitude])
-    //        }
-    //        
-    //        guard let jsonData = try? JSONSerialization.data(withJSONObject: coordinates),
-    //              let encodedString = String(data: jsonData, encoding: .utf8) else {
-    //            throw RouteServiceError.encodingFailed
-    //        }
-    //        
-    //        return GeofenceRoute(
-    //            routeId: routeId,
-    //            startLatitude: start.latitude,
-    //            startLongitude: start.longitude,
-    //            endLatitude: end.latitude,
-    //            endLongitude: end.longitude,
-    //            encodedPolyline: encodedString,
-    //            corridorRadiusMeters: corridorRadius
-    //        )
-    //    }
-    //}
+    func createGeofenceRoute(
+        from route: MKRoute,
+        routeId: UUID,
+        start: CLLocationCoordinate2D,
+        end: CLLocationCoordinate2D,
+        corridorRadius: Double
+    ) throws -> GeofenceRoute {
+        let polyline = route.polyline
+        let pointCount = polyline.pointCount
+        let points = polyline.points()
+        
+        var coordinates: [[Double]] = []
+        coordinates.reserveCapacity(pointCount)
+        
+        for i in 0..<pointCount {
+            let coordinate = points[i].coordinate
+            coordinates.append([coordinate.latitude, coordinate.longitude])
+        }
+        
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: coordinates),
+              let encodedString = String(data: jsonData, encoding: .utf8) else {
+            throw RouteServiceError.encodingFailed
+        }
+        
+        return GeofenceRoute(
+            routeId: routeId,
+            startLatitude: start.latitude,
+            startLongitude: start.longitude,
+            endLatitude: end.latitude,
+            endLongitude: end.longitude,
+            encodedPolyline: encodedString,
+            corridorRadiusMeters: corridorRadius
+        )
+    }
 }
