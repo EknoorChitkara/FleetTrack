@@ -248,14 +248,52 @@ class FleetManagerService {
             throw NSError(domain: "FleetManager", code: 400, userInfo: [NSLocalizedDescriptionKey: "Driver ID required"])
         }
         
-        // Create trip matching DB schema
-        let newTrip = FMTrip(
+        // Create DTO matching trips table schema (with lat/lon)
+        struct TripInsertDTO: Encodable {
+            let id: UUID
+            let vehicleId: UUID
+            let driverId: UUID
+            let status: String
+            let startAddress: String?
+            let endAddress: String?
+            let startLatitude: Double?
+            let startLongitude: Double?
+            let endLatitude: Double?
+            let endLongitude: Double?
+            let distance: Double?
+            let startTime: Date?
+            let purpose: String?
+            let createdAt: Date
+            
+            enum CodingKeys: String, CodingKey {
+                case id
+                case vehicleId = "vehicle_id"
+                case driverId = "driver_id"
+                case status
+                case startAddress = "start_address"
+                case endAddress = "end_address"
+                case startLatitude = "start_latitude"
+                case startLongitude = "start_longitude"
+                case endLatitude = "end_latitude"
+                case endLongitude = "end_longitude"
+                case distance
+                case startTime = "start_time"
+                case purpose
+                case createdAt = "created_at"
+            }
+        }
+        
+        let tripDTO = TripInsertDTO(
             id: UUID(),
             vehicleId: vehicleId,
             driverId: driverId,
             status: "Scheduled",
             startAddress: data.startAddress,
             endAddress: data.endAddress,
+            startLatitude: data.startLatitude,
+            startLongitude: data.startLongitude,
+            endLatitude: data.endLatitude,
+            endLongitude: data.endLongitude,
             distance: data.distance,
             startTime: data.startTime,
             purpose: data.purpose,
@@ -264,10 +302,10 @@ class FleetManagerService {
         
         try await client
             .from("trips")
-            .insert(newTrip)
+            .insert(tripDTO)
             .execute()
             
-        print("✅ Trip record created")
+        print("✅ Trip record created with coordinates")
     }
 
     

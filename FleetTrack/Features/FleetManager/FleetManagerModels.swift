@@ -257,6 +257,10 @@ struct TripCreationData {
     var driverId: UUID?
     var startAddress: String = ""
     var endAddress: String = ""
+    var startLatitude: Double?
+    var startLongitude: Double?
+    var endLatitude: Double?
+    var endLongitude: Double?
     var distance: Double?
     var startTime: Date = Date()
     var purpose: String = ""
