@@ -105,14 +105,15 @@ struct AssignedVehicleCard: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
+                        let fuel = vehicle.fuelLevel ?? 0.0
                         HStack(spacing: 4) {
                             Image(systemName: "fuelpump.fill")
                                 .font(.caption)
-                            Text("\(Int(vehicle.fuelLevel))%")
+                            Text("\(Int(fuel))%")
                         }
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundColor(vehicle.fuelLevel < 20 ? .red : .appEmerald)
+                        .foregroundColor(fuel < 20 ? .red : .appEmerald)
                         
                         Text(vehicle.status.rawValue)
                             .font(.caption2)
