@@ -124,20 +124,24 @@ struct LoginView: View {
         message = ""
 
         do {
-            // Step 1: Verify Password
-            try await supabase.auth.signIn(email: trimmedEmail, password: password)
-            print("✅ Step 1: Password Verified")
+            // Step 1: Verify Password using an isolated "Ghost Client"
+            // We do this to avoid triggering the global SessionManager
+            // until the 2FA (Step 2) is actually completed.
+            let ghostClient = SupabaseClient(
+                supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
+                supabaseKey: SupabaseConfig.supabaseAnonKey,
+                options: SupabaseClientOptions(
+                    auth: .init(storage: isolatedStorage)
+                )
+            )
+            
+            try await ghostClient.auth.signIn(email: trimmedEmail, password: password)
+            print("✅ Step 1: Password Verified (via Ghost Client)")
 
-            // Step 2: Clear session to ensure clean OTP flow
-            // This prevents "otp_expired" conflicts
-            try? await supabase.auth.signOut()
-
-            // Small delay to let Supabase settle
-            try? await Task.sleep(for: .seconds(1))
-
-            // Step 3: Trigger Code Send
+            // Step 2: Trigger Code Send on the MAIN client
+            // signInWithOTP does NOT create a session, so it won't trigger RootView
             try await supabase.auth.signInWithOTP(email: trimmedEmail)
-            print("✅ Step 2: OTP Sent to \(trimmedEmail)")
+            print("✅ Step 2: Code Sent to \(trimmedEmail)")
 
             await MainActor.run {
                 self.otpEmail = trimmedEmail
@@ -151,6 +155,16 @@ struct LoginView: View {
                 isLoading = false
             }
         }
+    }
+    
+    // Helper to keep Ghost Client session isolated
+    private var isolatedStorage: AuthLocalStorage {
+        class NoOpStorage: AuthLocalStorage {
+            func store(key: String, value: Data) throws {}
+            func retrieve(key: String) throws -> Data? { return nil }
+            func remove(key: String) throws {}
+        }
+        return NoOpStorage()
     }
 
     private func forgotPassword() async {
