@@ -38,6 +38,16 @@ struct MaintenanceTabView: View {
                     .tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .task {
+                await viewModel.loadData()
+            }
+            .onChange(of: selectedTab) { newValue in
+                if newValue == 0 {
+                    Task {
+                        await viewModel.loadData()
+                    }
+                }
+            }
             
             // Floating Tab Bar
             customTabBar

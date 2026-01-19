@@ -249,13 +249,54 @@ class FleetViewModel: ObservableObject {
         Task { @MainActor in
             do {
                 if let index = vehicles.firstIndex(where: { $0.id == vehicleId }) {
+                    let registrationNumber = vehicles[index].registrationNumber
+                    
+                    print("🚀 [FleetViewModel] Sending vehicle to service...")
+                    print("   Vehicle: \(registrationNumber)")
+                    print("   Services: \(serviceTypes.joined(separator: ", "))")
+                    
+                    // Call FleetManagerService to persist to database
+                    try await FleetManagerService.shared.sendVehicleToService(
+                        vehicleId: vehicleId,
+                        registrationNumber: registrationNumber,
+                        serviceTypes: serviceTypes,
+                        description: description
+                    )
+                    
+                    // Update local UI state
                     vehicles[index].status = .inMaintenance
+                    vehicles[index].lastService = Date()
+                    vehicles[index].maintenanceServices = serviceTypes
+                    vehicles[index].maintenanceDescription = description
+                    
+                    // Create and append log
+                    let newLog = MaintenanceLog(
+                        date: Date(),
+                        serviceTypes: serviceTypes,
+                        description: description
+                    )
+                    
+                    if vehicles[index].maintenanceLogs == nil {
+                        vehicles[index].maintenanceLogs = []
+                    }
+                    vehicles[index].maintenanceLogs?.insert(newLog, at: 0) // Newest first
+                    
                     let services = serviceTypes.joined(separator: ", ")
-                    let logDescription = description.isEmpty ? "Vehicle \(vehicles[index].registrationNumber) sent for \(services)." : "Vehicle \(vehicles[index].registrationNumber) sent for \(services). Notes: \(description)"
+                    let logDescription = description.isEmpty ? "Vehicle \(registrationNumber) sent for \(services)." : "Vehicle \(registrationNumber) sent for \(services). Notes: \(description)"
                     logActivity(title: "Service Scheduled", description: logDescription, icon: "wrench.and.screwdriver.fill", color: "orange")
+                    
+                    print("✅ [FleetViewModel] Service scheduled successfully")
                 }
                 isLoading = false
             } catch {
+                print("❌ ============================================")
+                print("❌ ERROR in FleetViewModel.markForService")
+                print("❌ Vehicle ID: \(vehicleId)")
+                print("❌ Services: \(serviceTypes.joined(separator: ", "))")
+                print("❌ Error: \(error.localizedDescription)")
+                print("❌ Full Error: \(error)")
+                print("❌ ============================================")
+                
                 self.errorMessage = "Failed to schedule service: \(error.localizedDescription)"
                 self.isLoading = false
             }

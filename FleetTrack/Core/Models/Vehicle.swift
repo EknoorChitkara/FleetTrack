@@ -13,9 +13,8 @@ import Foundation
 enum VehicleStatus: String, Codable, CaseIterable {
     case active = "Active"
     case inactive = "Inactive"
-    case inMaintenance = "In Maintenance"
-    case outOfService = "Out of Service"
-    case inTransit = "In Transit"
+    case inMaintenance = "Maintenance"  // Changed to match DB enum
+    case retired = "Retired"  // Added from DB enum
 }
 
 public enum VehicleType: String, Codable, CaseIterable {

@@ -16,6 +16,10 @@ struct VehicleDetailView: View {
     @State private var selectedServices: Set<String> = []
     @State private var serviceDescription: String = ""
     
+    private var currentVehicle: FMVehicle {
+        fleetVM.vehicles.first(where: { $0.id == vehicle.id }) ?? vehicle
+    }
+    
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
@@ -35,16 +39,16 @@ struct VehicleDetailView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(vehicle.registrationNumber)
+                        Text(currentVehicle.registrationNumber)
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                         HStack(spacing: 6) {
-                            Text(vehicle.model)
+                            Text(currentVehicle.model)
                             Circle().frame(width: 4, height: 4)
                             HStack(spacing: 4) {
                                 Circle().frame(width: 8, height: 8).foregroundColor(.green)
-                                Text(vehicle.status.rawValue)
+                                Text(currentVehicle.status.rawValue)
                             }
                         }
                         .font(.caption)
@@ -112,13 +116,13 @@ struct VehicleDetailView: View {
                                 .foregroundColor(.white)
                             
                             VStack(spacing: 0) {
-                                InfoRow(icon: "car.fill", label: "Model", value: vehicle.model)
+                                InfoRow(icon: "car.fill", label: "Model", value: currentVehicle.model)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "number", label: "License Plate", value: vehicle.registrationNumber)
+                                InfoRow(icon: "number", label: "License Plate", value: currentVehicle.registrationNumber)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(vehicle.mileage))
+                                InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(currentVehicle.mileage))
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "shield.fill", label: "Insurance", value: vehicle.insuranceStatus ?? "Pending")
+                                InfoRow(icon: "shield.fill", label: "Insurance", value: currentVehicle.insuranceStatus ?? "Pending")
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
@@ -174,18 +178,18 @@ struct VehicleDetailView: View {
         }
         .navigationBarHidden(true)
         .sheet(isPresented: $showInspection) {
-            VehicleInspectionView(vehicle: vehicle)
+            VehicleInspectionView(vehicle: currentVehicle)
         }
         .sheet(isPresented: $showServiceSelection) {
-            ServiceSelectionView(vehicle: vehicle, selectedServices: $selectedServices, description: $serviceDescription) {
-                fleetVM.markForService(vehicleId: vehicle.id, serviceTypes: Array(selectedServices), description: serviceDescription)
+            ServiceSelectionView(vehicle: currentVehicle, selectedServices: $selectedServices, description: $serviceDescription) {
+                fleetVM.markForService(vehicleId: currentVehicle.id, serviceTypes: Array(selectedServices), description: serviceDescription)
                 serviceDescription = "" // Reset for next time
                 presentationMode.wrappedValue.dismiss()
             }
             .environmentObject(fleetVM)
         }
         .sheet(isPresented: $showHistory) {
-            MaintenanceHistoryView(vehicle: vehicle)
+            MaintenanceHistoryView(vehicle: currentVehicle)
         }
     }
     

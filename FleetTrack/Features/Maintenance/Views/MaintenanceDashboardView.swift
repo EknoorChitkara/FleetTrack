@@ -60,6 +60,9 @@ struct MaintenanceDashboardView: View {
                 }
                 .padding(.vertical, AppTheme.spacing.md)
             }
+            .refreshable {
+                await viewModel.refreshData()
+            }
         }
         .sheet(isPresented: $showingTaskHistory) {
             TaskHistoryView(completedTasks: viewModel.completedTasks)
