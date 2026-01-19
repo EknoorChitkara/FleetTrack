@@ -6,7 +6,6 @@ class FleetViewModel: ObservableObject {
     @Published var vehicles: [FMVehicle] = []
     @Published var drivers: [FMDriver] = []
     @Published var trips: [FMTrip] = []
-    @Published var maintenancePersonnel: [MaintenancePersonnel] = []
     @Published var activities: [FMActivity] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -25,15 +24,13 @@ class FleetViewModel: ObservableObject {
             async let fetchedVehicles = FleetManagerService.shared.fetchVehicles()
             async let fetchedDrivers = FleetManagerService.shared.fetchDrivers()
             async let fetchedTrips = FleetManagerService.shared.fetchTrips()
-            async let fetchedPersonnel = FleetManagerService.shared.fetchMaintenancePersonnel()
             
             self.vehicles = try await fetchedVehicles
             self.drivers = try await fetchedDrivers
             self.trips = try await fetchedTrips
-            self.maintenancePersonnel = try await fetchedPersonnel
             
             self.isLoading = false
-            print("✅ Fleet Data Loaded: \(vehicles.count) vehicles, \(drivers.count) drivers, \(maintenancePersonnel.count) personnel")
+            print("✅ Fleet Data Loaded: \(vehicles.count) vehicles, \(drivers.count) drivers")
         } catch {
             self.errorMessage = "Failed to load fleet data: \(error.localizedDescription)"
             self.isLoading = false
@@ -150,39 +147,18 @@ class FleetViewModel: ObservableObject {
         }
     }
     
-    
-    func addMaintenanceUser(_ data: MaintenanceCreationData) {
+    func addMaintenanceStaff(_ data: MaintenanceStaffCreationData) {
         isLoading = true
         Task { @MainActor in
-            do {
-                try await FleetManagerService.shared.addMaintenanceUser(data)
-                
-                // Optimistically update UI with the new maintenance user
-                let now = Date()
-                let newPerson = MaintenancePersonnel(
-                    id: UUID(),
-                    userId: nil,
-                    fullName: data.fullName,
-                    email: data.email,
-                    phoneNumber: data.phoneNumber,
-                    specializations: data.specializations,
-                    isActive: true,
-                    createdAt: now,
-                    updatedAt: now
-                )
-                self.maintenancePersonnel.append(newPerson)
-                self.logActivity(
-                    title: "Mechanic Invited",
-                    description: "Invitation sent to \(data.email).",
-                    icon: "wrench.fill",
-                    color: "orange"
-                )
-                self.isLoading = false
-            } catch {
-                self.errorMessage = "Failed to add maintenance user: \(error.localizedDescription)"
-                self.isLoading = false
-                print("Error adding maintenance user: \(error)")
-            }
+            // For now, we'll just log the activity
+            // In a real app, this would call a service to save to the database
+            self.logActivity(
+                title: "New Maintenance Staff Added",
+                description: "Staff member \(data.fullName) (\(data.specialization)) was added.",
+                icon: "wrench.and.screwdriver.fill",
+                color: "orange"
+            )
+            self.isLoading = false
         }
     }
     
@@ -197,34 +173,10 @@ class FleetViewModel: ObservableObject {
         }
     }
     
-    
     func deleteDriver(byId id: UUID) {
         if let driverName = drivers.first(where: { $0.id == id })?.displayName {
             drivers.removeAll(where: { $0.id == id })
             logActivity(title: "Driver Removed", description: "Driver \(driverName) was removed from fleet.", icon: "person.fill.badge.minus", color: "red")
-        }
-    }
-    
-    func deleteMechanic(byId id: UUID) {
-        Task { @MainActor in
-            do {
-                // Delete from Supabase via service layer
-                try await FleetManagerService.shared.deleteMechanic(byId: id)
-                
-                // Update local state
-                if let mechanicName = maintenancePersonnel.first(where: { $0.id == id })?.displayName {
-                    maintenancePersonnel.removeAll(where: { $0.id == id })
-                    logActivity(
-                        title: "Mechanic Removed",
-                        description: "Mechanic \(mechanicName) was removed from the fleet.",
-                        icon: "wrench.fill",
-                        color: "red"
-                    )
-                }
-            } catch {
-                self.errorMessage = "Failed to delete mechanic: \(error.localizedDescription)"
-                print("❌ Error deleting mechanic: \(error)")
-            }
         }
     }
     
