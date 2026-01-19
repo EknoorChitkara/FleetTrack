@@ -10,6 +10,7 @@ import MapKit
 
 struct FleetManagerTripMapView: View {
     let fmTrip: FMTrip
+    let showRoute: Bool
     @StateObject private var viewModel: FleetManagerTripMapViewModel
     @State private var detailHeight: CGFloat = 350
     @State private var isDragging = false
@@ -17,8 +18,9 @@ struct FleetManagerTripMapView: View {
     private let minHeight: CGFloat = 120
     private let maxHeight: CGFloat = 550
     
-    init(trip: FMTrip) {
+    init(trip: FMTrip, showRoute: Bool = true) {
         self.fmTrip = trip
+        self.showRoute = showRoute
         _viewModel = StateObject(wrappedValue: FleetManagerTripMapViewModel(tripId: trip.id, vehicleId: trip.vehicleId))
     }
     
@@ -33,7 +35,7 @@ struct FleetManagerTripMapView: View {
                 UnifiedTripMap(
                     trip: trip,
                     provider: viewModel.locationProvider,
-                    routePolyline: viewModel.routePolyline
+                    routePolyline: showRoute ? viewModel.routePolyline : nil
                 )
                 .edgesIgnoringSafeArea(.all)
                 

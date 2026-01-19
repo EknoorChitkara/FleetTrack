@@ -22,17 +22,36 @@ struct TripMapView: View {
     
     @State private var showArriveAlert = false
     @State private var showCompleteAlert = false
+    @State private var showStartLog = false
+    @State private var showEndLog = false
+    @State private var showingInspectionSheet = false
+    @State private var hasCompletedInspection = false
+    
+    // Log variables
+    @State private var logOdometer: String = ""
+    @State private var logFuel: Double = 0.5
     @State private var estimatedTime: String?
     @State private var routeDistance: Double?
     @State private var isNavigating = false
     
-    // Geofencing Manager
     @StateObject private var routeMonitor = RouteMonitoringManager.shared
     
+    @State private var localTripStatus: TripStatus?
+    
+    // Alert Details
+    let driverName: String
+    let vehicleInfo: String
+    
     // Trip phases
-    var isCompleted: Bool { trip.status == .completed }
-    var isPickupPhase: Bool { trip.status == .scheduled }
-    var isDeliveryPhase: Bool { trip.status == .ongoing }
+    var isCompleted: Bool { (localTripStatus ?? trip.status) == .completed }
+    var isPickupPhase: Bool { (localTripStatus ?? trip.status) == .scheduled }
+    var isDeliveryPhase: Bool { (localTripStatus ?? trip.status) == .ongoing }
+    
+    init(trip: Trip, driverName: String = "Unknown Driver", vehicleInfo: String = "Unknown Vehicle") {
+        self.trip = trip
+        self.driverName = driverName
+        self.vehicleInfo = vehicleInfo
+    }
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -65,24 +84,41 @@ struct TripMapView: View {
                 .foregroundColor(.white)
             }
         }
-        .alert("Start Trip?", isPresented: $showArriveAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Start Trip") { startDelivery() }
-        } message: {
-            Text("Confirm you've picked up the package and ready to deliver?")
+        .sheet(isPresented: $showStartLog) {
+            TripLogSheet(
+                title: "Start Trip",
+                subtitle: "Please log the vehicle status to start delivery",
+                buttonTitle: "Confirm & Start",
+                buttonColor: .green,
+                odometer: $logOdometer,
+                fuelLevel: $logFuel,
+                onCommit: { startDelivery() }
+            )
         }
-        .alert("End Trip?", isPresented: $showCompleteAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("End Trip") { completeTrip() }
-        } message: {
-            Text("Confirm delivery to \(trip.endAddress ?? "destination")?")
+        .sheet(isPresented: $showEndLog) {
+            TripLogSheet(
+                title: "End Trip",
+                subtitle: "Final vehicle status after delivery",
+                buttonTitle: "Complete Trip",
+                buttonColor: .red,
+                odometer: $logOdometer,
+                fuelLevel: $logFuel,
+                onCommit: { completeTrip() }
+            )
+        }
+        .sheet(isPresented: $showingInspectionSheet) {
+            DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: nil)) // We need to pass vehicle if possible, but VM handles basic checks
         }
         .onAppear {
+            if localTripStatus == nil {
+                localTripStatus = trip.status
+            }
             if !isCompleted {
                 locationProvider.startTracking()
             }
             // Initial route calculation
             calculateRoute()
+            checkDailyInspection()
         }
         .onDisappear {
             locationProvider.stopTracking()
@@ -111,12 +147,14 @@ struct TripMapView: View {
             guard let lat = trip.startLat, let lon = trip.startLong else { return }
             end = CLLocationCoordinate2D(latitude: lat, longitude: lon)
         } else {
+            // Delivery phase or completed (default to drops off)
             guard let lat = trip.endLat, let lon = trip.endLong else { return }
             end = CLLocationCoordinate2D(latitude: lat, longitude: lon)
         }
         
         Task {
             do {
+                print("🗺️ calculating route: \(start.latitude),\(start.longitude) -> \(end.latitude),\(end.longitude)")
                 let result = try await RouteCalculationService.shared.calculateRoute(from: start, to: end)
                 await MainActor.run {
                     self.routePolyline = result.polyline
@@ -124,7 +162,14 @@ struct TripMapView: View {
                     self.estimatedTime = result.formattedDuration
                 }
             } catch {
-                print("Route calculation failed: \(error)")
+                print("⚠️ Route calculation failed: \(error)")
+                
+                // Fallback: If routing from User Location fails (e.g. Simulator in US, Trip in India),
+                // try routing from Trip Start to Trip End to at least show the strict path.
+                if userLoc != nil {
+                     print("🔄 Retrying with static trip route (ignoring current user location)...")
+                     calculateRoute(from: nil)
+                }
             }
         }
     }
@@ -172,8 +217,8 @@ struct TripMapView: View {
             // Completed badge
             HStack {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.title2)
+                .foregroundColor(.green)
+                .font(.title2)
                 Text("Trip Completed")
                     .font(.headline)
                     .foregroundColor(.green)
@@ -310,17 +355,29 @@ struct TripMapView: View {
             
             // Action Buttons
             if isPickupPhase {
-                Button { showArriveAlert = true } label: {
-                    Label("Start Trip", systemImage: "play.circle.fill")
+                Button(action: {
+                    if hasCompletedInspection {
+                        logOdometer = ""
+                        logFuel = 0.5 // Reset fuel to default for start log
+                        showStartLog = true
+                    } else {
+                        showingInspectionSheet = true
+                    }
+                }) {
+                    Text(hasCompletedInspection ? "Start Trip" : "Pending Inspection")
                         .font(.headline)
+                        .foregroundColor(.white) // Changed to white for better contrast
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color.green)
-                        .foregroundColor(.white)
+                        .background(hasCompletedInspection ? Color.green : Color.orange) // Assuming Color.appEmerald is Color.green
                         .cornerRadius(12)
                 }
             } else if isDeliveryPhase {
-                Button { showCompleteAlert = true } label: {
+                Button { 
+                    logOdometer = ""
+                    logFuel = 0.5 // Reset fuel to default for end log
+                    showEndLog = true 
+                } label: {
                     Label("End Trip", systemImage: "stop.circle.fill")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
@@ -348,12 +405,28 @@ struct TripMapView: View {
         mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
     }
     
+    @State private var isProcessing = false
+
     private func startDelivery() {
+        guard !isProcessing else { return }
+        isProcessing = true
+        
         Task {
-            // 1. Update Trip Status
-            try? await supabase.from("trips")
-                .update(["status": "In Progress", "start_time": ISO8601DateFormatter().string(from: Date())])
-                .eq("id", value: trip.id).execute()
+            // 1. Update Trip Status & Logs
+            let updateData: [String: AnyEncodable] = [
+                "status": AnyEncodable("In Progress"),
+                "start_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
+                "start_odometer": AnyEncodable(Double(logOdometer) ?? 0.0),
+                "start_fuel_level": AnyEncodable(logFuel)
+            ]
+            
+            do {
+                try await supabase.from("trips")
+                    .update(updateData)
+                    .eq("id", value: trip.id.uuidString).execute()
+            } catch {
+                print("❌ Failed to update start trip: \(error)")
+            }
             
             // 2. Start Geofencing
             if let startLat = trip.startLat, let startLong = trip.startLong,
@@ -364,6 +437,8 @@ struct TripMapView: View {
                 
                 do {
                     print("📍 Fetching route for geofencing...")
+                    print("   - Start: \(start.latitude), \(start.longitude)")
+                    print("   - End: \(end.latitude), \(end.longitude)")
                     let mkRoute = try await RouteService.shared.fetchRoute(from: start, to: end)
                     
                     let geofenceRoute = try RouteService.shared.createGeofenceRoute(
@@ -374,17 +449,33 @@ struct TripMapView: View {
                         corridorRadius: 100 // 100 meter corridor
                     )
                     
+                    await RouteMonitoringManager.shared.startMonitoring(
+                        route: geofenceRoute,
+                        driverName: self.driverName,
+                        vehicleInfo: self.vehicleInfo
+                    )
+                    
                     await MainActor.run {
-                        RouteMonitoringManager.shared.startMonitoring(route: geofenceRoute)
-                        dismiss()
+                        // 3. Update local state instead of dismissing
+                        self.localTripStatus = .ongoing
+                        self.isProcessing = false
+                        
+                        // Recalculate route for navigation (from current location to DROP OFF)
+                        self.calculateRoute()
                     }
                     
                 } catch {
                     print("❌ Failed to start route monitoring: \(error)")
-                     await MainActor.run { dismiss() }
+                    await MainActor.run { 
+                        isProcessing = false
+                    }
                 }
             } else {
-                 await MainActor.run { dismiss() }
+                 await MainActor.run { 
+                    self.localTripStatus = .ongoing
+                    self.isProcessing = false
+                    self.calculateRoute()
+                 }
             }
         }
     }
@@ -394,12 +485,49 @@ struct TripMapView: View {
         RouteMonitoringManager.shared.stopMonitoring()
         
         Task {
-            try? await supabase.from("trips")
-                .update(["status": "Completed", "end_time": ISO8601DateFormatter().string(from: Date())])
-                .eq("id", value: trip.id).execute()
-            await MainActor.run { dismiss() }
+            let updateData: [String: AnyEncodable] = [
+                "status": AnyEncodable("Completed"),
+                "end_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
+                "end_odometer": AnyEncodable(Double(logOdometer) ?? 0.0),
+                "end_fuel_level": AnyEncodable(logFuel)
+            ]
+            
+            do {
+                try await supabase.from("trips")
+                    .update(updateData)
+                    .eq("id", value: trip.id.uuidString).execute()
+                await MainActor.run { dismiss() }
+            } catch {
+                print("❌ Failed to update end trip: \(error)")
+                await MainActor.run { isProcessing = false }
+            }
         }
     }
+    
+    private func checkDailyInspection() {
+         Task {
+             do {
+                  let startOfDay = Calendar.current.startOfDay(for: Date())
+                  let startString = ISO8601DateFormatter().string(from: startOfDay)
+                  
+                  let count = try await supabase
+                      .from("vehicle_inspections")
+                      .select("id", head: true, count: .exact)
+                      .eq("vehicle_id", value: trip.vehicleId)
+                      .gte("created_at", value: startString)
+                      .execute()
+                      .count
+                  
+                  await MainActor.run {
+                      hasCompletedInspection = (count ?? 0) > 0
+                  }
+             } catch {
+                 print("⚠️ Failed to check inspection status: \(error)")
+                 // Allow trip if check fails to prevent blocking
+                 await MainActor.run { hasCompletedInspection = true } 
+             }
+         }
+     }
 }
 
     // MARK: - Completed Trip Map (Static)
@@ -413,6 +541,10 @@ struct TripMapView: View {
 
 #Preview {
     NavigationStack {
-        TripMapView(trip: Trip.mockCompletedTrip)
+        TripMapView(
+            trip: Trip.mockCompletedTrip,
+            driverName: "Mock Driver",
+            vehicleInfo: "Toyota Prious (MH-12-AB-1234)"
+        )
     }
 }
