@@ -10,7 +10,8 @@ import SwiftUI
 struct AddMaintenanceStaffView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var fleetVM: FleetViewModel
-    @State private var formData = MaintenanceStaffCreationData()
+    @State private var formData = MaintenanceCreationData()
+    @State private var selectedSpecializations: Set<String> = []
     
     var body: some View {
         ZStack {
@@ -27,12 +28,14 @@ struct AddMaintenanceStaffView: View {
                             .foregroundColor(.gray)
                     }
                     Spacer()
-                    Text("Add Staff")
+                    Text("Add Mechanic")
                         .font(.headline)
                         .foregroundColor(.white)
                     Spacer()
                     Button(action: {
-                        fleetVM.addMaintenanceStaff(formData)
+                        // Convert array to comma-separated string
+                        formData.specializations = Array(selectedSpecializations).joined(separator: ", ")
+                        fleetVM.addMaintenanceUser(formData)
                         presentationMode.wrappedValue.dismiss()
                     }) {
                         Text("Save")
@@ -46,21 +49,46 @@ struct AddMaintenanceStaffView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         ModernFormHeader(
-                            title: "Staff Details",
-                            subtitle: "Register new maintenance personnel",
+                            title: "Mechanic Details",
+                            subtitle: "Register new mechanic",
                             iconName: "wrench.and.screwdriver.fill"
                         )
                         
                         VStack(spacing: 16) {
                             ModernTextField(icon: "person.fill", placeholder: "Full Name", text: $formData.fullName, isRequired: true)
                             
-                            ModernTextField(icon: "star.fill", placeholder: "Specialization (e.g., Mechanic)", text: $formData.specialization, isRequired: true)
+                            ModernTextField(icon: "envelope.fill", placeholder: "Email", text: $formData.email, isRequired: true, keyboardType: .emailAddress)
                             
                             ModernTextField(icon: "phone.fill", placeholder: "Phone (e.g., +91 9876543210)", text: $formData.phoneNumber, isRequired: true, keyboardType: .phonePad)
                             
-                            ModernTextField(icon: "envelope.fill", placeholder: "Email", text: $formData.email, isRequired: true, keyboardType: .emailAddress)
-                            
-                            ModernTextField(icon: "briefcase.fill", placeholder: "Experience (Yrs)", text: $formData.yearsOfExperience, keyboardType: .numberPad)
+                            // Specializations Picker
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack {
+                                    Image(systemName: "star.fill")
+                                        .foregroundColor(.appEmerald)
+                                        .font(.system(size: 14))
+                                    Text("Specializations *")
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.horizontal, 4)
+                                
+                                FlowLayout(spacing: 8) {
+                                    ForEach(FleetViewModel.maintenanceOptions, id: \.self) { spec in
+                                        SpecializationChip(
+                                            title: spec,
+                                            isSelected: selectedSpecializations.contains(spec),
+                                            action: {
+                                                if selectedSpecializations.contains(spec) {
+                                                    selectedSpecializations.remove(spec)
+                                                } else {
+                                                    selectedSpecializations.insert(spec)
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                         }
                         .padding(.horizontal)
                         
@@ -78,8 +106,8 @@ struct AddMaintenanceStaffView: View {
                                     if !NSPredicate(format:"SELF MATCHES %@", "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}").evaluate(with: formData.email) {
                                         Text("• Invalid email format")
                                     }
-                                    if formData.specialization.isEmpty {
-                                        Text("• Specialization is required")
+                                    if selectedSpecializations.isEmpty {
+                                        Text("• At least one specialization is required")
                                     }
                                 }
                                 .font(.caption)
@@ -97,7 +125,7 @@ struct AddMaintenanceStaffView: View {
     
     private var isFormValid: Bool {
         guard !formData.fullName.isEmpty else { return false }
-        guard !formData.specialization.isEmpty else { return false }
+        guard !selectedSpecializations.isEmpty else { return false }
         
         // Phone: +91 9876543210
         let phoneRegEx = "^\\+\\d{2} \\d{10}$"
@@ -113,12 +141,82 @@ struct AddMaintenanceStaffView: View {
     }
 }
 
-// Data model for maintenance staff creation
-struct MaintenanceStaffCreationData {
-    var fullName: String = ""
-    var specialization: String = ""
-    var phoneNumber: String = ""
-    var email: String = ""
-    var employeeId: String = ""
-    var yearsOfExperience: String = ""
+// MARK: - Specialization Chip Component
+
+struct SpecializationChip: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(isSelected ? Color.appEmerald.opacity(0.2) : Color.gray.opacity(0.1))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(isSelected ? Color.appEmerald : Color.gray.opacity(0.3), lineWidth: 1)
+                )
+                .foregroundColor(isSelected ? .appEmerald : .gray)
+        }
+    }
+}
+
+// MARK: - Flow Layout for Chips
+
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+    
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = FlowResult(
+            in: proposal.replacingUnspecifiedDimensions().width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = FlowResult(
+            in: bounds.width,
+            subviews: subviews,
+            spacing: spacing
+        )
+        for (index, subview) in subviews.enumerated() {
+            subview.place(at: CGPoint(x: bounds.minX + result.positions[index].x, y: bounds.minY + result.positions[index].y), proposal: .unspecified)
+        }
+    }
+    
+    struct FlowResult {
+        var size: CGSize = .zero
+        var positions: [CGPoint] = []
+        
+        init(in maxWidth: CGFloat, subviews: Subviews, spacing: CGFloat) {
+            var currentX: CGFloat = 0
+            var currentY: CGFloat = 0
+            var lineHeight: CGFloat = 0
+            
+            for subview in subviews {
+                let size = subview.sizeThatFits(.unspecified)
+                
+                if currentX + size.width > maxWidth && currentX > 0 {
+                    currentX = 0
+                    currentY += lineHeight + spacing
+                    lineHeight = 0
+                }
+                
+                positions.append(CGPoint(x: currentX, y: currentY))
+                currentX += size.width + spacing
+                lineHeight = max(lineHeight, size.height)
+            }
+            
+            self.size = CGSize(width: maxWidth, height: currentY + lineHeight)
+        }
+    }
 }
