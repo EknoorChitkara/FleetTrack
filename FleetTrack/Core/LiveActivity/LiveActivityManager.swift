@@ -7,6 +7,7 @@
 
 import ActivityKit
 import Foundation
+import Combine
 
 @MainActor
 class LiveActivityManager: ObservableObject {

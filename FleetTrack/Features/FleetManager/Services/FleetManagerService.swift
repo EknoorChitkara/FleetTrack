@@ -22,31 +22,47 @@ class FleetManagerService {
     // MARK: - Driver Management
     
     /// Add a new driver to the system
-    /// Flow:
-    /// 1. Create user in auth.users via RPC database function (NOT confirmed)
-    /// 2. Send verification email to the driver
-    /// 3. Driver clicks verification link in email
-    /// 4. Trigger syncs to public.users → drivers table
-    /// 5. Driver can now login with their password
     func addDriver(_ data: DriverCreationData) async throws {
         print("🚀 [addDriver] Starting driver creation for: \(data.fullName)")
         
-        // Generate password for the driver
         let temporaryPassword = generateTemporaryPassword()
         
-        // Step 1: Create user via Ghost Client (Standard Auth flow)
         try await createUserViaGhostClient(
             email: data.email,
             password: temporaryPassword,
             fullName: data.fullName,
             phoneNumber: data.phoneNumber,
-            licenseNumber: data.licenseNumber,
-            address: data.address
+            role: "Driver",
+            metadata: [
+                "license_number": AnyJSON.string(data.licenseNumber),
+                "address": AnyJSON.string(data.address)
+            ]
         )
         
         print("✅ [addDriver] Driver created and invitation sent")
         print("🔑 [addDriver] Temporary Password: \(temporaryPassword)")
-        print("⚠️ [addDriver] IMPORTANT: Share this password with the driver securely!")
+    }
+    
+    /// Add a new maintenance staff to the system
+    func addMaintenanceStaff(_ data: MaintenanceStaffCreationData) async throws {
+        print("🚀 [addMaintenanceStaff] Starting staff creation for: \(data.fullName)")
+        
+        let temporaryPassword = generateTemporaryPassword()
+        
+        try await createUserViaGhostClient(
+            email: data.email,
+            password: temporaryPassword,
+            fullName: data.fullName,
+            phoneNumber: data.phoneNumber,
+            role: "Maintenance Personnel",
+            metadata: [
+                "specialization": AnyJSON.string(data.specialization),
+                "years_of_experience": AnyJSON.string(data.yearsOfExperience)
+            ]
+        )
+        
+        print("✅ [addMaintenanceStaff] Maintenance staff created and invitation sent")
+        print("🔑 [addMaintenanceStaff] Temporary Password: \(temporaryPassword)")
     }
     
     /// Creates a user using a secondary Supabase client with no persistence.
@@ -56,55 +72,60 @@ class FleetManagerService {
         password: String,
         fullName: String,
         phoneNumber: String?,
-        licenseNumber: String? = nil,
-        address: String? = nil
+        role: String,
+        metadata: [String: AnyJSON] = [:]
     ) async throws {
         print("🔐 [GhostClient] Initializing isolated sign-up for: \(email)")
         
-        // 1. Create a "Ghost" client with PKCE DISABLED
-        // PKCE is great for security but causes 'bad_code_verifier' when 
-        // one client starts a signup and another finishes it.
         let ghostClient = SupabaseClient(
             supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
             supabaseKey: SupabaseConfig.supabaseAnonKey,
             options: SupabaseClientOptions(
                 auth: .init(
                     storage: NSLockingNoOpStorage(),
-                    flowType: .implicit // Uses stable tokens in URL instead of PKCE
+                    flowType: .implicit
                 )
             )
         )
         
-        // 2. Perform a standard signUp
         do {
-            // Check if user already exists to avoid duplicate trigger
-            let existingUsers: [FMDriver] = try await client
-                .from("drivers")
-                .select()
+            // Check if user already exists - decode to array to check count correctly
+            let response = try await client
+                .from("users")
+                .select("id")
                 .eq("email", value: email)
                 .execute()
-                .value
             
-            if !existingUsers.isEmpty {
-                print("⚠️ User already exists. Sending a resend instead.")
+            // PostgrestResponse.data is Data, [] is not empty Data.
+            // We decode to see if we actually got records.
+            struct UserRecord: Decodable { let id: UUID }
+            let existingUsers = try? JSONDecoder().decode([UserRecord].self, from: response.data)
+            
+            if let existingUsers = existingUsers, !existingUsers.isEmpty {
+                print("⚠️ User already exists in database. Sending a resend instead.")
                 try await client.auth.resend(email: email, type: .signup)
                 return
+            }
+
+            var fullMetadata: [String: AnyJSON] = [
+                "full_name": AnyJSON.string(fullName),
+                "role": AnyJSON.string(role),
+                "phone_number": AnyJSON.string(phoneNumber ?? "")
+            ]
+            
+            // Merge additional metadata
+            for (key, value) in metadata {
+                fullMetadata[key] = value
             }
 
             _ = try await ghostClient.auth.signUp(
                 email: email,
                 password: password,
-                data: [
-                    "full_name": AnyJSON.string(fullName),
-                    "role": AnyJSON.string("Driver"),
-                    "phone_number": AnyJSON.string(phoneNumber ?? ""),
-                    "license_number": AnyJSON.string(licenseNumber ?? ""),
-                    "address": AnyJSON.string(address ?? "")
-                ],
+                data: fullMetadata,
                 redirectTo: URL(string: "fleettrack://auth/callback")
             )
             
-            print("📧 [GhostClient] Invitation sent successfully via Implicit Flow.")
+            print("📧 [GhostClient] Invitation sent successfully via Implicit Flow for role: \(role).")
             
         } catch {
             print("❌ [GhostClient] failed: \(error.localizedDescription)")
@@ -357,6 +378,15 @@ class FleetManagerService {
             .execute()
             .value
         return drivers
+    }
+    
+    func fetchMaintenanceStaff() async throws -> [FMMaintenanceStaff] {
+        let staff: [FMMaintenanceStaff] = try await client
+            .from("maintenance_personnel")
+            .select()
+            .execute()
+            .value
+        return staff
     }
     
     func fetchTrips() async throws -> [FMTrip] {
