@@ -87,13 +87,15 @@ struct DriverDashboardView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Welcome, \(localUser.name.components(separatedBy: " ").first ?? localUser.name)!")
-                            .font(.system(size: 25, weight: .bold, design: .rounded))
+                            .font(.appTitle)
                             .foregroundColor(.white)
+                            .accessibilityAddTraits(.isHeader)
                     }
                     
                     Spacer()
                     
                     Button {
+                        HapticManager.shared.triggerSelection()
                         isShowingProfile = true
                     } label: {
                         Image(systemName: "person.circle.fill")
@@ -101,6 +103,7 @@ struct DriverDashboardView: View {
                             .foregroundColor(.white.opacity(0.8))
                             .background(Circle().fill(Color.white.opacity(0.1)))
                     }
+                    .accessibilityLabel("Profile and Settings")
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
@@ -134,12 +137,16 @@ struct DriverDashboardView: View {
                             value: "\(viewModel.completedTripsCount)",
                             unit: ""
                         )
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Trips Completed: \(viewModel.completedTripsCount)")
                         
                         DriverStatCard(
                             title: "Distance",
                             value: "\(Int(viewModel.totalDistance))",
                             unit: "km"
                         )
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Total Distance: \(Int(viewModel.totalDistance)) kilometers")
                     }
                     .padding(.horizontal)
                     
@@ -159,6 +166,7 @@ struct DriverDashboardView: View {
                     VStack(spacing: 12) {
                         ForEach(viewModel.dashboardActions) { action in
                             DashboardActionCard(action: action) {
+                                HapticManager.shared.triggerImpact(style: .light)
                                 if action.type == .vehicleInspection {
                                     isShowingInspection = true
                                 } else if action.type == .reportIssue {
@@ -168,6 +176,8 @@ struct DriverDashboardView: View {
                                     print("Tapped action: \(action.title)")
                                 }
                             }
+                            .accessibilityLabel(action.title)
+                            .accessibilityHint(action.subtitle)
                         }
                     }
                     .padding(.horizontal)
@@ -175,8 +185,9 @@ struct DriverDashboardView: View {
                     // Recent Trips
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Recent Trips")
-                            .font(.headline)
+                            .font(.appHeadline)
                             .foregroundColor(.white)
+                            .accessibilityAddTraits(.isHeader)
                         
                         if viewModel.recentTrips.isEmpty {
                             Text("No recent trips")
