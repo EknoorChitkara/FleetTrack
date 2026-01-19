@@ -95,13 +95,19 @@ public class TasksViewModel: ObservableObject {
     // MARK: - Initialization
 
     init() {
-        Task { await loadTasks() }
+        // Note: Initial load is handled by the view's .task modifier
     }
 
     // MARK: - Data Loading
 
     @MainActor
     func loadTasks() async {
+        // Prevent concurrent loading
+        guard !isLoading else {
+            print("⏭️ Skipping loadTasks - already loading")
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
 
@@ -243,7 +249,8 @@ public class TasksViewModel: ObservableObject {
 
     // MARK: - Refresh
 
-    func refreshData() {
-        Task { await loadTasks() }
+    @MainActor
+    func refreshData() async {
+        await loadTasks()
     }
 }
