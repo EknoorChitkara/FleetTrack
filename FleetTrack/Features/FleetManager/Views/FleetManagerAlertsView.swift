@@ -12,6 +12,7 @@ struct FleetManagerAlertsView: View {
     @State private var selectedSegment = 0
     @State private var alerts: [GeofenceAlert] = []
     @State private var isLoading = false
+    @State private var selectedAlert: GeofenceAlert?
     
     var filteredAlerts: [GeofenceAlert] {
         if selectedSegment == 1 {
@@ -19,7 +20,7 @@ struct FleetManagerAlertsView: View {
         }
         return alerts
     }
-    
+
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
@@ -85,6 +86,9 @@ struct FleetManagerAlertsView: View {
                         LazyVStack(spacing: 16) {
                             ForEach(filteredAlerts) { alert in
                                 AlertRowView(alert: alert)
+                                    .onTapGesture {
+                                        selectedAlert = alert
+                                    }
                             }
                         }
                         .padding(.horizontal)
@@ -94,6 +98,9 @@ struct FleetManagerAlertsView: View {
         }
         .task {
             await fetchAlerts()
+        }
+        .sheet(item: $selectedAlert) { alert in
+            AlertDetailView(alert: alert)
         }
     }
     

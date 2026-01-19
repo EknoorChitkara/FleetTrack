@@ -46,9 +46,18 @@ final class DriverDashboardViewModel: ObservableObject {
             let driverProfile = try await driverService.getDriverProfile(userId: user.id)
             self.driver = driverProfile
             
-            // 2. Fetch Assigned Vehicle if available
-            if let vehicleId = driverProfile.currentVehicleId {
-                self.assignedVehicle = try await driverService.getAssignedVehicle(vehicleId: vehicleId)
+            // 2. Fetch Assigned Vehicle (Query by Driver ID from Database)
+            do {
+                self.assignedVehicle = try await driverService.getAssignedVehicle(driverId: driverProfile.id)
+                if let vehicle = self.assignedVehicle {
+                    print("🚗 Assigned Vehicle: \(vehicle.manufacturer) \(vehicle.model) (\(vehicle.registrationNumber))")
+                } else {
+                    print("ℹ️ Driver has no vehicle assigned in 'vehicles' table.")
+                    self.assignedVehicle = nil
+                }
+            } catch {
+                print("❌ Failed to fetch assigned vehicle: \(error)")
+                // Don't clear nil here, let it be nil
                 self.assignedVehicle = nil
             }
             

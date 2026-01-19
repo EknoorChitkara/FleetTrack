@@ -105,15 +105,6 @@ struct AssignedVehicleCard: View {
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 4) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "fuelpump.fill")
-                                .font(.caption)
-                            Text("\(Int(vehicle.fuelLevel))%")
-                        }
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(vehicle.fuelLevel < 20 ? .red : .appEmerald)
-                        
                         Text(vehicle.status.rawValue)
                             .font(.caption2)
                             .padding(.horizontal, 8)
@@ -466,8 +457,8 @@ struct ScheduledTripCard: View {
                 
                 Button(action: onStart) {
                     HStack {
-                        Text("Start Trip")
-                        Image(systemName: "arrow.right")
+                        Text("View Map")
+                        Image(systemName: "map.fill")
                     }
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.black)
@@ -558,8 +549,8 @@ struct ActiveTripCard: View {
             // Action
             Button(action: onResume) {
                 HStack {
-                    Text("End Trip") // Leads to map where End Trip is available
-                    Image(systemName: "chevron.right")
+                    Text("View Map") // Leads to map where End Trip is available
+                    Image(systemName: "map.fill")
                 }
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.black)

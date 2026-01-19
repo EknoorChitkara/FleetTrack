@@ -44,26 +44,27 @@ struct FleetManagerHomeView: View {
                         ActionCard(title: "Create\nTrip", icon: "map.fill", color: .blue) {
                             showCreateTrip = true
                         }
-                        ActionCard(title: "Add\nVehicle", icon: "car.fill", color: .appEmerald) { // Changed to appEmerald (Green)
+                        ActionCard(title: "Add\nVehicle", icon: "car.fill", color: .appEmerald) {
                             showAddVehicle = true
                         }
                         ActionCard(title: "Add\nDriver", icon: "person.badge.plus.fill", color: .green) {
                             showAddDriver = true
                         }
-                        ActionCard(title: "Add\nMaintenance", icon: "wrench.and.screwdriver.fill", color: .orange) {
+                        ActionCard(title: "Add\nMechanic", icon: "wrench.and.screwdriver.fill", color: .orange) {
                             showAddMaintenanceStaff = true
                         }
                     }
                 }
                 .padding(.horizontal)
                 
-                // Geofencing Button
+                // Quick Links
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Quick Links")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal)
                     
+                    // Geofencing Link
                     Button(action: {
                         showGeofencing = true
                     }) {
@@ -80,6 +81,40 @@ struct FleetManagerHomeView: View {
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
                                 Text("Manage virtual boundaries")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.gray)
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                        .padding()
+                        .background(Color.appCardBackground)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        )
+                    }
+                    .padding(.horizontal)
+                    
+                    // Analytics Link
+                    NavigationLink(destination: FleetManagerAnalyticsView()) {
+                        HStack(spacing: 16) {
+                            Image(systemName: "chart.bar.xaxis")
+                                .font(.system(size: 24))
+                                .foregroundColor(.orange)
+                                .padding(12)
+                                .background(Color.orange.opacity(0.1))
+                                .clipShape(Circle())
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("View Analytics")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white)
+                                Text("Fuel, costs & distance insights")
                                     .font(.system(size: 13))
                                     .foregroundColor(.gray)
                             }

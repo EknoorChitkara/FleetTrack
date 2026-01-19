@@ -5,6 +5,7 @@
 
 import SwiftUI
 import Supabase
+
 struct VerificationView: View {
     let email: String
     @ObservedObject private var sessionManager = SessionManager.shared
@@ -120,48 +121,72 @@ struct VerificationView: View {
             print("✅ 2FA Success for \(email)")
             print("✅ Session user ID: \(session.user.id)")
             
-            // Try to fetch existing user profile
+            // Try to fetch existing user profile from maintenance_personnel
             var userProfile: User?
             
             do {
-                userProfile = try await supabase
-                    .from("users")
+                // First, try to get from maintenance_personnel table
+                let maintenanceUser: MaintenancePersonnel = try await supabase
+                    .from("maintenance_personnel")
                     .select()
-                    .eq("id", value: session.user.id)
+                    .eq("user_id", value: session.user.id)
                     .single()
                     .execute()
                     .value
-                print("✅ Existing user profile found: \(userProfile?.name ?? "Unknown")")
+                
+                // Convert to User model
+                userProfile = User(
+                    id: session.user.id,
+                    name: maintenanceUser.fullName ?? email.components(separatedBy: "@").first ?? "User",
+                    email: maintenanceUser.email ?? email,
+                    phoneNumber: maintenanceUser.phoneNumber,
+                    role: .maintenancePersonnel,
+                    profileImageURL: nil,
+                    isActive: maintenanceUser.isActive ?? true,
+                    createdAt: maintenanceUser.createdAt ?? Date(),
+                    updatedAt: maintenanceUser.updatedAt ?? Date()
+                )
+                print("✅ Existing maintenance personnel found: \(maintenanceUser.fullName ?? "Unknown")")
             } catch {
-                // User doesn't exist in users table - create them
+                // User doesn't exist in maintenance_personnel - create them
                 print("⚠️ No user profile found, creating new record...")
                 
                 // Extract user info from auth session
                 let userName = session.user.userMetadata["full_name"]?.stringValue ?? 
                                session.user.userMetadata["name"]?.stringValue ?? 
                                email.components(separatedBy: "@").first ?? "User"
-                let userRole = session.user.userMetadata["role"]?.stringValue ?? "Driver"
                 
-                // Create new user record
-                let newUser = User(
-                    id: session.user.id,
-                    name: userName,
+                // Create new maintenance_personnel record
+                let newMaintenanceUser = MaintenancePersonnel(
+                    id: UUID(),
+                    userId: session.user.id,
+                    fullName: userName,
                     email: email,
                     phoneNumber: session.user.phone,
-                    role: UserRole(rawValue: userRole) ?? .driver,
-                    profileImageURL: nil,
+                    specializations: nil,
                     isActive: true,
                     createdAt: Date(),
                     updatedAt: Date()
                 )
                 
                 try await supabase
-                    .from("users")
-                    .insert(newUser)
+                    .from("maintenance_personnel")
+                    .insert(newMaintenanceUser)
                     .execute()
                 
-                userProfile = newUser
-                print("✅ New user profile created for \(userName)")
+                // Convert to User model
+                userProfile = User(
+                    id: session.user.id,
+                    name: userName,
+                    email: email,
+                    phoneNumber: session.user.phone,
+                    role: .maintenancePersonnel,
+                    profileImageURL: nil,
+                    isActive: true,
+                    createdAt: Date(),
+                    updatedAt: Date()
+                )
+                print("✅ New maintenance personnel created for \(userName)")
             }
             
             guard let profile = userProfile else {

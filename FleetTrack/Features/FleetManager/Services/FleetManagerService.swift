@@ -56,8 +56,10 @@ class FleetManagerService {
         password: String,
         fullName: String,
         phoneNumber: String?,
+        role: String = "Driver",
         licenseNumber: String? = nil,
-        address: String? = nil
+        address: String? = nil,
+        specializations: String? = nil
     ) async throws {
         print("🔐 [GhostClient] Initializing isolated sign-up for: \(email)")
         
@@ -91,16 +93,25 @@ class FleetManagerService {
                 return
             }
 
+            var metadata: [String: AnyJSON] = [
+                "full_name": AnyJSON.string(fullName),
+                "role": AnyJSON.string(role),
+                "phone_number": AnyJSON.string(phoneNumber ?? "")
+            ]
+            
+            // Add role-specific metadata
+            if role == "Driver" {
+                metadata["license_number"] = AnyJSON.string(licenseNumber ?? "")
+                metadata["address"] = AnyJSON.string(address ?? "")
+            } else if role == "Maintenance Personnel", let specs = specializations {
+                // specializations is already a comma-separated string
+                metadata["specializations"] = AnyJSON.string(specs)
+            }
+            
             _ = try await ghostClient.auth.signUp(
                 email: email,
                 password: password,
-                data: [
-                    "full_name": AnyJSON.string(fullName),
-                    "role": AnyJSON.string("Driver"),
-                    "phone_number": AnyJSON.string(phoneNumber ?? ""),
-                    "license_number": AnyJSON.string(licenseNumber ?? ""),
-                    "address": AnyJSON.string(address ?? "")
-                ],
+                data: metadata,
                 redirectTo: URL(string: "fleettrack://auth/callback")
             )
             
@@ -123,6 +134,36 @@ class FleetManagerService {
     private func generateTemporaryPassword() -> String {
         let characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
         return String((0..<16).map { _ in characters.randomElement()! })
+    }
+    
+    // MARK: - Maintenance Personnel Management
+    
+    /// Add a new maintenance user to the system
+    /// Flow:
+    /// 1. Create user in auth.users via Ghost Client
+    /// 2. Send verification email to the user
+    /// 3. User clicks verification link in email
+    /// 4. Trigger syncs to maintenance_personnel table
+    /// 5. User can now login with their password
+    func addMaintenanceUser(_ data: MaintenanceCreationData) async throws {
+        print("🚀 [addMaintenanceUser] Starting maintenance user creation for: \(data.fullName)")
+        
+        // Generate password for the user
+        let temporaryPassword = generateTemporaryPassword()
+        
+        // Step 1: Create user via Ghost Client
+        try await createUserViaGhostClient(
+            email: data.email,
+            password: temporaryPassword,
+            fullName: data.fullName,
+            phoneNumber: data.phoneNumber,
+            role: "Maintenance Personnel",
+            specializations: data.specializations
+        )
+        
+        print("✅ [addMaintenanceUser] User created and invitation sent")
+        print("🔑 [addMaintenanceUser] Temporary Password: \(temporaryPassword)")
+        print("⚠️ [addMaintenanceUser] IMPORTANT: Share this password with the user securely!")
     }
     
     // MARK: - Vehicle Management
@@ -329,6 +370,7 @@ class FleetManagerService {
         return drivers
     }
     
+    
     func fetchTrips() async throws -> [FMTrip] {
         let trips: [FMTrip] = try await client
             .from("trips")
@@ -336,5 +378,54 @@ class FleetManagerService {
             .execute()
             .value
         return trips
+    }
+    
+    
+    func fetchMaintenancePersonnel() async throws -> [MaintenancePersonnel] {
+        let personnel: [MaintenancePersonnel] = try await client
+            .from("maintenance_personnel")
+            .select()
+            .execute()
+            .value
+        return personnel
+    }
+    
+    // MARK: - Delete Maintenance Personnel
+    
+    func deleteMechanic(byId id: UUID) async throws {
+        print("🗑️ [deleteMechanic] Deleting mechanic with ID: \(id)")
+        
+        // Step 1: Fetch the mechanic to get user_id
+        let mechanic: MaintenancePersonnel = try await client
+            .from("maintenance_personnel")
+            .select()
+            .eq("id", value: id)
+            .single()
+            .execute()
+            .value
+        
+        guard let userId = mechanic.userId else {
+            print("⚠️ [deleteMechanic] No user_id found, deleting only from maintenance_personnel")
+            // If no user_id, just delete from maintenance_personnel
+            try await client
+                .from("maintenance_personnel")
+                .delete()
+                .eq("id", value: id)
+                .execute()
+            return
+        }
+        
+        print("ℹ️ [deleteMechanic] Found user_id: \(userId)")
+        
+        // Step 2: Delete from auth.users (parent) via Edge Function
+        // This will CASCADE to maintenance_personnel automatically
+        let response = try await client.functions.invoke(
+            "delete-user",
+            options: FunctionInvokeOptions(
+                body: ["userId": userId.uuidString]
+            )
+        )
+        
+        print("✅ [deleteMechanic] Auth user deleted, CASCADE will remove maintenance_personnel record")
     }
 }

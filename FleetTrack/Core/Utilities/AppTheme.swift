@@ -35,6 +35,9 @@ public struct AppTheme {
     /// Disabled text: #555558
     public static let textDisabled = Color(hex: "#555558")
 
+    /// Inverse text (for use on accent colored surfaces): #000000
+    public static let textInverse = Color(hex: "#000000")
+
     // MARK: - Primary Accent Color (Neon Green)
 
     /// Base neon green accent: #00E676

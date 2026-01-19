@@ -40,25 +40,36 @@ class RouteMonitoringManager: NSObject, ObservableObject {
     
     // MARK: - Public API
     
-    func startMonitoring(route: GeofenceRoute) {
-        self.activeRoute = route
-        self.routePoints = decodePolyline(route.encodedPolyline)
-        self.isOffRoute = false
-        self.currentViolation = nil
-        self.lastViolationTimestamp = nil
-        
-        locationManager.startUpdatingLocation()
-        
-        // Step 7: Create Geofence Route in Backend
-        Task {
-            do {
-                try await saveGeofenceRoute(route)
-            } catch {
-                print("Failed to save geofence route: \(error)")
-            }
+    // Context for Alerts
+    private var currentDriverName: String = "Unknown Driver"
+    private var currentVehicleInfo: String = "Unknown Vehicle"
+    
+    // MARK: - Public API
+    
+    func startMonitoring(route: GeofenceRoute, driverName: String, vehicleInfo: String) async {
+        await MainActor.run {
+            self.activeRoute = route
+            self.currentDriverName = driverName
+            self.currentVehicleInfo = vehicleInfo
+            self.routePoints = decodePolyline(route.encodedPolyline)
+            self.isOffRoute = false
+            self.currentViolation = nil
+            self.lastViolationTimestamp = nil
         }
         
-        print("📍 Started route monitoring for Route ID: \(route.routeId)")
+        // Step 7: Create/Update Geofence Route in Backend FIRST
+        // This ensures the foreign key exists before any violations are recorded.
+        do {
+            try await saveGeofenceRoute(route)
+            print("✅ Geofence route saved successfully")
+        } catch {
+            print("⚠️ Failed to save geofence route (monitoring will continue but violations may fail to save): \(error)")
+        }
+        
+        await MainActor.run {
+            locationManager.startUpdatingLocation()
+            print("📍 Started route monitoring for Route ID: \(route.routeId)")
+        }
     }
     
     func stopMonitoring() {
@@ -82,10 +93,10 @@ class RouteMonitoringManager: NSObject, ObservableObject {
     // MARK: - Backend Integration (Step 7)
     
     private func saveGeofenceRoute(_ route: GeofenceRoute) async throws {
-        // Assuming table 'geofence_routes'
+        // Upsert ensures we don't fail if the route was already saved (e.g. app restart)
         try await supabase.database
             .from("geofence_routes")
-            .insert(route)
+            .upsert(route)
             .execute()
     }
     
@@ -101,7 +112,7 @@ class RouteMonitoringManager: NSObject, ObservableObject {
             let alert = GeofenceAlert(
                 tripId: violation.routeId, // Assuming routeId == tripId
                 title: "Geofence Violation",
-                message: "Driver has deviated \(Int(violation.distanceFromRoute))m from the route."
+                message: "🚨 GEOFENCE VIOLATION 🚨\n\nDriver: \(currentDriverName)\nVehicle: \(currentVehicleInfo)\nDeviation: \(Int(violation.distanceFromRoute))m from route."
             )
             await recordAlert(alert)
             

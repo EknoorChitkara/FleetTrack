@@ -31,7 +31,7 @@ struct MaintenanceTabView: View {
                 TasksView()
                     .tag(1)
                 
-                AlertsView()
+                AlertsView(alerts: viewModel.alerts)
                     .tag(2)
                 
                 InventoryView()
