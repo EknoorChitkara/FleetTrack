@@ -21,6 +21,8 @@ public enum VehicleType: String, Codable, CaseIterable {
     case truck = "Truck"
     case van = "Van"
     case car = "Car"
+    case bus = "Bus"
+    case motorcycle = "Motorcycle"
     case other = "Other"
 }
 

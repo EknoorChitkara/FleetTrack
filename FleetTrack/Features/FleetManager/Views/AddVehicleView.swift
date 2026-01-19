@@ -14,15 +14,14 @@ struct AddVehicleView: View {
     @State private var showError = false
     @State private var showRegistrationError = false
     @State private var showDuplicateAlert = false
-    
     @FocusState private var focusedField: Field?
     
     enum Field {
-        case registration
+        case registration, manufacturer, model, capacity
     }
     
     // Mock data for dropdowns
-    let vehicleTypes = VehicleType.allCases
+    let vehicleTypes: [VehicleType] = [.truck, .van, .car, .other]
     let fuelTypes = FuelType.allCases
     let statuses = VehicleStatus.allCases
     
@@ -99,15 +98,17 @@ struct AddVehicleView: View {
                                 ModernPicker(icon: "car.fill", title: "Type", selection: $formData.vehicleType, options: vehicleTypes)
                                     .frame(maxWidth: .infinity)
                                     .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
-                                    .onChange(of: formData.vehicleType) { _ in validateRegistrationOnInteraction() }
+                                .onChange(of: formData.vehicleType) { _ in validateRegistrationOnInteraction() }
                                 ModernTextField(icon: "building.2.fill", placeholder: "Manufacturer", text: $formData.manufacturer, isRequired: true)
                                     .frame(maxWidth: .infinity)
+                                    .focused($focusedField, equals: .manufacturer)
                                     .onTapGesture { validateRegistrationOnInteraction() }
                             }
                             
                             HStack(spacing: 16) {
                                 ModernTextField(icon: "info.circle.fill", placeholder: "Model", text: $formData.model, isRequired: true)
                                     .frame(maxWidth: .infinity)
+                                    .focused($focusedField, equals: .model)
                                     .onTapGesture { validateRegistrationOnInteraction() }
                                 ModernPicker(icon: "fuelpump.fill", title: "Fuel", selection: $formData.fuelType, options: fuelTypes)
                                     .frame(maxWidth: .infinity)
@@ -118,6 +119,7 @@ struct AddVehicleView: View {
                             HStack(spacing: 16) {
                                 ModernTextField(icon: "scalemass.fill", placeholder: "Capacity", text: $formData.capacity, isRequired: true)
                                     .frame(maxWidth: .infinity)
+                                    .focused($focusedField, equals: .capacity)
                                     .onTapGesture { validateRegistrationOnInteraction() }
                                 ModernDatePicker(icon: "calendar", title: "Reg Date", selection: $formData.registrationDate, throughDate: Date())
                                     .frame(maxWidth: .infinity)
@@ -176,8 +178,9 @@ struct AddVehicleView: View {
             }
         }
         .onChange(of: focusedField) { newValue in
-            if newValue != .registration && !formData.registrationNumber.isEmpty {
-                showRegistrationError = true
+            // If focus moves to ANY field other than registration, check validation
+            if newValue != .registration && newValue != nil {
+                validateRegistrationOnInteraction()
             }
         }
         .onChange(of: formData.registrationNumber) { _ in
