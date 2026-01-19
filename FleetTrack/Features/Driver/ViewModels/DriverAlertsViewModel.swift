@@ -50,7 +50,7 @@ class DriverAlertsViewModel: ObservableObject {
             // Fallback - mock data if service fails or is not ready
             self.alerts = [
                 MaintenanceAlert(title: "Engine Overheat", message: "Engine temperature critical", date: Date(), type: .emergency),
-                MaintenanceAlert(title: "Oil Change Due", message: "Scheduled maintenance", date: Date().addingTimeInterval(-86400), type: .system)
+                MaintenanceAlert(title: "Oil Change Due", message: "Scheduled maintenance", date: Date().addingTimeInterval(-86400), type: .maintenance)
             ]
         }
         

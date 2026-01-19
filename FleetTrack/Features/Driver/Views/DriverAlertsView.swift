@@ -38,13 +38,13 @@ struct DriverAlertsView: View {
                 // Segments / Tabs
                 HStack(spacing: 12) {
                     TabButton(
-                        title: "All (\(viewModel.emergencyCount))",
+                        title: "Emergency (\(viewModel.emergencyCount))",
                         isSelected: viewModel.selectedTab == .all,
                         action: { viewModel.selectedTab = .all }
                     )
                     
                     TabButton(
-                        title: "Unread (\(viewModel.maintenanceCount))",
+                        title: "Maintainance(\(viewModel.maintenanceCount))",
                         isSelected: viewModel.selectedTab == .unread,
                         action: { viewModel.selectedTab = .unread }
                     )
