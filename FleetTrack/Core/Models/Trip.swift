@@ -45,9 +45,16 @@ struct Trip: Identifiable, Codable, Hashable {
     var distance: Double?
     
     // Trip metadata
+    // Trip metadata
     var purpose: String?
     var notes: String?
     var createdBy: UUID?
+    
+    // Manual Logs
+    var startOdometer: Double?
+    var endOdometer: Double?
+    var startFuelLevel: Double? // 0-100%
+    var endFuelLevel: Double? // 0-100%
     
     // Timestamps
     var createdAt: Date
@@ -70,6 +77,10 @@ struct Trip: Identifiable, Codable, Hashable {
         case purpose
         case notes
         case createdBy = "created_by"
+        case startOdometer = "start_odometer"
+        case endOdometer = "end_odometer"
+        case startFuelLevel = "start_fuel_level"
+        case endFuelLevel = "end_fuel_level"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -91,6 +102,10 @@ struct Trip: Identifiable, Codable, Hashable {
         purpose: String? = nil,
         notes: String? = nil,
         createdBy: UUID? = nil,
+        startOdometer: Double? = nil,
+        endOdometer: Double? = nil,
+        startFuelLevel: Double? = nil,
+        endFuelLevel: Double? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -110,6 +125,10 @@ struct Trip: Identifiable, Codable, Hashable {
         self.purpose = purpose
         self.notes = notes
         self.createdBy = createdBy
+        self.startOdometer = startOdometer
+        self.endOdometer = endOdometer
+        self.startFuelLevel = startFuelLevel
+        self.endFuelLevel = endFuelLevel
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -199,7 +218,9 @@ extension Trip {
         startTime: Calendar.current.date(byAdding: .hour, value: -2, to: Date()),
         distance: 148.5,
         purpose: "Urgent Delivery",
-        createdBy: User.mockFleetManager.id
+        createdBy: User.mockFleetManager.id,
+        startOdometer: 12400.0,
+        startFuelLevel: 80.0
     )
     
     static let mockCompletedTrip = Trip(

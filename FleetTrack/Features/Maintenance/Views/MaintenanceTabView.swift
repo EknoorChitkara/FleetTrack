@@ -31,13 +31,23 @@ struct MaintenanceTabView: View {
                 TasksView()
                     .tag(1)
                 
-                AlertsView()
+                AlertsView(alerts: viewModel.alerts)
                     .tag(2)
                 
                 InventoryView()
                     .tag(3)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .task {
+                await viewModel.loadData()
+            }
+            .onChange(of: selectedTab) { newValue in
+                if newValue == 0 {
+                    Task {
+                        await viewModel.loadData()
+                    }
+                }
+            }
             
             // Floating Tab Bar
             customTabBar

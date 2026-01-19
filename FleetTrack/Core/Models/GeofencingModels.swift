@@ -68,7 +68,7 @@ struct GeofenceViolation: Codable, Identifiable {
 
 struct GeofenceAlert: Codable, Identifiable {
     let id: UUID
-    let tripId: UUID
+    let tripId: UUID?
     let title: String
     let message: String
     let type: String // "geofence_violation"
@@ -85,7 +85,7 @@ struct GeofenceAlert: Codable, Identifiable {
         case isRead = "is_read"
     }
     
-    init(tripId: UUID, title: String, message: String, type: String = "geofence_violation", timestamp: Date = Date()) {
+    init(tripId: UUID?, title: String, message: String, type: String = "geofence_violation", timestamp: Date = Date()) {
         self.id = UUID()
         self.tripId = tripId
         self.title = title

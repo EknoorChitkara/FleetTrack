@@ -18,13 +18,19 @@ class InventoryViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     init() {
-        Task { await loadInventory() }
+        // Note: Initial load is handled by the view's .task modifier
     }
 
     // MARK: - Data Loading
 
     @MainActor
     func loadInventory() async {
+        // Prevent concurrent loading
+        guard !isLoading else {
+            print("⏭️ Skipping loadInventory - already loading")
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
 
@@ -202,5 +208,12 @@ class InventoryViewModel: ObservableObject {
             let partToDelete = categoryParts[index]
             deletePart(partToDelete)
         }
+    }
+
+    // MARK: - Refresh
+
+    @MainActor
+    func refreshData() async {
+        await loadInventory()
     }
 }

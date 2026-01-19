@@ -60,15 +60,20 @@ struct InventoryView: View {
                 // Content
                 ScrollView {
                     VStack(spacing: AppTheme.spacing.md) {
-                        // Quick Stats
-                        quickStatsSection
-                        
-                        // Categories
-                        categoriesSection
-                        
-                        // Low Stock Alert
-                        if !viewModel.lowStockParts.isEmpty {
-                            lowStockSection
+                        // Show search results when searching
+                        if !viewModel.searchText.isEmpty {
+                            searchResultsSection
+                        } else {
+                            // Quick Stats
+                            quickStatsSection
+                            
+                            // Categories
+                            categoriesSection
+                            
+                            // Low Stock Alert
+                            if !viewModel.lowStockParts.isEmpty {
+                                lowStockSection
+                            }
                         }
                     }
                     .padding(AppTheme.spacing.md)
@@ -78,6 +83,12 @@ struct InventoryView: View {
         .sheet(isPresented: $showingAddPart) {
             AddEditPartView()
                 .environmentObject(viewModel)
+        }
+        .refreshable {
+            await viewModel.refreshData()
+        }
+        .task {
+            await viewModel.loadInventory()
         }
     }
     
@@ -155,6 +166,52 @@ struct InventoryView: View {
             }
         }
     }
+    
+    // MARK: - Search Results Section
+    
+    private var searchResultsSection: some View {
+        VStack(alignment: .leading, spacing: AppTheme.spacing.md) {
+            HStack {
+                Text("Search Results")
+                    .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
+                
+                Spacer()
+                
+                Text("\(viewModel.filteredParts.count) item\(viewModel.filteredParts.count == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+            
+            if viewModel.filteredParts.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 48))
+                        .foregroundColor(AppTheme.iconDefault.opacity(0.5))
+                    
+                    Text("No parts found")
+                        .font(.headline)
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    Text("Try searching with different keywords")
+                        .font(.subheadline)
+                        .foregroundColor(AppTheme.textSecondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else {
+                VStack(spacing: AppTheme.spacing.sm) {
+                    ForEach(viewModel.filteredParts) { part in
+                        SearchResultPartRow(
+                            part: part,
+                            viewModel: viewModel
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Category Row Button Component
@@ -199,6 +256,8 @@ struct CategoryRowButton: View {
             .padding(12)
             .background(AppTheme.backgroundSecondary)
             .cornerRadius(AppTheme.cornerRadius.small)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Category: \(displayName), \(count) items.")
         }
     }
 }
@@ -245,6 +304,8 @@ struct LowStockItemButton: View {
             .padding(12)
             .background(AppTheme.backgroundSecondary)
             .cornerRadius(AppTheme.cornerRadius.small)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Part: \(part.name). Current stock: \(part.quantityInStock). Minimum level: \(part.minimumStockLevel). Status: Low stock.")
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingEditSheet) {
@@ -317,6 +378,93 @@ struct InventoryStatCard: View {
         .padding(.vertical, 16)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
+    }
+}
+
+// MARK: - Search Result Part Row Component
+
+struct SearchResultPartRow: View {
+    let part: InventoryPart
+    @ObservedObject var viewModel: InventoryViewModel
+    @State private var showingEditSheet = false
+    
+    var body: some View {
+        Button(action: {
+            showingEditSheet = true
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(part.name)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(AppTheme.textPrimary)
+                    
+                    HStack(spacing: 8) {
+                        Text(part.partNumber)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                        
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                        
+                        Text(viewModel.displayName(for: part.category))
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "shippingbox.fill")
+                            .font(.caption2)
+                        Text("\(part.quantityInStock) in stock")
+                            .font(.caption)
+                    }
+                    .foregroundColor(stockStatusColor)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(part.formattedPrice)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppTheme.accentPrimary)
+                    
+                    Text(part.stockStatus)
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(stockStatusColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(stockStatusColor.opacity(0.15))
+                        .cornerRadius(6)
+                }
+                
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(AppTheme.iconDefault)
+            }
+            .padding(12)
+            .background(AppTheme.backgroundSecondary)
+            .cornerRadius(AppTheme.cornerRadius.small)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .sheet(isPresented: $showingEditSheet) {
+            AddEditPartView(partToEdit: part)
+                .environmentObject(viewModel)
+        }
+    }
+    
+    private var stockStatusColor: Color {
+        if part.quantityInStock == 0 {
+            return AppTheme.statusError
+        } else if part.isLowStock {
+            return AppTheme.statusWarning
+        } else {
+            return AppTheme.statusActiveText
+        }
     }
 }
 

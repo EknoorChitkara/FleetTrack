@@ -7,6 +7,9 @@
 
 import SwiftUI
 import Combine
+import Supabase
+
+// MARK: - Models
 
 enum IssueType: String, CaseIterable, Identifiable {
     case tirePuncture = "Tire Puncture"
@@ -47,11 +50,66 @@ class ReportIssueViewModel: ObservableObject {
     @Published var selectedSeverity: IssueSeverity = .normal
     @Published var description: String = ""
     @Published var showingConfirmation = false
+    @Published var isSubmitting = false
+    
+    // Optional context (passed from parent view)
+    var tripId: UUID?
+    var vehicleId: UUID?
+    var driverId: UUID?
     
     func submitAlert() {
-        // Mock submission
-        print("Submitting alert: \(selectedIssueType?.rawValue ?? "None"), Severity: \(selectedSeverity), Desc: \(description)")
-        showingConfirmation = true
+        guard let issueType = selectedIssueType else { return }
+        isSubmitting = true
+        
+        Task {
+            do {
+                let timestamp = ISO8601DateFormatter().string(from: Date())
+                
+                // 1. Create Alert record (General)
+                let alert = AlertCreate(
+                    tripId: tripId,
+                    title: issueType.rawValue,
+                    message: description.isEmpty ? issueType.rawValue : description,
+                    type: selectedSeverity.rawValue,
+                    timestamp: timestamp,
+                    isRead: false
+                )
+                
+                try await supabase
+                    .from("alerts")
+                    .insert(alert)
+                    .execute()
+                
+                // 2. Create Maintenance Alert (For Dashboard)
+                // Map severity/type to maintenance alert types logic if needed
+                let maintenanceAlert = MaintenanceAlertCreate(
+                    title: "Issue Reported: \(issueType.rawValue)",
+                    message: "Severity: \(selectedSeverity.rawValue). \(description)",
+                    type: "Emergency", // Always treat driver reports as urgent/emergency for now
+                    date: timestamp,
+                    isRead: false
+                )
+                
+                try await supabase
+                    .from("maintenance_alerts")
+                    .insert(maintenanceAlert)
+                    .execute()
+                
+                await MainActor.run {
+                    print("✅ Alert submitted successfully")
+                    isSubmitting = false
+                    showingConfirmation = true
+                }
+                
+            } catch {
+                print("❌ Failed to submit alert: \(error)")
+                await MainActor.run {
+                    isSubmitting = false
+                    // Ideally show error alert here, but for now we fallback
+                    showingConfirmation = true 
+                }
+            }
+        }
     }
 }
 

@@ -32,15 +32,17 @@ final class DriverService {
     }
     
     /// Fetch the current vehicle assigned to the driver
-    func getAssignedVehicle(vehicleId: UUID) async throws -> Vehicle {
-        let vehicle: Vehicle = try await client
+    /// Fetch the current vehicle assigned to the driver
+    /// Fetch the current vehicle assigned to the driver
+    func getAssignedVehicle(driverId: UUID) async throws -> Vehicle? {
+        let vehicles: [Vehicle] = try await client
             .from("vehicles")
             .select()
-            .eq("id", value: vehicleId.uuidString)
-            .single()
+            .eq("assigned_driver_id", value: driverId.uuidString)
+            .limit(1)
             .execute()
             .value
-        return vehicle
+        return vehicles.first
     }
     
     /// Fetch recent trips for the driver

@@ -148,7 +148,7 @@ struct InspectionSummaryView: View {
                                     .font(.title3)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
-                                Text("\(vehicle.manufacturer) \(vehicle.model) \(vehicle.year)")
+                                Text("\(vehicle.manufacturer) \(vehicle.model)")
                                     .font(.subheadline)
                                     .foregroundColor(.appSecondaryText)
                             }
@@ -170,7 +170,7 @@ struct InspectionSummaryView: View {
                                 Text("Last Service")
                                     .foregroundColor(.appSecondaryText)
                                 Spacer()
-                                Text(vehicle.lastServiceDate?.formatted(date: .abbreviated, time: .omitted) ?? "N/A")
+                                Text(vehicle.lastService?.formatted(date: .abbreviated, time: .omitted) ?? "N/A")
                                     .foregroundColor(.white)
                                     .fontWeight(.bold)
                             }
@@ -269,81 +269,85 @@ struct InspectionChecklistView: View {
                         .cornerRadius(12)
                     }
                 }
+                
+                // Submit
+                Button {
+                    Task {
+                        await viewModel.submitInspection()
+                    }
+                } label: {
+                    Text("Submit Inspection")
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.appEmerald)
+                        .cornerRadius(12)
+                }
+                
+                Button("Report Issue") {
+                    // Report action
+                }
+                .foregroundColor(.white)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(12)
             }
-            
-            // Submit
-            Button(action: viewModel.submitInspection) {
-                Text("Submit Inspection")
-                    .font(.headline)
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.appEmerald)
-                    .cornerRadius(12)
-            }
-            
-            Button("Report Issue") {
-                // Report action
-            }
-            .foregroundColor(.white)
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.white.opacity(0.1))
-            .cornerRadius(12)
         }
     }
 }
 
 struct InspectionHistoryView: View {
-    @ObservedObject var viewModel: VehicleInspectionViewModel
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            if viewModel.historyRecords.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 48))
-                        .foregroundColor(.appSecondaryText)
-                    Text("No inspection history yet")
-                        .font(.headline)
-                        .foregroundColor(.appSecondaryText)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.top, 60)
-            } else {
-                ForEach(viewModel.historyRecords) { record in
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text(record.title)
+        @ObservedObject var viewModel: VehicleInspectionViewModel
+        
+        var body: some View {
+            VStack(spacing: 16) {
+                if viewModel.historyRecords.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 48))
+                            .foregroundColor(.appSecondaryText)
+                        Text("No inspection history yet")
                             .font(.headline)
-                            .foregroundColor(.white)
-                        Spacer()
-                        Text(record.date.formatted(date: .abbreviated, time: .omitted))
-                            .font(.subheadline)
                             .foregroundColor(.appSecondaryText)
                     }
-                    
-                    Text(record.status)
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(record.color) // e.g., appEmerald
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(record.color.opacity(0.2))
-                        .cornerRadius(4)
-                    
-                    Text(record.description)
-                        .font(.subheadline)
-                        .foregroundColor(.appSecondaryText)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.top, 60)
+                } else {
+                    ForEach(viewModel.historyRecords) { record in
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text(record.title)
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Text(record.date.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.subheadline)
+                                    .foregroundColor(.appSecondaryText)
+                            }
+                            
+                            Text(record.status)
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundColor(record.color) // e.g., appEmerald
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(record.color.opacity(0.2))
+                                .cornerRadius(4)
+                            
+                            Text(record.description)
+                                .font(.subheadline)
+                                .foregroundColor(.appSecondaryText)
+                        }
+                        .padding()
+                        .background(Color.appCardBackground)
+                        .cornerRadius(16)
+                    }
                 }
-                .padding()
-                .background(Color.appCardBackground)
-                .cornerRadius(16)
             }
         }
     }
-}
-}
 
 struct InspectionBookingView: View {
     @ObservedObject var viewModel: VehicleInspectionViewModel
@@ -420,7 +424,7 @@ struct InspectionBookingView: View {
                 TextEditor(text: $viewModel.notes)
                     .frame(height: 100)
                     .padding(8)
-                    .scrollContentBackground(.hidden) 
+                    .scrollContentBackground(.hidden)
                     .background(Color.appCardBackground)
                     .cornerRadius(12)
                     .foregroundColor(.white)

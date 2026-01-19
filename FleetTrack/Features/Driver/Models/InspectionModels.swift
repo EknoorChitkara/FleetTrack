@@ -26,7 +26,7 @@ enum ServiceType: String, CaseIterable, Identifiable {
 
 // MARK: - Models
 
-struct InspectionItem: Identifiable, Hashable {
+struct InspectionItem: Identifiable, Hashable, Codable {
     let id: UUID
     let name: String
     var isChecked: Bool
@@ -72,12 +72,16 @@ enum ServiceRequestStatus: String, Codable {
     }
 }
 
-struct InspectionHistoryRecord: Identifiable, Hashable {
+struct InspectionHistoryRecord: Identifiable, Hashable, Codable {
     let id: UUID
     let title: String
     let date: Date
     let status: String // e.g., "Completed", "Pending"
     let description: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id, title, date, status, description
+    }
     
     var color: Color {
         switch status {
@@ -85,6 +89,38 @@ struct InspectionHistoryRecord: Identifiable, Hashable {
         case "Pending": return .orange
         default: return .gray
         }
+    }
+}
+
+// MARK: - Vehicle Inspection Model (for Supabase)
+
+struct VehicleInspection: Identifiable, Codable {
+    let id: UUID
+    let vehicleId: UUID
+    let driverId: UUID
+    let inspectionDate: Date
+    let checklistItems: [InspectionItem]
+    let itemsChecked: Int
+    let totalItems: Int
+    let allItemsPassed: Bool
+    let notes: String?
+    let status: String
+    let createdAt: Date
+    let updatedAt: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case vehicleId = "vehicle_id"
+        case driverId = "driver_id"
+        case inspectionDate = "inspection_date"
+        case checklistItems = "checklist_items"
+        case itemsChecked = "items_checked"
+        case totalItems = "total_items"
+        case allItemsPassed = "all_items_passed"
+        case notes
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
     }
 }
 

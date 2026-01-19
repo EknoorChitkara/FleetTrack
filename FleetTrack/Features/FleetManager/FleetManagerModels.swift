@@ -19,6 +19,13 @@ enum FuelType: String, Codable, CaseIterable {
     case cng = "CNG"
 }
 
+struct MaintenanceLog: Codable, Identifiable {
+    var id: UUID = UUID()
+    var date: Date
+    var serviceTypes: [String]
+    var description: String
+}
+
 // MARK: - FM Models (Match DB Schema)
 
 struct FMVehicle: Identifiable, Codable {
@@ -39,6 +46,10 @@ struct FMVehicle: Identifiable, Codable {
     var mileage: Double?
     var insuranceStatus: String?
     var lastService: Date?
+    var nextServiceDue: Date?
+    var maintenanceServices: [String]?
+    var maintenanceDescription: String?
+    var maintenanceLogs: [MaintenanceLog]?
     var createdAt: Date
     
     enum CodingKeys: String, CodingKey {
@@ -57,6 +68,10 @@ struct FMVehicle: Identifiable, Codable {
         case mileage
         case insuranceStatus = "insurance_status"
         case lastService = "last_service"
+        case nextServiceDue = "next_service_due"
+        case maintenanceServices = "maintenance_services"
+        case maintenanceDescription = "maintenance_description"
+        case maintenanceLogs = "maintenance_logs"
         case createdAt = "created_at"
     }
     
@@ -76,6 +91,10 @@ struct FMVehicle: Identifiable, Codable {
         mileage: Double? = nil,
         insuranceStatus: String? = nil,
         lastService: Date? = nil,
+        nextServiceDue: Date? = nil,
+        maintenanceServices: [String]? = nil,
+        maintenanceDescription: String? = nil,
+        maintenanceLogs: [MaintenanceLog]? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -93,6 +112,10 @@ struct FMVehicle: Identifiable, Codable {
         self.mileage = mileage
         self.insuranceStatus = insuranceStatus
         self.lastService = lastService
+        self.nextServiceDue = nextServiceDue
+        self.maintenanceServices = maintenanceServices
+        self.maintenanceDescription = maintenanceDescription
+        self.maintenanceLogs = maintenanceLogs
         self.createdAt = createdAt
     }
 }
@@ -264,4 +287,40 @@ struct TripCreationData {
     var distance: Double?
     var startTime: Date = Date()
     var purpose: String = ""
+}
+struct MaintenanceStaffCreationData {
+    var fullName: String = ""
+    var specialization: String = ""
+    var phoneNumber: String = ""
+    var email: String = ""
+    var employeeId: String = ""
+    var yearsOfExperience: String = ""
+}
+
+struct FMMaintenanceStaff: Identifiable, Codable {
+    let id: UUID
+    var userId: UUID?
+    var fullName: String?
+    var email: String?
+    var phoneNumber: String?
+    var specialization: String?
+    var yearsOfExperience: Int?
+    var status: String?
+    var isActive: Bool?
+    var createdAt: Date?
+    var updatedAt: Date?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case fullName = "full_name"
+        case email
+        case phoneNumber = "phone_number"
+        case specialization
+        case yearsOfExperience = "years_of_experience"
+        case status
+        case isActive = "is_active"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
 }

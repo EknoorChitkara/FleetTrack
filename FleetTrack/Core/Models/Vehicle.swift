@@ -13,9 +13,8 @@ import Foundation
 enum VehicleStatus: String, Codable, CaseIterable {
     case active = "Active"
     case inactive = "Inactive"
-    case inMaintenance = "In Maintenance"
-    case outOfService = "Out of Service"
-    case inTransit = "In Transit"
+    case inMaintenance = "Maintenance"  // Changed to match DB enum
+    case retired = "Retired"  // Added from DB enum
 }
 
 public enum VehicleType: String, Codable, CaseIterable {
@@ -58,39 +57,33 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var vehicleType: VehicleType
     var status: VehicleStatus
 
-    // Live tracking data
-    var currentSpeed: Double
-    var fuelLevel: Double
-    var totalMileage: Double
-    var averageFuelEfficiency: Double
-
-    // Location (flat columns in DB, not nested)
+    // Location (from DB schema)
     var latitude: Double?
     var longitude: Double?
     var address: String?
-    var lastLocationUpdate: Date?
 
-    // Assignment
+    // Assignment (from DB schema)
     var assignedDriverId: UUID?
     var assignedDriverName: String?
 
-    // Maintenance
-    var nextServiceDue: Date?
-    var lastServiceDate: Date?
-
-    // Additional details
-    var yearOfManufacture: Int?
-    var vinNumber: String?
-    var color: String?
+    // Vehicle Details (from DB schema)
+    var vin: String?
+    var mileage: Double?
     var capacity: String?
-
-    // Additional DB columns
+    var tankCapacity: Double? // in Liters
     var fuelType: String?
     var registrationDate: Date?
-    var vin: String?
-    var mileage: String?
+    
+    // Insurance (from DB schema)
     var insuranceStatus: String?
-    var lastService: String?
+    var insuranceExpiry: Date?
+    
+    // Maintenance (from DB schema)
+    var lastService: Date?
+    var nextServiceDue: Date?
+    
+    // Status
+    var isActive: Bool?
 
     // Timestamps
     var createdAt: Date
@@ -103,28 +96,22 @@ struct Vehicle: Identifiable, Codable, Hashable {
         case manufacturer
         case vehicleType = "vehicle_type"
         case status
-        case currentSpeed = "current_speed"
-        case fuelLevel = "fuel_level"
-        case totalMileage = "total_mileage"
-        case averageFuelEfficiency = "average_fuel_efficiency"
         case latitude
         case longitude
         case address
-        case lastLocationUpdate = "last_location_update"
         case assignedDriverId = "assigned_driver_id"
         case assignedDriverName = "assigned_driver_name"
-        case nextServiceDue = "next_service_due"
-        case lastServiceDate = "last_service_date"
-        case yearOfManufacture = "year_of_manufacture"
-        case vinNumber = "vin_number"
-        case color
-        case capacity
-        case fuelType = "fuel_type"
-        case registrationDate = "registration_date"
         case vin
         case mileage
+        case capacity
+        case tankCapacity = "tank_capacity"
+        case fuelType = "fuel_type"
+        case registrationDate = "registration_date"
         case insuranceStatus = "insurance_status"
+        case insuranceExpiry = "insurance_expiry"
         case lastService = "last_service"
+        case nextServiceDue = "next_service_due"
+        case isActive = "is_active"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -136,28 +123,22 @@ struct Vehicle: Identifiable, Codable, Hashable {
         manufacturer: String,
         vehicleType: VehicleType,
         status: VehicleStatus = .active,
-        currentSpeed: Double = 0,
-        fuelLevel: Double = 100,
-        totalMileage: Double = 0,
-        averageFuelEfficiency: Double = 0,
         latitude: Double? = nil,
         longitude: Double? = nil,
         address: String? = nil,
-        lastLocationUpdate: Date? = nil,
         assignedDriverId: UUID? = nil,
         assignedDriverName: String? = nil,
-        nextServiceDue: Date? = nil,
-        lastServiceDate: Date? = nil,
-        yearOfManufacture: Int? = nil,
-        vinNumber: String? = nil,
-        color: String? = nil,
+        vin: String? = nil,
+        mileage: Double? = 0,
         capacity: String? = nil,
+        tankCapacity: Double? = 60.0,
         fuelType: String? = "Diesel",
         registrationDate: Date? = nil,
-        vin: String? = "UNKNOWN",
-        mileage: String? = "0 km",
-        insuranceStatus: String? = "Pending",
-        lastService: String? = "Never",
+        insuranceStatus: String? = "Valid",
+        insuranceExpiry: Date? = nil,
+        lastService: Date? = nil,
+        nextServiceDue: Date? = nil,
+        isActive: Bool? = true,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -167,28 +148,22 @@ struct Vehicle: Identifiable, Codable, Hashable {
         self.manufacturer = manufacturer
         self.vehicleType = vehicleType
         self.status = status
-        self.currentSpeed = currentSpeed
-        self.fuelLevel = fuelLevel
-        self.totalMileage = totalMileage
-        self.averageFuelEfficiency = averageFuelEfficiency
         self.latitude = latitude
         self.longitude = longitude
         self.address = address
-        self.lastLocationUpdate = lastLocationUpdate
         self.assignedDriverId = assignedDriverId
         self.assignedDriverName = assignedDriverName
-        self.nextServiceDue = nextServiceDue
-        self.lastServiceDate = lastServiceDate
-        self.yearOfManufacture = yearOfManufacture
-        self.vinNumber = vinNumber
-        self.color = color
-        self.capacity = capacity
-        self.fuelType = fuelType
-        self.registrationDate = registrationDate
         self.vin = vin
         self.mileage = mileage
+        self.capacity = capacity
+        self.tankCapacity = tankCapacity
+        self.fuelType = fuelType
+        self.registrationDate = registrationDate
         self.insuranceStatus = insuranceStatus
+        self.insuranceExpiry = insuranceExpiry
         self.lastService = lastService
+        self.nextServiceDue = nextServiceDue
+        self.isActive = isActive
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -202,28 +177,13 @@ struct Vehicle: Identifiable, Codable, Hashable {
             latitude: lat,
             longitude: lng,
             address: address ?? "",
-            timestamp: lastLocationUpdate ?? Date()
+            timestamp: Date()
         )
-    }
-
-    var formattedMileage: String {
-        String(format: "%.1f km", totalMileage)
-    }
-
-    var formattedEfficiency: String {
-        String(format: "%.1f km/l", averageFuelEfficiency)
     }
 
     var isServiceDue: Bool {
         guard let nextService = nextServiceDue else { return false }
         return nextService <= Date()
-    }
-    
-    var year: String {
-        if let y = yearOfManufacture {
-            return String(y)
-        }
-        return ""
     }
 }
 
@@ -235,16 +195,12 @@ extension Vehicle {
         manufacturer: "Mahindra",
         vehicleType: .van,
         status: .active,
-        currentSpeed: 45.0,
-        fuelLevel: 75.0,
-        totalMileage: 12500.5,
-        averageFuelEfficiency: 12.5,
         latitude: 19.0760,
         longitude: 72.8777,
         address: "Mumbai, Maharashtra",
-        yearOfManufacture: 2021,
-        color: "White",
-        capacity: "1.5 Ton"
+        mileage: 12500.5,
+        capacity: "1.5 Ton",
+        tankCapacity: 60.0
     )
 
     static let mockVehicle2 = Vehicle(
@@ -253,16 +209,12 @@ extension Vehicle {
         manufacturer: "Tata",
         vehicleType: .truck,
         status: .inMaintenance,
-        currentSpeed: 0.0,
-        fuelLevel: 45.0,
-        totalMileage: 45000.0,
-        averageFuelEfficiency: 6.5,
         latitude: 28.6139,
         longitude: 77.2090,
         address: "Delhi",
-        yearOfManufacture: 2019,
-        color: "Yellow",
-        capacity: "10 Ton"
+        mileage: 45000.0,
+        capacity: "10 Ton",
+        tankCapacity: 160.0
     )
 
     static let mockVehicles: [Vehicle] = [

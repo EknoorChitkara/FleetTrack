@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct AlertsView: View {
+    var alerts: [MaintenanceAlert] = [] // Passed from parent
     @StateObject private var inventoryViewModel = InventoryViewModel()
     @State private var selectedFilter: AlertFilter = .all
     @State private var partToEdit: InventoryPart?
@@ -61,23 +62,37 @@ struct AlertsView: View {
                 .padding(.bottom, AppTheme.spacing.sm)
 
                 // Alerts List
-                if inventoryViewModel.isLoading {
-                    VStack {
-                        Spacer()
-                        ProgressView()
-                            .tint(AppTheme.accentPrimary)
-                        Text("Checking inventory...")
-                            .font(.caption)
-                            .foregroundColor(AppTheme.textSecondary)
-                            .padding(.top, 8)
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-                } else if filteredParts.isEmpty {
-                    emptyStateView
-                } else {
-                    ScrollView {
-                        VStack(spacing: AppTheme.spacing.sm) {
+                // Alerts List
+                ScrollView {
+                    VStack(spacing: AppTheme.spacing.sm) {
+                        
+                        // 1. Maintenance/Emergency Alerts
+                        if selectedFilter == .all && !alerts.isEmpty {
+                            ForEach(alerts) { alert in
+                                MaintenanceAlertCard(alert: alert)
+                            }
+                        }
+                        
+                        // 2. Inventory Alerts
+                        if inventoryViewModel.isLoading {
+                            VStack {
+                                Spacer()
+                                ProgressView()
+                                    .tint(AppTheme.accentPrimary)
+                                Text("Checking inventory...")
+                                    .font(.caption)
+                                    .foregroundColor(AppTheme.textSecondary)
+                                    .padding(.top, 8)
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                        } else if filteredParts.isEmpty && (selectedFilter != .all || alerts.isEmpty) {
+                            // Show empty state if NO alerts at all for current filter
+                            // If selectedFilter is .all, we only show empty if BOTH are empty
+                            // If selectedFilter is inventory-specific, we show if parts are empty
+                            emptyStateView
+                        } else {
                             ForEach(filteredParts) { part in
                                 InventoryAlertCard(
                                     part: part,
@@ -87,12 +102,15 @@ struct AlertsView: View {
                                 )
                             }
                         }
-                        .padding(AppTheme.spacing.md)
-                        .padding(.bottom, 100)
                     }
-                    .refreshable {
-                        await inventoryViewModel.loadInventory()
-                    }
+                    .padding(AppTheme.spacing.md)
+                    .padding(.bottom, 100)
+                }
+                .refreshable {
+                    await inventoryViewModel.loadInventory()
+                }
+                .task {
+                    await inventoryViewModel.loadInventory()
                 }
             }
         }
@@ -236,6 +254,50 @@ struct InventoryAlertCard: View {
             .cornerRadius(AppTheme.cornerRadius.medium)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Maintenance Alert Card
+
+struct MaintenanceAlertCard: View {
+    let alert: MaintenanceAlert
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppTheme.statusError)
+                
+                Text(alert.type.rawValue.uppercased())
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppTheme.statusError)
+                
+                Spacer()
+                
+                Text(alert.date.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption2)
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(alert.title)
+                    .font(.headline)
+                    .foregroundColor(AppTheme.textPrimary)
+                
+                Text(alert.message)
+                    .font(.caption)
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+        }
+        .padding(AppTheme.spacing.md)
+        .background(AppTheme.backgroundSecondary)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppTheme.cornerRadius.medium)
+                .stroke(AppTheme.statusError.opacity(0.3), lineWidth: 1)
+        )
+        .cornerRadius(AppTheme.cornerRadius.medium)
     }
 }
 
