@@ -12,6 +12,7 @@ struct VehicleDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var showInspection = false
     @State private var showServiceSelection = false
+    @State private var showHistory = false
     @State private var selectedServices: Set<String> = []
     @State private var serviceDescription: String = ""
     
@@ -93,7 +94,13 @@ struct VehicleDetailView: View {
                                 .disabled(fleetVM.unassignedDrivers.isEmpty && vehicle.assignedDriverId == nil)
                                 
                                 QuickActionBtn(title: "Service", icon: "wrench.and.screwdriver.fill", color: .orange) {
+                                    selectedServices = Set(vehicle.maintenanceServices ?? [])
+                                    serviceDescription = vehicle.maintenanceDescription ?? ""
                                     showServiceSelection = true
+                                }
+                                
+                                QuickActionBtn(title: "History", icon: "clock.arrow.circlepath", color: .purple) {
+                                    showHistory = true
                                 }
                             }
                         }
@@ -170,12 +177,15 @@ struct VehicleDetailView: View {
             VehicleInspectionView(vehicle: vehicle)
         }
         .sheet(isPresented: $showServiceSelection) {
-            ServiceSelectionView(selectedServices: $selectedServices, description: $serviceDescription) {
+            ServiceSelectionView(vehicle: vehicle, selectedServices: $selectedServices, description: $serviceDescription) {
                 fleetVM.markForService(vehicleId: vehicle.id, serviceTypes: Array(selectedServices), description: serviceDescription)
                 serviceDescription = "" // Reset for next time
                 presentationMode.wrappedValue.dismiss()
             }
             .environmentObject(fleetVM)
+        }
+        .sheet(isPresented: $showHistory) {
+            MaintenanceHistoryView(vehicle: vehicle)
         }
     }
     
@@ -242,9 +252,14 @@ struct InfoRow: View {
 
 struct ServiceSelectionView: View {
     @Environment(\.presentationMode) var presentationMode
+    let vehicle: FMVehicle
     @Binding var selectedServices: Set<String>
     @Binding var description: String
     let onSave: () -> Void
+    
+    private var isReadOnly: Bool {
+        vehicle.status == .inMaintenance
+    }
     
     var body: some View {
         ZStack {
@@ -266,18 +281,41 @@ struct ServiceSelectionView: View {
                     
                     Spacer()
                     
-                    Button("Save") {
-                        onSave()
+                    if isReadOnly {
+                        Button("Close") {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                        .foregroundColor(.blue)
+                        .fontWeight(.bold)
+                    } else {
+                        Button("Save") {
+                            onSave()
+                        }
+                        .foregroundColor(selectedServices.isEmpty ? .gray : .appEmerald)
+                        .fontWeight(.bold)
+                        .disabled(selectedServices.isEmpty)
                     }
-                    .foregroundColor(selectedServices.isEmpty ? .gray : .appEmerald)
-                    .fontWeight(.bold)
-                    .disabled(selectedServices.isEmpty)
                 }
                 .padding()
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         ModernFormHeader(title: "Maintenance", subtitle: "Select all components that need work", iconName: "wrench.and.screwdriver.fill")
+                        
+                        if let lastService = vehicle.lastService {
+                            HStack {
+                                Spacer()
+                                Text("Last Service: \(lastService.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(.caption)
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal)
+                                    .padding(.vertical, 8)
+                                    .background(Color.white.opacity(0.05))
+                                    .cornerRadius(8)
+                                Spacer()
+                            }
+                            .padding(.top, -10)
+                        }
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Description")
@@ -287,11 +325,14 @@ struct ServiceSelectionView: View {
                             
                             ModernTextField(icon: "pencil.and.outline", placeholder: "What is the problem in the vehicle?", text: $description)
                                 .padding(.horizontal)
+                                .disabled(isReadOnly)
+                                .opacity(isReadOnly ? 0.6 : 1.0)
                         }
                         
                         VStack(spacing: 12) {
                             ForEach(FleetViewModel.maintenanceOptions, id: \.self) { service in
                                 Button(action: {
+                                    guard !isReadOnly else { return }
                                     if selectedServices.contains(service) {
                                         selectedServices.remove(service)
                                     } else {
