@@ -109,6 +109,9 @@ struct AlertsView: View {
                 .refreshable {
                     await inventoryViewModel.loadInventory()
                 }
+                .task {
+                    await inventoryViewModel.loadInventory()
+                }
             }
         }
         .sheet(item: $partToEdit) { part in
