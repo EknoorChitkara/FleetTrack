@@ -19,6 +19,13 @@ enum FuelType: String, Codable, CaseIterable {
     case cng = "CNG"
 }
 
+struct MaintenanceLog: Codable, Identifiable {
+    var id: UUID = UUID()
+    var date: Date
+    var serviceTypes: [String]
+    var description: String
+}
+
 // MARK: - FM Models (Match DB Schema)
 
 struct FMVehicle: Identifiable, Codable {
@@ -39,6 +46,10 @@ struct FMVehicle: Identifiable, Codable {
     var mileage: Double?
     var insuranceStatus: String?
     var lastService: Date?
+    var nextServiceDue: Date?
+    var maintenanceServices: [String]?
+    var maintenanceDescription: String?
+    var maintenanceLogs: [MaintenanceLog]?
     var createdAt: Date
     
     enum CodingKeys: String, CodingKey {
@@ -57,6 +68,10 @@ struct FMVehicle: Identifiable, Codable {
         case mileage
         case insuranceStatus = "insurance_status"
         case lastService = "last_service"
+        case nextServiceDue = "next_service_due"
+        case maintenanceServices = "maintenance_services"
+        case maintenanceDescription = "maintenance_description"
+        case maintenanceLogs = "maintenance_logs"
         case createdAt = "created_at"
     }
     
@@ -76,6 +91,10 @@ struct FMVehicle: Identifiable, Codable {
         mileage: Double? = nil,
         insuranceStatus: String? = nil,
         lastService: Date? = nil,
+        nextServiceDue: Date? = nil,
+        maintenanceServices: [String]? = nil,
+        maintenanceDescription: String? = nil,
+        maintenanceLogs: [MaintenanceLog]? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -93,6 +112,10 @@ struct FMVehicle: Identifiable, Codable {
         self.mileage = mileage
         self.insuranceStatus = insuranceStatus
         self.lastService = lastService
+        self.nextServiceDue = nextServiceDue
+        self.maintenanceServices = maintenanceServices
+        self.maintenanceDescription = maintenanceDescription
+        self.maintenanceLogs = maintenanceLogs
         self.createdAt = createdAt
     }
 }

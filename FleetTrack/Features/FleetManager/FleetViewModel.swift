@@ -265,6 +265,22 @@ class FleetViewModel: ObservableObject {
                     
                     // Update local UI state
                     vehicles[index].status = .inMaintenance
+                    vehicles[index].lastService = Date()
+                    vehicles[index].maintenanceServices = serviceTypes
+                    vehicles[index].maintenanceDescription = description
+                    
+                    // Create and append log
+                    let newLog = MaintenanceLog(
+                        date: Date(),
+                        serviceTypes: serviceTypes,
+                        description: description
+                    )
+                    
+                    if vehicles[index].maintenanceLogs == nil {
+                        vehicles[index].maintenanceLogs = []
+                    }
+                    vehicles[index].maintenanceLogs?.insert(newLog, at: 0) // Newest first
+                    
                     let services = serviceTypes.joined(separator: ", ")
                     let logDescription = description.isEmpty ? "Vehicle \(registrationNumber) sent for \(services)." : "Vehicle \(registrationNumber) sent for \(services). Notes: \(description)"
                     logActivity(title: "Service Scheduled", description: logDescription, icon: "wrench.and.screwdriver.fill", color: "orange")
