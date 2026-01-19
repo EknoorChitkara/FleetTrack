@@ -56,7 +56,10 @@ struct AddDriverView: View {
                         )
                         
                         VStack(spacing: 16) {
-                            ModernTextField(icon: "person.fill", placeholder: "Full Name", text: $formData.fullName, isRequired: true)
+                            ModernTextField(icon: "person.fill", placeholder: "Full Name", text: Binding(
+                                get: { formData.fullName },
+                                set: { formData.fullName = String($0.prefix(50)) }
+                            ), isRequired: true)
                             
                             ModernTextField(icon: "creditcard.fill", placeholder: "License Number (e.g., MH1420110062821)", text: $formData.licenseNumber, isRequired: true)
                             
