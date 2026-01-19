@@ -265,3 +265,39 @@ struct TripCreationData {
     var startTime: Date = Date()
     var purpose: String = ""
 }
+struct MaintenanceStaffCreationData {
+    var fullName: String = ""
+    var specialization: String = ""
+    var phoneNumber: String = ""
+    var email: String = ""
+    var employeeId: String = ""
+    var yearsOfExperience: String = ""
+}
+
+struct FMMaintenanceStaff: Identifiable, Codable {
+    let id: UUID
+    var userId: UUID?
+    var fullName: String?
+    var email: String?
+    var phoneNumber: String?
+    var specialization: String?
+    var yearsOfExperience: Int?
+    var status: String?
+    var isActive: Bool?
+    var createdAt: Date?
+    var updatedAt: Date?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case fullName = "full_name"
+        case email
+        case phoneNumber = "phone_number"
+        case specialization
+        case yearsOfExperience = "years_of_experience"
+        case status
+        case isActive = "is_active"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}

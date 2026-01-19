@@ -168,17 +168,24 @@ struct LoginView: View {
     }
 
     private func forgotPassword() async {
-        guard !email.isEmpty else {
-            message = "❌ Enter email first"
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty else {
+            message = "❌ Enter your email first"
             return
         }
         isLoading = true
+        message = ""
+        
         do {
+            // Use reset-password redirect so FleetTrackApp handles it correctly
             try await supabase.auth.resetPasswordForEmail(
-                email, redirectTo: URL(string: "fleettrack://auth/callback"))
-            message = "✅ Reset link sent!"
+                trimmedEmail,
+                redirectTo: URL(string: "fleettrack://reset-password")
+            )
+            message = "✅ Password reset link sent to \(trimmedEmail)"
         } catch {
-            message = "❌ \(error.localizedDescription)"
+            print("❌ Forgot password error: \(error)")
+            message = "❌ Failed to send reset link. Please try again."
         }
         isLoading = false
     }

@@ -188,12 +188,14 @@ struct FleetManagerHomeView: View {
             Spacer()
             
             Button(action: {
+                HapticManager.shared.triggerSelection()
                 showProfile = true
             }) {
                 Image(systemName: "person.crop.circle.fill")
                     .font(.system(size: 32))
                     .foregroundColor(.appEmerald)
             }
+            .accessibilityLabel("Profile")
         }
         .padding(.horizontal)
     }
@@ -206,7 +208,10 @@ struct ActionCard: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            HapticManager.shared.triggerImpact(style: .medium)
+            action()
+        }) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .foregroundColor(color)
@@ -231,6 +236,8 @@ struct ActionCard: View {
                     .stroke(Color.white.opacity(0.05), lineWidth: 1)
             )
         }
+        .accessibilityLabel(title.replacingOccurrences(of: "\n", with: " "))
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -273,5 +280,7 @@ struct StatCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
