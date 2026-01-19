@@ -112,6 +112,10 @@ struct PlanTripView: View {
         } message: {
             Text("Pickup and drop-off locations cannot be the same.")
         }
+        .task {
+            // Refresh data to ensure we have the latest trip statuses from the database
+            await fleetVM.loadData()
+        }
     }
     
     // MARK: - Floating Header
