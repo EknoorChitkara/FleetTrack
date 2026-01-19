@@ -35,6 +35,7 @@ class PlanTripViewModel: ObservableObject {
     @Published var isGeocodingEnd = false
     @Published var isCalculatingRoute = false
     @Published var errorMessage: String?
+    @Published var showingSameLocationAlert = false
     
     private var geocodingTask: Task<Void, Never>?
     
@@ -81,6 +82,11 @@ class PlanTripViewModel: ObservableObject {
             print("Geocoding start address failed: \(error)")
         }
         
+        if let start = startCoordinate, let end = endCoordinate,
+           start.latitude == end.latitude, start.longitude == end.longitude {
+            showingSameLocationAlert = true
+        }
+        
         isGeocodingStart = false
     }
     
@@ -98,6 +104,11 @@ class PlanTripViewModel: ObservableObject {
             }
         } catch {
             print("Geocoding end address failed: \(error)")
+        }
+        
+        if let start = startCoordinate, let end = endCoordinate,
+           start.latitude == end.latitude, start.longitude == end.longitude {
+            showingSameLocationAlert = true
         }
         
         isGeocodingEnd = false
@@ -191,6 +202,27 @@ class PlanTripViewModel: ObservableObject {
         !startAddress.isEmpty &&
         !endAddress.isEmpty &&
         startCoordinate != nil &&
-        endCoordinate != nil
+        endCoordinate != nil &&
+        !isLocationSame
+    }
+    
+    var isLocationSame: Bool {
+        guard let start = startCoordinate, let end = endCoordinate else {
+            return false
+        }
+        return start.latitude == end.latitude && start.longitude == end.longitude
+    }
+    
+    var tripDateRange: ClosedRange<Date> {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        let components = calendar.dateComponents([.year], from: today)
+        guard let year = components.year,
+              let lastDayOfYear = calendar.date(from: DateComponents(year: year, month: 12, day: 31, hour: 23, minute: 59, second: 59)) else {
+            return today...today
+        }
+        
+        return today...lastDayOfYear
     }
 }
