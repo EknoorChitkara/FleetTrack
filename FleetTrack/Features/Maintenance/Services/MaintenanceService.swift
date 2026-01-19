@@ -274,25 +274,62 @@ public class MaintenanceService {
 
     /// Add a part usage to a task
     public func addPart(taskId: UUID, part: PartUsage) async throws {
+        print("🔧 ========== ADDING PART TO TASK ==========")
+        print("📋 Table: maintenance_tasks")
+        print("🆔 Task ID: \(taskId)")
+        print("🔩 Part Name: \(part.partName)")
+        print("📦 Quantity: \(part.quantity)")
+        print("💰 Unit Price: ₹\(part.unitPrice)")
+        print("💵 Total Cost: ₹\(part.totalCost)")
+        
         // Fetch current parts
-        let tasks: [MaintenanceTask] =
-            try await client
-            .from("maintenance_tasks")
-            .select("parts_used")
-            .eq("id", value: taskId)
-            .execute()
-            .value
+        print("")
+        print("📤 Step 1/2: Fetching current parts from database...")
+        let tasks: [MaintenanceTask]
+        do {
+            tasks = try await client
+                .from("maintenance_tasks")
+                .select()  // Select all columns so MaintenanceTask can decode properly
+                .eq("id", value: taskId)
+                .execute()
+                .value
+            print("✅ Successfully fetched task data")
+        } catch {
+            print("❌ Failed to fetch task: \(error)")
+            throw error
+        }
 
-        var parts = tasks.first?.partsUsed ?? []
+        guard let existingTask = tasks.first else {
+            print("❌ ERROR: Task with ID \(taskId) not found in database!")
+            throw NSError(domain: "MaintenanceService", code: 404, userInfo: [
+                NSLocalizedDescriptionKey: "Task not found"
+            ])
+        }
+        
+        var parts = existingTask.partsUsed
+        print("📊 Current parts count: \(parts.count)")
         parts.append(part)
+        print("📊 New parts count: \(parts.count)")
 
-        try await client
-            .from("maintenance_tasks")
-            .update(["parts_used": parts])
-            .eq("id", value: taskId)
-            .execute()
+        print("")
+        print("📤 Step 2/2: Updating parts_used in database...")
+        do {
+            try await client
+                .from("maintenance_tasks")
+                .update(["parts_used": parts])
+                .eq("id", value: taskId)
+                .execute()
+            print("✅ Successfully updated parts_used column")
+        } catch {
+            print("❌ Failed to update parts: \(error)")
+            throw error
+        }
 
-        print("✅ Part added to task \(taskId)")
+        print("")
+        print("✅ ========== PART ADDED SUCCESSFULLY ==========")
+        print("✅ Part '\(part.partName)' added to task \(taskId)")
+        print("✅ Table: maintenance_tasks, Column: parts_used")
+        print("🔧 ============================================")
     }
 
     /// Remove a part usage from a task
