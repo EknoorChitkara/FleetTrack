@@ -43,7 +43,10 @@ struct TasksView: View {
             TaskSortSheet(viewModel: viewModel)
         }
         .refreshable {
-            viewModel.refreshData()
+            await viewModel.refreshData()
+        }
+        .task {
+            await viewModel.loadTasks()
         }
     }
     
@@ -258,7 +261,9 @@ struct TasksView: View {
                 .padding(.horizontal, AppTheme.spacing.xl)
             
             Button(action: {
-                viewModel.refreshData()
+                Task {
+                    await viewModel.refreshData()
+                }
             }) {
                 Text("Retry")
                     .font(.subheadline)

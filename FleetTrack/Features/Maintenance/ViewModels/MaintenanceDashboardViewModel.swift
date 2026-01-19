@@ -42,14 +42,19 @@ class MaintenanceDashboardViewModel: ObservableObject {
             averageCompletionTimeHours: 0.0
         )
 
-        // Load data from Supabase
-        Task { await loadData() }
+        // Note: Initial load is handled by the view's .task modifier
     }
 
     // MARK: - Data Loading
 
     @MainActor
     func loadData() async {
+        // Prevent concurrent loading
+        guard !isLoading else {
+            print("⏭️ Skipping loadData - already loading")
+            return
+        }
+        
         isLoading = true
         do {
             // Fetch tasks from Supabase
@@ -93,11 +98,21 @@ class MaintenanceDashboardViewModel: ObservableObject {
         isLoading = true
         Task { @MainActor in
             do {
+                print("🚀 MaintenanceDashboardViewModel: Attempting to add maintenance task...")
                 try await MaintenanceService.shared.addMaintenanceTask(data)
+                print("🎉 MaintenanceDashboardViewModel: Task added successfully, reloading data...")
 
                 // Reload data to reflect changes
                 await loadData()
             } catch {
+                print("❌ ============================================")
+                print("❌ ERROR in MaintenanceDashboardViewModel.addMaintenanceTask")
+                print("❌ Vehicle: \(data.vehicleRegistrationNumber)")
+                print("❌ Component: \(data.component.rawValue)")
+                print("❌ Error: \(error.localizedDescription)")
+                print("❌ Full Error: \(error)")
+                print("❌ ============================================")
+                
                 self.errorMessage = "Failed to add maintenance task: \(error.localizedDescription)"
                 self.isLoading = false
                 print("❌ Error adding maintenance task: \(error)")
@@ -129,7 +144,8 @@ class MaintenanceDashboardViewModel: ObservableObject {
         }
     }
 
-    func refreshData() {
-        Task { await loadData() }
+    @MainActor
+    func refreshData() async {
+        await loadData()
     }
 }

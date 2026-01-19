@@ -149,8 +149,7 @@ struct VehicleCard: View {
         case .active: return .green
         case .inactive: return .gray
         case .inMaintenance: return .orange
-        case .outOfService: return .red
-        case .inTransit: return .blue
+        case .retired: return .red
         }
     }
 }
