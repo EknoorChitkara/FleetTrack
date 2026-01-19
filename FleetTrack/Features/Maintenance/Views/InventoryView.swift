@@ -84,6 +84,12 @@ struct InventoryView: View {
             AddEditPartView()
                 .environmentObject(viewModel)
         }
+        .refreshable {
+            await viewModel.refreshData()
+        }
+        .task {
+            await viewModel.loadInventory()
+        }
     }
     
     // MARK: - Quick Stats Section

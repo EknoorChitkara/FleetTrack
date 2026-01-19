@@ -69,6 +69,15 @@ public class MaintenanceService {
 
     /// Add a new maintenance task
     public func addMaintenanceTask(_ data: MaintenanceTaskCreationData) async throws {
+        print("🔧 ========== ADDING MAINTENANCE TASK ==========")
+        print("📋 Table: maintenance_tasks")
+        print("🚗 Vehicle Registration: \(data.vehicleRegistrationNumber)")
+        print("⚡ Priority: \(data.priority)")
+        print("🔩 Component: \(data.component.rawValue)")
+        print("📊 Status: \(data.status)")
+        print("📅 Due Date: \(data.dueDate)")
+        print("🧰 Parts Used: \(data.partsUsed.map { $0.partName }.joined(separator: ", "))")
+        
         let newTask = MaintenanceTask(
             id: UUID(),
             vehicleRegistrationNumber: data.vehicleRegistrationNumber,
@@ -79,15 +88,19 @@ public class MaintenanceService {
             completedDate: nil,
             partsUsed: data.partsUsed
         )
+        
+        print("🆔 Generated Task ID: \(newTask.id)")
+        print("📤 Sending to Supabase table: maintenance_tasks...")
 
         try await client
             .from("maintenance_tasks")
             .insert(newTask)
             .execute()
 
-        print(
-            "✅ Maintenance task created: \(data.component.rawValue) for \(data.vehicleRegistrationNumber)"
-        )
+        print("✅ Maintenance task created successfully!")
+        print("✅ Task: \(data.component.rawValue) for \(data.vehicleRegistrationNumber)")
+        print("✅ Stored in table: maintenance_tasks")
+        print("🔧 ============================================")
     }
 
     // MARK: - Update Operations
