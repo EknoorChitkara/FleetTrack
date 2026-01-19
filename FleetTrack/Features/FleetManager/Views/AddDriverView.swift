@@ -12,9 +12,18 @@ struct AddDriverView: View {
     @EnvironmentObject var fleetVM: FleetViewModel
     @State private var formData = DriverCreationData()
     @State private var showError = false
+    @State private var showSuccessAlert = false
     
     // Mock Data
     let statuses = DriverStatus.allCases
+    
+    // Phone State
+    @State private var selectedCountryCode = "+91"
+    @State private var localPhoneNumber = ""
+    
+    private func updatePhoneNumber() {
+        formData.phoneNumber = "\(selectedCountryCode) \(localPhoneNumber)"
+    }
     
     var body: some View {
         ZStack {
@@ -37,13 +46,22 @@ struct AddDriverView: View {
                     Spacer()
                     Button(action: {
                         fleetVM.addDriver(formData)
-                        presentationMode.wrappedValue.dismiss()
+                        showSuccessAlert = true
                     }) {
                         Text("Save")
                             .fontWeight(.bold)
                             .foregroundColor(!isFormValid ? .gray : .appEmerald)
                     }
                     .disabled(!isFormValid)
+                    .alert(isPresented: $showSuccessAlert) {
+                        Alert(
+                            title: Text("Success"),
+                            message: Text("Driver added successfully"),
+                            dismissButton: .default(Text("OK")) {
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                        )
+                    }
                 }
                 .padding()
                 
@@ -56,44 +74,120 @@ struct AddDriverView: View {
                         )
                         
                         VStack(spacing: 16) {
-                            ModernTextField(icon: "person.fill", placeholder: "Full Name", text: Binding(
-                                get: { formData.fullName },
-                                set: { formData.fullName = String($0.prefix(50)) }
-                            ), isRequired: true)
+                            ModernTextField(icon: "person.fill", placeholder: "Full Name", text: $formData.fullName, isRequired: true)
+                                .onChange(of: formData.fullName) { newValue in
+                                    if newValue.count > 50 {
+                                        formData.fullName = String(newValue.prefix(50))
+                                    }
+                                }
                             
-                            ModernTextField(icon: "creditcard.fill", placeholder: "License Number (e.g., MH1420110062821)", text: $formData.licenseNumber, isRequired: true)
+                            // License Number with Validation
+                            VStack(alignment: .leading, spacing: 4) {
+                                ModernTextField(icon: "creditcard.fill", placeholder: "License Number XX0000000000000", text: $formData.licenseNumber, isRequired: true)
+                                    .onChange(of: formData.licenseNumber) { newValue in
+                                        let limited = String(newValue.prefix(15)).uppercased()
+                                        if limited != newValue {
+                                            formData.licenseNumber = limited
+                                        }
+                                    }
+                                
+                                if !formData.licenseNumber.isEmpty && !NSPredicate(format:"SELF MATCHES %@", "^[A-Z]{2}\\d{13}$").evaluate(with: formData.licenseNumber) {
+                                    Text("License must be 2 letters + 13 digits")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .padding(.leading)
+                                }
+                            }
                             
-                            ModernTextField(icon: "phone.fill", placeholder: "Phone (e.g., +91 9876543210)", text: $formData.phoneNumber, isRequired: true, keyboardType: .phonePad)
+                            // Phone Number with Validation
+                            VStack(alignment: .leading, spacing: 4) {
+                                // Composite Phone Number Field
+                                HStack(spacing: 12) {
+                                    Image(systemName: "phone.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.gray)
+                                        .frame(width: 24)
+                                    
+                                    // Country Code Picker
+                                    Menu {
+                                        ForEach(["+91", "+1", "+44", "+61", "+81", "+971"], id: \.self) { code in
+                                            Button(code) {
+                                                selectedCountryCode = code
+                                                updatePhoneNumber()
+                                            }
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text(selectedCountryCode)
+                                                .foregroundColor(.white)
+                                            Image(systemName: "chevron.down")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.gray)
+                                        }
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 8)
+                                        .background(Color.white.opacity(0.1))
+                                        .cornerRadius(8)
+                                    }
+                                    
+                                    // Phone Number Input
+                                    ZStack(alignment: .leading) {
+                                        if localPhoneNumber.isEmpty {
+                                            Text("xxxxxxxxxx")
+                                                .foregroundColor(.gray.opacity(0.6))
+                                        }
+                                        TextField("", text: $localPhoneNumber)
+                                            .keyboardType(.numberPad)
+                                            .foregroundColor(.white)
+                                            .onChange(of: localPhoneNumber) { newValue in
+                                                let filtered = newValue.filter { $0.isNumber }
+                                                if filtered.count > 10 {
+                                                    localPhoneNumber = String(filtered.prefix(10))
+                                                } else {
+                                                    localPhoneNumber = filtered
+                                                }
+                                                updatePhoneNumber()
+                                            }
+                                    }
+                                    
+                                    if formData.phoneNumber.isEmpty { // Show required asterisk if empty
+                                         Text("*")
+                                            .foregroundColor(.red)
+                                    }
+                                }
+                                .padding(.horizontal)
+                                .frame(height: 60)
+                                .background(Color.appCardBackground)
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                                )
+                                
+                                if !formData.phoneNumber.isEmpty && !NSPredicate(format:"SELF MATCHES %@", "^\\+\\d{2} \\d{10}$").evaluate(with: formData.phoneNumber) {
+                                    Text("Phone must be in format +91 9876543210")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .padding(.leading)
+                                }
+                            }
                             
-                            ModernTextField(icon: "envelope.fill", placeholder: "Email", text: $formData.email, isRequired: true, keyboardType: .emailAddress)
+                            // Email with Validation
+                            VStack(alignment: .leading, spacing: 4) {
+                                ModernTextField(icon: "envelope.fill", placeholder: "Email", text: $formData.email, isRequired: true, keyboardType: .emailAddress)
+                                
+                                // Matches standard email regex used in bottom validation
+                                if !formData.email.isEmpty && !NSPredicate(format:"SELF MATCHES %@", "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}").evaluate(with: formData.email) {
+                                    Text("Invalid email format")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .padding(.leading)
+                                }
+                            }
                             
                             ModernTextField(icon: "house.fill", placeholder: "Address", text: $formData.address, isRequired: true)
                         }
                         .padding(.horizontal)
-                        
-                        if !formData.fullName.isEmpty && !isFormValid {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Please correct the following:")
-                                    .font(.caption)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.red)
-                                
-                                Group {
-                                    if !NSPredicate(format:"SELF MATCHES %@", "^[A-Z]{2}\\d{13}$").evaluate(with: formData.licenseNumber) {
-                                        Text("• License must be 2 letters + 13 digits")
-                                    }
-                                    if !NSPredicate(format:"SELF MATCHES %@", "^\\+\\d{2} \\d{10}$").evaluate(with: formData.phoneNumber) {
-                                        Text("• Phone must be in format +91 9876543210")
-                                    }
-                                    if !NSPredicate(format:"SELF MATCHES %@", "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}").evaluate(with: formData.email) {
-                                        Text("• Invalid email format")
-                                    }
-                                }
-                                .font(.caption)
-                                .foregroundColor(.red.opacity(0.8))
-                            }
-                            .padding(.horizontal)
-                        }
                         
                         Spacer(minLength: 40)
                     }
