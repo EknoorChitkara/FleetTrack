@@ -112,13 +112,3 @@ struct AddMaintenanceStaffView: View {
         return true
     }
 }
-
-// Data model for maintenance staff creation
-struct MaintenanceStaffCreationData {
-    var fullName: String = ""
-    var specialization: String = ""
-    var phoneNumber: String = ""
-    var email: String = ""
-    var employeeId: String = ""
-    var yearsOfExperience: String = ""
-}

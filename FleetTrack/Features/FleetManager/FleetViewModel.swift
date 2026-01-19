@@ -5,6 +5,7 @@ import Combine
 class FleetViewModel: ObservableObject {
     @Published var vehicles: [FMVehicle] = []
     @Published var drivers: [FMDriver] = []
+    @Published var maintenanceStaff: [FMMaintenanceStaff] = []
     @Published var trips: [FMTrip] = []
     @Published var activities: [FMActivity] = []
     @Published var isLoading: Bool = false
@@ -23,10 +24,12 @@ class FleetViewModel: ObservableObject {
         do {
             async let fetchedVehicles = FleetManagerService.shared.fetchVehicles()
             async let fetchedDrivers = FleetManagerService.shared.fetchDrivers()
+            async let fetchedMaintenance = FleetManagerService.shared.fetchMaintenanceStaff()
             async let fetchedTrips = FleetManagerService.shared.fetchTrips()
             
             self.vehicles = try await fetchedVehicles
             self.drivers = try await fetchedDrivers
+            self.maintenanceStaff = try await fetchedMaintenance
             self.trips = try await fetchedTrips
             
             self.isLoading = false
@@ -150,15 +153,39 @@ class FleetViewModel: ObservableObject {
     func addMaintenanceStaff(_ data: MaintenanceStaffCreationData) {
         isLoading = true
         Task { @MainActor in
-            // For now, we'll just log the activity
-            // In a real app, this would call a service to save to the database
-            self.logActivity(
-                title: "New Maintenance Staff Added",
-                description: "Staff member \(data.fullName) (\(data.specialization)) was added.",
-                icon: "wrench.and.screwdriver.fill",
-                color: "orange"
-            )
-            self.isLoading = false
+            do {
+                try await FleetManagerService.shared.addMaintenanceStaff(data)
+                
+                // Optimistically update UI with the new staff member
+                let now = Date()
+                let newStaff = FMMaintenanceStaff(
+                    id: UUID(),
+                    userId: nil,
+                    fullName: data.fullName,
+                    email: data.email,
+                    phoneNumber: data.phoneNumber,
+                    specialization: data.specialization,
+                    yearsOfExperience: Int(data.yearsOfExperience),
+                    status: "Available",
+                    isActive: true,
+                    createdAt: now,
+                    updatedAt: now
+                )
+                // If you had a list of maintenance staff in the VM, you would append it here
+                self.maintenanceStaff.append(newStaff) 
+                
+                self.logActivity(
+                    title: "Staff Invited",
+                    description: "Invitation sent to \(data.email).",
+                    icon: "wrench.and.screwdriver.fill",
+                    color: "orange"
+                )
+                self.isLoading = false
+            } catch {
+                self.errorMessage = "Failed to add maintenance staff: \(error.localizedDescription)"
+                self.isLoading = false
+                print("❌ [FleetViewModel] Failed to add staff: \(error)")
+            }
         }
     }
     
@@ -184,6 +211,10 @@ class FleetViewModel: ObservableObject {
         isLoading = true
         Task { @MainActor in
             do {
+                // 1. Perform database update
+                try await FleetManagerService.shared.reassignDriver(vehicleId: vehicleId, driverId: driverId)
+                
+                // 2. Update local state
                 if let index = vehicles.firstIndex(where: { $0.id == vehicleId }) {
                     let oldDriverId = vehicles[index].assignedDriverId
                     
@@ -208,6 +239,7 @@ class FleetViewModel: ObservableObject {
             } catch {
                 self.errorMessage = "Failed to reassign driver: \(error.localizedDescription)"
                 self.isLoading = false
+                print("❌ [FleetViewModel] Reassign failed: \(error)")
             }
         }
     }
