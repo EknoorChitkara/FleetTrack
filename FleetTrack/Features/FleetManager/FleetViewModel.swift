@@ -5,8 +5,8 @@ import Combine
 class FleetViewModel: ObservableObject {
     @Published var vehicles: [FMVehicle] = []
     @Published var drivers: [FMDriver] = []
+    @Published var maintenanceStaff: [FMMaintenanceStaff] = []
     @Published var trips: [FMTrip] = []
-    @Published var maintenancePersonnel: [MaintenancePersonnel] = []
     @Published var activities: [FMActivity] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -24,16 +24,16 @@ class FleetViewModel: ObservableObject {
         do {
             async let fetchedVehicles = FleetManagerService.shared.fetchVehicles()
             async let fetchedDrivers = FleetManagerService.shared.fetchDrivers()
+            async let fetchedMaintenance = FleetManagerService.shared.fetchMaintenanceStaff()
             async let fetchedTrips = FleetManagerService.shared.fetchTrips()
-            async let fetchedPersonnel = FleetManagerService.shared.fetchMaintenancePersonnel()
             
             self.vehicles = try await fetchedVehicles
             self.drivers = try await fetchedDrivers
+            self.maintenanceStaff = try await fetchedMaintenance
             self.trips = try await fetchedTrips
-            self.maintenancePersonnel = try await fetchedPersonnel
             
             self.isLoading = false
-            print("✅ Fleet Data Loaded: \(vehicles.count) vehicles, \(drivers.count) drivers, \(maintenancePersonnel.count) personnel")
+            print("✅ Fleet Data Loaded: \(vehicles.count) vehicles, \(drivers.count) drivers")
         } catch {
             self.errorMessage = "Failed to load fleet data: \(error.localizedDescription)"
             self.isLoading = false
@@ -150,38 +150,41 @@ class FleetViewModel: ObservableObject {
         }
     }
     
-    
-    func addMaintenanceUser(_ data: MaintenanceCreationData) {
+    func addMaintenanceStaff(_ data: MaintenanceStaffCreationData) {
         isLoading = true
         Task { @MainActor in
             do {
-                try await FleetManagerService.shared.addMaintenanceUser(data)
+                try await FleetManagerService.shared.addMaintenanceStaff(data)
                 
-                // Optimistically update UI with the new maintenance user
+                // Optimistically update UI with the new staff member
                 let now = Date()
-                let newPerson = MaintenancePersonnel(
+                let newStaff = FMMaintenanceStaff(
                     id: UUID(),
                     userId: nil,
                     fullName: data.fullName,
                     email: data.email,
                     phoneNumber: data.phoneNumber,
-                    specializations: data.specializations,
+                    specialization: data.specialization,
+                    yearsOfExperience: Int(data.yearsOfExperience),
+                    status: "Available",
                     isActive: true,
                     createdAt: now,
                     updatedAt: now
                 )
-                self.maintenancePersonnel.append(newPerson)
+                // If you had a list of maintenance staff in the VM, you would append it here
+                self.maintenanceStaff.append(newStaff) 
+                
                 self.logActivity(
-                    title: "Mechanic Invited",
+                    title: "Staff Invited",
                     description: "Invitation sent to \(data.email).",
-                    icon: "wrench.fill",
+                    icon: "wrench.and.screwdriver.fill",
                     color: "orange"
                 )
                 self.isLoading = false
             } catch {
-                self.errorMessage = "Failed to add maintenance user: \(error.localizedDescription)"
+                self.errorMessage = "Failed to add maintenance staff: \(error.localizedDescription)"
                 self.isLoading = false
-                print("Error adding maintenance user: \(error)")
+                print("❌ [FleetViewModel] Failed to add staff: \(error)")
             }
         }
     }
@@ -197,7 +200,6 @@ class FleetViewModel: ObservableObject {
         }
     }
     
-    
     func deleteDriver(byId id: UUID) {
         if let driverName = drivers.first(where: { $0.id == id })?.displayName {
             drivers.removeAll(where: { $0.id == id })
@@ -205,33 +207,14 @@ class FleetViewModel: ObservableObject {
         }
     }
     
-    func deleteMechanic(byId id: UUID) {
-        Task { @MainActor in
-            do {
-                // Delete from Supabase via service layer
-                try await FleetManagerService.shared.deleteMechanic(byId: id)
-                
-                // Update local state
-                if let mechanicName = maintenancePersonnel.first(where: { $0.id == id })?.displayName {
-                    maintenancePersonnel.removeAll(where: { $0.id == id })
-                    logActivity(
-                        title: "Mechanic Removed",
-                        description: "Mechanic \(mechanicName) was removed from the fleet.",
-                        icon: "wrench.fill",
-                        color: "red"
-                    )
-                }
-            } catch {
-                self.errorMessage = "Failed to delete mechanic: \(error.localizedDescription)"
-                print("❌ Error deleting mechanic: \(error)")
-            }
-        }
-    }
-    
     func reassignDriver(vehicleId: UUID, driverId: UUID?) {
         isLoading = true
         Task { @MainActor in
             do {
+                // 1. Perform database update
+                try await FleetManagerService.shared.reassignDriver(vehicleId: vehicleId, driverId: driverId)
+                
+                // 2. Update local state
                 if let index = vehicles.firstIndex(where: { $0.id == vehicleId }) {
                     let oldDriverId = vehicles[index].assignedDriverId
                     
@@ -256,6 +239,7 @@ class FleetViewModel: ObservableObject {
             } catch {
                 self.errorMessage = "Failed to reassign driver: \(error.localizedDescription)"
                 self.isLoading = false
+                print("❌ [FleetViewModel] Reassign failed: \(error)")
             }
         }
     }

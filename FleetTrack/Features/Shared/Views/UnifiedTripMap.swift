@@ -171,16 +171,24 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
                 view?.markerTintColor = .systemGreen
                 view?.glyphImage = UIImage(systemName: "shippingbox.fill")
                 view?.displayPriority = .required
+                view?.accessibilityLabel = "Pickup Location: \(parent.trip.startAddress)"
             case "Dropoff":
                 view?.markerTintColor = .systemRed
                 view?.glyphImage = UIImage(systemName: "flag.fill")
                 view?.displayPriority = .required
+                view?.accessibilityLabel = "Dropoff Location: \(parent.trip.endAddress)"
             case "Vehicle":
                 view?.markerTintColor = .systemBlue
                 view?.glyphImage = UIImage(systemName: "car.fill")
                 view?.displayPriority = .required
+                view?.accessibilityLabel = "Current Vehicle Location"
             default:
                 break
+            }
+            
+            // Generic fallback if not caught by switch
+            if view?.accessibilityLabel == nil {
+                view?.accessibilityLabel = annotation.title ?? "Map Location"
             }
             
             return view

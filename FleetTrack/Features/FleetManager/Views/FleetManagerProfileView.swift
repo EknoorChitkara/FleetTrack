@@ -80,9 +80,6 @@ struct FleetManagerProfileView: View {
                                 NavigationLink(destination: FleetManagerManageDriversView().environmentObject(fleetVM)) {
                                     SettingRow(icon: "person.2.fill", title: "Manage Drivers", color: .blue)
                                 }
-                                NavigationLink(destination: FleetManagerManageMechanicsView().environmentObject(fleetVM)) {
-                                    SettingRow(icon: "wrench.and.screwdriver.fill", title: "Manage Mechanics", color: .orange)
-                                }
                                 NavigationLink(destination: AllTripsView().environmentObject(fleetVM)) {
                                     SettingRow(icon: "map.fill", title: "Trip History", color: .purple)
                                 }
