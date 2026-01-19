@@ -47,6 +47,8 @@ struct PriorityTaskRow: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Task: \(task.component.rawValue) for vehicle \(task.vehicleRegistrationNumber). Priority: \(task.priority.rawValue). Due \(formattedDate(task.dueDate)).")
     }
     
     private func formattedDate(_ date: Date) -> String {

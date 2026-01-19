@@ -237,6 +237,36 @@ class FleetManagerService {
         }
     }
     
+    /// Reassign a driver to a vehicle in the database
+    func reassignDriver(vehicleId: UUID, driverId: UUID?) async throws {
+        print("💾 [reassignDriver] Updating assignment for vehicle: \(vehicleId)")
+        
+        var driverName: String? = nil
+        if let dId = driverId {
+            let driver: FMDriver = try await client
+                .from("drivers")
+                .select("full_name, email")
+                .eq("id", value: dId)
+                .single()
+                .execute()
+                .value
+            driverName = driver.fullName ?? driver.email ?? "Unknown"
+        }
+        
+        let update: [String: AnyJSON] = [
+            "assigned_driver_id": driverId != nil ? .string(driverId!.uuidString) : .null,
+            "assigned_driver_name": driverName != nil ? .string(driverName!) : .null
+        ]
+        
+        try await client
+            .from("vehicles")
+            .update(update)
+            .eq("id", value: vehicleId)
+            .execute()
+            
+        print("✅ [reassignDriver] Successfully updated vehicle \(vehicleId) in database")
+    }
+    
     // MARK: - Trip Management
     
     func addTrip(_ data: TripCreationData) async throws {

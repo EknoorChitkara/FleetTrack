@@ -8,6 +8,8 @@
 import SwiftUI
 import Supabase
 import Combine
+import AppIntents
+import SwiftData
 
 // Global app state for deep link handling
 class AppState: ObservableObject {
@@ -22,6 +24,21 @@ class AppState: ObservableObject {
 @main
 struct FleetTrackApp: App {
     @StateObject private var appState = AppState.shared
+    
+    // SwiftData Model Container for offline caching
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            CachedRoute.self,
+            OfflineTripAction.self
+        ])
+        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error)")
+        }
+    }()
     
     var body: some Scene {
         WindowGroup {
@@ -40,6 +57,9 @@ struct FleetTrackApp: App {
                 
                 // Initialize Circular Geofencing (Stationary Zones)
                 await CircularGeofenceManager.shared.fetchAndMonitorGeofences()
+                
+                // Refresh Siri Shortcuts
+                FleetTrackShortcuts.updateAppShortcutParameters()
             }
             .onOpenURL { url in
                 handleDeepLink(url)
@@ -54,6 +74,7 @@ struct FleetTrackApp: App {
             } message: {
                 Text(appState.errorMessage)
             }
+            .modelContainer(sharedModelContainer)
         }
     }
     

@@ -129,6 +129,9 @@ struct TabBarItem: View {
                     .foregroundColor(isSelected ? .appEmerald : .gray)
             }
             .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(title) tab")
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : [.isButton])
         }
         //    },
     }

@@ -199,6 +199,8 @@ struct CategoryRowButton: View {
             .padding(12)
             .background(AppTheme.backgroundSecondary)
             .cornerRadius(AppTheme.cornerRadius.small)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Category: \(displayName), \(count) items.")
         }
     }
 }
@@ -245,6 +247,8 @@ struct LowStockItemButton: View {
             .padding(12)
             .background(AppTheme.backgroundSecondary)
             .cornerRadius(AppTheme.cornerRadius.small)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Part: \(part.name). Current stock: \(part.quantityInStock). Minimum level: \(part.minimumStockLevel). Status: Low stock.")
         }
         .buttonStyle(PlainButtonStyle())
         .sheet(isPresented: $showingEditSheet) {
@@ -317,6 +321,8 @@ struct InventoryStatCard: View {
         .padding(.vertical, 16)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 

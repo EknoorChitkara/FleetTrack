@@ -184,6 +184,10 @@ class FleetViewModel: ObservableObject {
         isLoading = true
         Task { @MainActor in
             do {
+                // 1. Perform database update
+                try await FleetManagerService.shared.reassignDriver(vehicleId: vehicleId, driverId: driverId)
+                
+                // 2. Update local state
                 if let index = vehicles.firstIndex(where: { $0.id == vehicleId }) {
                     let oldDriverId = vehicles[index].assignedDriverId
                     
@@ -208,6 +212,7 @@ class FleetViewModel: ObservableObject {
             } catch {
                 self.errorMessage = "Failed to reassign driver: \(error.localizedDescription)"
                 self.isLoading = false
+                print("❌ [FleetViewModel] Reassign failed: \(error)")
             }
         }
     }
