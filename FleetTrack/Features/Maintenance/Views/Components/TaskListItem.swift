@@ -80,7 +80,7 @@ struct TaskListItem: View {
                 Spacer()
                 
                 // Status Badge
-                StatusBadge(status: task.status)
+                StatusBadge(status: task.status, task: task)
             }
         }
         .padding(AppTheme.spacing.md)
@@ -110,8 +110,27 @@ struct TaskListItem: View {
 
 struct StatusBadge: View {
     let status: String
+    let task: MaintenanceTask?
+    
+    init(status: String, task: MaintenanceTask? = nil) {
+        self.status = status
+        self.task = task
+    }
+    
+    // Display status - show "Paused" if task is paused
+    private var displayStatus: String {
+        if let task = task, task.isPaused {
+            return "Paused"
+        }
+        return status
+    }
     
     var statusColor: Color {
+        // Check for paused state first
+        if let task = task, task.isPaused {
+            return AppTheme.statusIdle
+        }
+        
         switch status {
         case "Pending":
             return AppTheme.statusWarning
@@ -129,6 +148,11 @@ struct StatusBadge: View {
     }
     
     var backgroundColor: Color {
+        // Check for paused state first
+        if let task = task, task.isPaused {
+            return AppTheme.statusIdleBackground
+        }
+        
         switch status {
         case "Pending":
             return AppTheme.statusWarningBackground
@@ -146,7 +170,7 @@ struct StatusBadge: View {
     }
     
     var body: some View {
-        Text(status)
+        Text(displayStatus)
             .font(.caption2)
             .fontWeight(.semibold)
             .foregroundColor(statusColor)

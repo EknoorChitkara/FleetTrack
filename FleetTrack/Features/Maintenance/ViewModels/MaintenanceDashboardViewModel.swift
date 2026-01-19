@@ -43,6 +43,21 @@ class MaintenanceDashboardViewModel: ObservableObject {
         )
 
         // Note: Initial load is handled by the view's .task modifier
+        
+        // Listen for task completion notifications
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("TaskCompleted"),
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                await self?.loadData()
+            }
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - Data Loading
@@ -60,11 +75,13 @@ class MaintenanceDashboardViewModel: ObservableObject {
             // Fetch tasks from Supabase
             let tasks = try await MaintenanceService.shared.fetchMaintenanceTasks()
 
-            // Filter high priority pending tasks
+            // Get 3 most recent pending tasks (sorted by creation/due date)
             self.highPriorityMaintenanceTasks =
                 tasks
-                .filter { $0.priority == .high && $0.status == "Pending" }
+                .filter { $0.status == "Pending" }
                 .sorted { $0.dueDate < $1.dueDate }
+                .prefix(3)
+                .map { $0 }
 
             // Get most recent completed tasks (limit to 3)
             self.completedTasks =
@@ -78,7 +95,16 @@ class MaintenanceDashboardViewModel: ObservableObject {
 
             // Calculate task counts
             self.pendingTasksCount = tasks.filter { $0.status == "Pending" }.count
-            self.inProgressTasksCount = tasks.filter { $0.status == "In Progress" }.count
+            self.inProgressTasksCount = tasks.filter { $0.status == "In Progress" && !$0.isPaused }.count
+
+            // Fetch maintenance summary (completed count & avg time)
+            do {
+                self.maintenanceSummary = try await MaintenanceService.shared.fetchMaintenanceSummary()
+                print("✅ Loaded maintenance summary: \(self.maintenanceSummary.completedTasksThisMonth) completed, \(self.maintenanceSummary.averageCompletionTimeHours)h avg")
+            } catch {
+                print("⚠️ Failed to load maintenance summary: \(error)")
+                // Keep default values if fetch fails
+            }
 
             // Fetch alerts from Supabase
             self.alerts = try await MaintenanceService.shared.fetchAlerts()
