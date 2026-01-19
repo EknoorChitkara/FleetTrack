@@ -60,13 +60,15 @@ struct MaintenanceHistoryView: View {
                                 .font(.headline)
                                 .foregroundColor(.white)
                             
-                            if let services = vehicle.maintenanceServices, !services.isEmpty {
+                            if let logs = vehicle.maintenanceLogs, !logs.isEmpty {
                                 VStack(spacing: 12) {
-                                    MaintenanceLogRow(
-                                        date: vehicle.lastService ?? Date(),
-                                        services: services,
-                                        description: vehicle.maintenanceDescription ?? "Routine maintenance"
-                                    )
+                                    ForEach(logs) { log in
+                                        MaintenanceLogRow(
+                                            date: log.date,
+                                            services: log.serviceTypes,
+                                            description: log.description
+                                        )
+                                    }
                                 }
                             } else {
                                 VStack(spacing: 16) {
