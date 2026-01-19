@@ -42,12 +42,17 @@ struct AlertDetailView: View {
     }
     
     private func fetchTripDetails() {
+        guard let tripId = alert.tripId else {
+            print("No tripId for this alert, skipping fetch.")
+            return
+        }
+        
         Task {
             do {
                 let trip: Trip = try await SupabaseClientManager.shared.client.database
                     .from("trips")
                     .select()
-                    .eq("id", value: alert.tripId.uuidString)
+                    .eq("id", value: tripId.uuidString)
                     .single()
                     .execute()
                     .value
@@ -125,42 +130,44 @@ struct AlertDetailView: View {
                 .cornerRadius(12)
             }
             
-            if let trip = fetchedTrip {
-                NavigationLink(destination:
-                    FleetManagerTripMapView(trip: FMTrip(
-                        id: trip.id,
-                        vehicleId: trip.vehicleId,
-                        driverId: trip.driverId,
-                        status: trip.status?.rawValue ?? "Unknown",
-                        startAddress: trip.startAddress,
-                        endAddress: trip.endAddress,
-                        startTime: trip.startTime,
-                        createdAt: trip.createdAt
-                    ), showRoute: false)
-                ) {
-                    HStack {
-                        Image(systemName: "location.fill")
-                        Text("Track Driver")
+            if alert.tripId != nil {
+                if let trip = fetchedTrip {
+                    NavigationLink(destination:
+                        FleetManagerTripMapView(trip: FMTrip(
+                            id: trip.id,
+                            vehicleId: trip.vehicleId,
+                            driverId: trip.driverId,
+                            status: trip.status?.rawValue ?? "Unknown",
+                            startAddress: trip.startAddress,
+                            endAddress: trip.endAddress,
+                            startTime: trip.startTime,
+                            createdAt: trip.createdAt
+                        ), showRoute: false)
+                    ) {
+                        HStack {
+                            Image(systemName: "location.fill")
+                            Text("Track Driver")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.appEmerald)
+                        .cornerRadius(12)
+                    }
+                } else {
+                     // Loading state for button
+                     HStack {
+                        ProgressView()
+                        Text("Loading details...")
                     }
                     .font(.headline)
-                    .foregroundColor(.black)
+                    .foregroundColor(.gray)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.appEmerald)
+                    .background(Color.white.opacity(0.1))
                     .cornerRadius(12)
                 }
-            } else {
-                 // Loading state for button
-                 HStack {
-                    ProgressView()
-                    Text("Loading details...")
-                }
-                .font(.headline)
-                .foregroundColor(.gray)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(12)
             }
         }
     }

@@ -107,6 +107,7 @@ struct MaintenanceDashboardView: View {
                         .foregroundColor(.black)
                 }
             }
+            .accessibilityLabel("Profile")
         }
         .padding(.horizontal, AppTheme.spacing.md)
     }
@@ -132,6 +133,7 @@ struct MaintenanceDashboardView: View {
                 .cornerRadius(10)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Perform Daily Inspections")
         }
     }
     
