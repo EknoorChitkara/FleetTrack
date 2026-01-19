@@ -266,7 +266,7 @@ class FleetManagerService {
         if let dId = driverId {
             let driver: FMDriver = try await client
                 .from("drivers")
-                .select("full_name, email")
+                .select()  // Select all columns so FMDriver can decode properly
                 .eq("id", value: dId)
                 .single()
                 .execute()
