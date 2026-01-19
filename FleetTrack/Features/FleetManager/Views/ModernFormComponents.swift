@@ -74,6 +74,7 @@ struct ModernTextField: View {
         }
         .padding(.horizontal)
         .frame(height: 60)
+        .frame(maxWidth: .infinity)
         .background(Color.appCardBackground)
         .cornerRadius(16)
         .overlay(

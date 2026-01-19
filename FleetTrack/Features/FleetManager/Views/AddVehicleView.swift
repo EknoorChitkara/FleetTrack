@@ -87,34 +87,47 @@ struct AddVehicleView: View {
                                         .font(.caption)
                                         .foregroundColor(.red)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .padding(.horizontal, 4)
+                                        .padding(.horizontal, 52) // Align with text inside field (16 padding + 24 icon + 12 spacing)
                                 }
                             }
                             
                             ModernDriverPicker(icon: "person.fill.badge.plus", selection: $formData.assignedDriverId, drivers: fleetVM.unassignedDrivers, placeholder: "Assign Driver")
+                                .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
+                                .onChange(of: formData.assignedDriverId) { _ in validateRegistrationOnInteraction() }
                             
                             HStack(spacing: 16) {
                                 ModernPicker(icon: "car.fill", title: "Type", selection: $formData.vehicleType, options: vehicleTypes)
                                     .frame(maxWidth: .infinity)
+                                    .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
+                                    .onChange(of: formData.vehicleType) { _ in validateRegistrationOnInteraction() }
                                 ModernTextField(icon: "building.2.fill", placeholder: "Manufacturer", text: $formData.manufacturer, isRequired: true)
                                     .frame(maxWidth: .infinity)
+                                    .onTapGesture { validateRegistrationOnInteraction() }
                             }
                             
                             HStack(spacing: 16) {
                                 ModernTextField(icon: "info.circle.fill", placeholder: "Model", text: $formData.model, isRequired: true)
                                     .frame(maxWidth: .infinity)
+                                    .onTapGesture { validateRegistrationOnInteraction() }
                                 ModernPicker(icon: "fuelpump.fill", title: "Fuel", selection: $formData.fuelType, options: fuelTypes)
                                     .frame(maxWidth: .infinity)
+                                    .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
+                                    .onChange(of: formData.fuelType) { _ in validateRegistrationOnInteraction() }
                             }
                             
                             HStack(spacing: 16) {
                                 ModernTextField(icon: "scalemass.fill", placeholder: "Capacity", text: $formData.capacity, isRequired: true)
                                     .frame(maxWidth: .infinity)
+                                    .onTapGesture { validateRegistrationOnInteraction() }
                                 ModernDatePicker(icon: "calendar", title: "Reg Date", selection: $formData.registrationDate, throughDate: Date())
                                     .frame(maxWidth: .infinity)
+                                    .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
+                                    .onChange(of: formData.registrationDate) { _ in validateRegistrationOnInteraction() }
                             }
                             
                             ModernPicker(icon: "checkmark.circle.fill", title: "Status", selection: $formData.status, options: statuses)
+                                .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
+                                .onChange(of: formData.status) { _ in validateRegistrationOnInteraction() }
                         }
                         .padding(.horizontal)
                         
@@ -173,6 +186,12 @@ struct AddVehicleView: View {
                     showDuplicateAlert = false
                 }
             }
+        }
+    }
+    
+    private func validateRegistrationOnInteraction() {
+        if !formData.registrationNumber.isEmpty && !isValidRegistration {
+            showRegistrationError = true
         }
     }
     
