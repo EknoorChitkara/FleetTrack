@@ -147,9 +147,9 @@ struct VehicleCard: View {
     private func statusColor(_ status: VehicleStatus) -> Color {
         switch status {
         case .active: return .green
-        case .inactive: return .gray
-        case .inMaintenance: return .orange
-        case .retired: return .red
+        case .inactive: return .red
+        case .inMaintenance: return .yellow
+        case .retired: return .gray
         }
     }
 }

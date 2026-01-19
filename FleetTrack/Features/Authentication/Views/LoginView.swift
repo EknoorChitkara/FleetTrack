@@ -21,7 +21,7 @@ struct LoginView: View {
 
     private var isFormValid: Bool {
         !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
-        !password.isEmpty
+        password.count >= 8
     }
 
     var body: some View {

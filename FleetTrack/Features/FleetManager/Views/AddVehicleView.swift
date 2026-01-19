@@ -12,6 +12,14 @@ struct AddVehicleView: View {
     @EnvironmentObject var fleetVM: FleetViewModel
     @State private var formData = VehicleCreationData()
     @State private var showError = false
+    @State private var showRegistrationError = false
+    @State private var showDuplicateAlert = false
+    
+    @FocusState private var focusedField: Field?
+    
+    enum Field {
+        case registration
+    }
     
     // Mock data for dropdowns
     let vehicleTypes = VehicleType.allCases
@@ -38,8 +46,20 @@ struct AddVehicleView: View {
                         .foregroundColor(.white)
                     Spacer()
                     Button(action: {
-                        fleetVM.addVehicle(formData)
-                        presentationMode.wrappedValue.dismiss()
+                        if fleetVM.isVehicleRegistered(formData.registrationNumber) {
+                            withAnimation(.spring()) {
+                                showDuplicateAlert = true
+                            }
+                            // Auto-hide alert after 3 seconds
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                withAnimation {
+                                    showDuplicateAlert = false
+                                }
+                            }
+                        } else {
+                            fleetVM.addVehicle(formData)
+                            presentationMode.wrappedValue.dismiss()
+                        }
                     }) {
                         Text("Save")
                             .fontWeight(.bold)
@@ -58,7 +78,18 @@ struct AddVehicleView: View {
                         )
                         
                         VStack(spacing: 16) {
-                            ModernTextField(icon: "number.square.fill", placeholder: "Registration Number (e.g., MH-14-AB1234)", text: $formData.registrationNumber, isRequired: true)
+                            VStack(spacing: 8) {
+                                ModernTextField(icon: "number.square.fill", placeholder: "Registration Number (e.g., XX-00-XX0000)", text: $formData.registrationNumber, isRequired: true)
+                                    .focused($focusedField, equals: .registration)
+                                
+                                if showRegistrationError && !isValidRegistration {
+                                    Text("Invalid format. Expected: XX-00-XX0000")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, 4)
+                                }
+                            }
                             
                             ModernDriverPicker(icon: "person.fill.badge.plus", selection: $formData.assignedDriverId, drivers: fleetVM.unassignedDrivers, placeholder: "Assign Driver")
                             
@@ -87,14 +118,59 @@ struct AddVehicleView: View {
                         }
                         .padding(.horizontal)
                         
-                        if !formData.registrationNumber.isEmpty && !isValidRegistration {
-                            Text("Invalid format. Expected: MH-14-AB1234")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        }
-                        
                         Spacer(minLength: 40)
                     }
+                }
+            }
+            
+            // Duplicate Alert Popup
+            if showDuplicateAlert {
+                VStack {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.white)
+                        Text("Vehicle with this registration already exists!")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Button(action: {
+                            withAnimation {
+                                showDuplicateAlert = false
+                            }
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                    }
+                    .padding()
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.red, Color.red.opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                    .padding(.horizontal)
+                    .padding(.top, 60) // Positioned below the header area
+                    
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(100)
+            }
+        }
+        .onChange(of: focusedField) { newValue in
+            if newValue != .registration && !formData.registrationNumber.isEmpty {
+                showRegistrationError = true
+            }
+        }
+        .onChange(of: formData.registrationNumber) { _ in
+            if showDuplicateAlert {
+                withAnimation {
+                    showDuplicateAlert = false
                 }
             }
         }

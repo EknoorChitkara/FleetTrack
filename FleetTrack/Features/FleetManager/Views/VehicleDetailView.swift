@@ -47,7 +47,7 @@ struct VehicleDetailView: View {
                             Text(currentVehicle.model)
                             Circle().frame(width: 4, height: 4)
                             HStack(spacing: 4) {
-                                Circle().frame(width: 8, height: 8).foregroundColor(.green)
+                                Circle().frame(width: 8, height: 8).foregroundColor(statusColor(currentVehicle.status))
                                 Text(currentVehicle.status.rawValue)
                             }
                         }
@@ -199,6 +199,15 @@ struct VehicleDetailView: View {
     }
     
     @EnvironmentObject var fleetVM: FleetViewModel
+    
+    private func statusColor(_ status: VehicleStatus) -> Color {
+        switch status {
+        case .active: return .green
+        case .inactive: return .red
+        case .inMaintenance: return .yellow
+        case .retired: return .gray
+        }
+    }
 }
 
 struct QuickActionBtn: View {

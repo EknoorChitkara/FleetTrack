@@ -146,8 +146,6 @@ class AnalyticsViewModel: ObservableObject {
                 case .truck: efficiency = 4.0
                 case .van: efficiency = 8.0
                 case .car: efficiency = 12.0
-                case .motorcycle: efficiency = 35.0
-                case .bus: efficiency = 3.0
                 case .other: efficiency = 6.0
                 }
                 fuelConsumed = distance / efficiency
@@ -203,8 +201,6 @@ class AnalyticsViewModel: ObservableObject {
             "Truck": .purple,
             "Van": .blue,
             "Car": .orange,
-            "Bus": .red,
-            "Motorcycle": .green,
             "Other": .gray
         ]
         

@@ -324,6 +324,10 @@ class FleetViewModel: ObservableObject {
         activities.insert(activity, at: 0)
     }
     
+    func isVehicleRegistered(_ registrationNumber: String) -> Bool {
+        vehicles.contains { $0.registrationNumber.lowercased() == registrationNumber.lowercased() }
+    }
+    
     // MARK: - Helpers
     
     private func getDriverName(for id: UUID?) -> String? {
