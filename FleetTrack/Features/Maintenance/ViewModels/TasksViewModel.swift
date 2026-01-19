@@ -77,11 +77,11 @@ public class TasksViewModel: ObservableObject {
     }
 
     var inProgressTasks: [MaintenanceTask] {
-        filteredTasks.filter { $0.status == "In Progress" }
+        filteredTasks.filter { $0.status == "In Progress" && !$0.isPaused }
     }
 
     var pausedTasks: [MaintenanceTask] {
-        filteredTasks.filter { $0.status == "Paused" }
+        filteredTasks.filter { $0.isPaused }
     }
 
     var completedTasks: [MaintenanceTask] {
