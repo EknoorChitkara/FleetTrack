@@ -255,6 +255,11 @@ public struct MaintenanceTask: Identifiable, Codable, Hashable, Equatable {
     public var isPaused: Bool {
         status == "In Progress" && pausedAt != nil
     }
+    
+    // Check if task is failed based on Cancelled status with failedReason
+    public var isFailed: Bool {
+        status == "Cancelled" && failedReason != nil
+    }
 
     public var canBeStarted: Bool {
         status == "Pending"
