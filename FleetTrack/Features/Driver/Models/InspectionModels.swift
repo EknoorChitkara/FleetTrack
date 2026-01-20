@@ -14,7 +14,6 @@ enum InspectionTab: String, CaseIterable {
     case summary = "Summary"
     case checklist = "Checklist"
     case history = "History"
-    case booking = "Booking"
 }
 
 enum ServiceType: String, CaseIterable, Identifiable {
@@ -128,7 +127,7 @@ struct VehicleInspection: Identifiable, Codable {
 
 extension InspectionItem {
     static let defaultChecklist: [InspectionItem] = [
-        .init(name: "Tires"),
+        .init(name: "Tyres"),
         .init(name: "Brakes"),
         .init(name: "Lights"),
         .init(name: "Oil"),

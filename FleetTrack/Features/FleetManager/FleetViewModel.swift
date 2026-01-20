@@ -303,6 +303,39 @@ class FleetViewModel: ObservableObject {
         }
     }
     
+    func retireVehicle(byId id: UUID) {
+        isLoading = true
+        Task { @MainActor in
+            do {
+                // 1. Backend Call
+                try await FleetManagerService.shared.retireVehicle(byId: id)
+                
+                // 2. Local Update
+                if let index = vehicles.firstIndex(where: { $0.id == id }) {
+                    let oldDriverId = vehicles[index].assignedDriverId
+                    let registration = vehicles[index].registrationNumber
+                    
+                    // Update vehicle status and unassign driver
+                    vehicles[index].status = .retired
+                    vehicles[index].assignedDriverId = nil
+                    vehicles[index].assignedDriverName = nil
+                    
+                    // Update old driver status to available
+                    if let dId = oldDriverId, let dIndex = drivers.firstIndex(where: { $0.id == dId }) {
+                        drivers[dIndex].status = .available
+                    }
+                    
+                    logActivity(title: "Vehicle Retired", description: "Vehicle \(registration) has been retired from active service.", icon: "archivebox.fill", color: "gray")
+                }
+                isLoading = false
+            } catch {
+                self.errorMessage = "Failed to retire vehicle: \(error.localizedDescription)"
+                self.isLoading = false
+                print("❌ [FleetViewModel] Retire failed: \(error)")
+            }
+        }
+    }
+    
     static let maintenanceOptions = [
         "Engine", "Oil", "Oil Change", "Tires", "Tire Replacement",
         "Brakes", "Brake Inspection", "Battery", "Transmission",
@@ -322,6 +355,10 @@ class FleetViewModel: ObservableObject {
     func logActivity(title: String, description: String, icon: String, color: String) {
         let activity = FMActivity(id: UUID(), title: title, description: description, timestamp: Date(), icon: icon, color: color)
         activities.insert(activity, at: 0)
+    }
+    
+    func isVehicleRegistered(_ registrationNumber: String) -> Bool {
+        vehicles.contains { $0.registrationNumber.lowercased() == registrationNumber.lowercased() }
     }
     
     // MARK: - Helpers

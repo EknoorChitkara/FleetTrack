@@ -12,6 +12,7 @@ import SwiftUI
 struct DriverVehicleInspectionView: View {
     @StateObject var viewModel: VehicleInspectionViewModel
     @Environment(\.presentationMode) var presentationMode
+    @State private var isShowingReportIssue = false
     
     var body: some View {
         ZStack {
@@ -65,13 +66,11 @@ struct DriverVehicleInspectionView: View {
                     VStack(spacing: 20) {
                         switch viewModel.selectedTab {
                         case .summary:
-                            InspectionSummaryView(viewModel: viewModel)
+                            InspectionSummaryView(viewModel: viewModel, isShowingReportIssue: $isShowingReportIssue)
                         case .checklist:
-                            InspectionChecklistView(viewModel: viewModel)
+                            InspectionChecklistView(viewModel: viewModel, isShowingReportIssue: $isShowingReportIssue)
                         case .history:
                             InspectionHistoryView(viewModel: viewModel)
-                        case .booking:
-                            InspectionBookingView(viewModel: viewModel)
                         }
                     }
                     .padding()
@@ -81,6 +80,9 @@ struct DriverVehicleInspectionView: View {
         .navigationBarHidden(true)
         .alert(isPresented: $viewModel.showingConfirmation) {
             Alert(title: Text("Success"), message: Text(viewModel.confirmationMessage), dismissButton: .default(Text("OK")))
+        }
+        .fullScreenCover(isPresented: $isShowingReportIssue) {
+            ReportIssueView(vehicle: viewModel.vehicle)
         }
     }
 }
@@ -123,6 +125,7 @@ struct InspectionTabBar: View {
 
 struct InspectionSummaryView: View {
     @ObservedObject var viewModel: VehicleInspectionViewModel
+    @Binding var isShowingReportIssue: Bool
     
     var body: some View {
         VStack(spacing: 24) {
@@ -175,19 +178,6 @@ struct InspectionSummaryView: View {
                                     .fontWeight(.bold)
                             }
                         }
-                        
-                        // Details Button
-                        Button {
-                            // View details action
-                        } label: {
-                            Text("View Vehicle Details")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(12)
-                        }
                     }
                     .padding(20)
                     .background(Color.appCardBackground)
@@ -215,22 +205,22 @@ struct InspectionSummaryView: View {
                 } label: {
                     Text("Start Daily Inspection")
                         .fontWeight(.semibold)
-                        .foregroundColor(.white)
+                        .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.white.opacity(0.1))
+                        .background(Color.appEmerald)
                         .cornerRadius(12)
                 }
                 
                 Button {
-                    // Navigate to reporting
+                    isShowingReportIssue = true
                 } label: {
                     Text("Report Issue")
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.white.opacity(0.1))
+                        .background(Color.red)
                         .cornerRadius(12)
                 }
             }
@@ -243,6 +233,11 @@ struct InspectionSummaryView: View {
 
 struct InspectionChecklistView: View {
     @ObservedObject var viewModel: VehicleInspectionViewModel
+    @Binding var isShowingReportIssue: Bool
+    
+    private var allItemsChecked: Bool {
+        viewModel.checklistItems.allSatisfy { $0.isChecked }
+    }
     
     var body: some View {
         VStack(spacing: 20) {
@@ -260,39 +255,68 @@ struct InspectionChecklistView: View {
                             Text(item.name)
                                 .foregroundColor(.white)
                             Spacer()
-                            Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
+                            Image(systemName: (viewModel.isSubmitted || item.isChecked) ? "checkmark.circle.fill" : "circle")
                                 .font(.system(size: 24))
-                                .foregroundColor(item.isChecked ? .appEmerald : .gray)
+                                .foregroundColor((viewModel.isSubmitted || item.isChecked) ? .appEmerald : .gray)
                         }
                         .padding()
                         .background(Color.appCardBackground)
                         .cornerRadius(12)
                     }
+                    .disabled(viewModel.isSubmitted)
                 }
                 
-                // Submit
-                Button {
-                    Task {
-                        await viewModel.submitInspection()
+                // Submit button - only shown when all items are checked and not yet submitted
+                if allItemsChecked && !viewModel.isSubmitted {
+                    Button {
+                        Task {
+                            await viewModel.submitInspection()
+                        }
+                    } label: {
+                        Text("Submit Inspection")
+                            .font(.headline)
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.appEmerald)
+                            .cornerRadius(12)
                     }
-                } label: {
-                    Text("Submit Inspection")
-                        .font(.headline)
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.appEmerald)
-                        .cornerRadius(12)
+                } else if viewModel.isSubmitted {
+                    // Show submitted state
+                    Button {} label: {
+                        Text("Submitted")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray)
+                            .cornerRadius(12)
+                    }
+                    .disabled(true)
+                } else {
+                    // Show disabled submit button when not all items are checked
+                    Button {} label: {
+                        Text("Submit Inspection")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.5))
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.gray.opacity(0.5))
+                            .cornerRadius(12)
+                    }
+                    .disabled(true)
                 }
                 
+                // Report Issue button - disabled when all items checked or submitted
                 Button("Report Issue") {
-                    // Report action
+                    isShowingReportIssue = true
                 }
                 .foregroundColor(.white)
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color.white.opacity(0.1))
+                .background(Color.red.opacity((allItemsChecked || viewModel.isSubmitted) ? 0.3 : 1.0))
                 .cornerRadius(12)
+                .disabled(allItemsChecked || viewModel.isSubmitted)
             }
         }
     }
@@ -346,111 +370,10 @@ struct InspectionHistoryView: View {
                     }
                 }
             }
-        }
-    }
-
-struct InspectionBookingView: View {
-    @ObservedObject var viewModel: VehicleInspectionViewModel
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Request Service")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                
-                Text("Service Type")
-                    .font(.subheadline)
-                    .foregroundColor(.appSecondaryText)
-                
-                Menu {
-                    ForEach(ServiceType.allCases) { type in
-                        Button(type.rawValue) {
-                            viewModel.selectedServiceType = type
-                        }
-                    }
-                } label: {
-                    HStack {
-                        Text(viewModel.selectedServiceType.rawValue)
-                            .foregroundColor(.white)
-                        Spacer()
-                        Image(systemName: "chevron.down")
-                            .foregroundColor(.appSecondaryText)
-                    }
-                    .padding()
-                    .background(Color.appCardBackground)
-                    .cornerRadius(12)
+            .onAppear {
+                Task {
+                    await viewModel.fetchHistory()
                 }
-            }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Preferred Date")
-                    .font(.subheadline)
-                    .foregroundColor(.appSecondaryText)
-                
-                // Custom Text Field with DatePicker
-                // We puts the DatePicker 'behind' the custom view but scale it up to fill the space.
-                // The custom view must allow hit testing to pass through to the underlying picker.
-                ZStack {
-                    // Layer 1: The functionality (Invisible but touchable giant picker)
-                    DatePicker("", selection: $viewModel.preferredDate, displayedComponents: .date)
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
-                        .colorScheme(.dark)
-                        .scaleEffect(x: 10, y: 5) // Scale up to cover the whole container
-                        .opacity(0.02) // Almost invisible but interactive
-                    
-                    // Layer 2: The Design (Non-interactive visual only)
-                    HStack {
-                        Text(viewModel.preferredDate.formatted(.dateTime.day().month().year()))
-                            .foregroundColor(.white)
-                        Spacer()
-                        Image(systemName: "calendar")
-                            .foregroundColor(.appSecondaryText)
-                    }
-                    .padding()
-                    .background(Color.appCardBackground)
-                    .cornerRadius(12)
-                    .allowsHitTesting(false) // Pass touches to the DatePicker below
-                }
-                .clipped() // Clip the giant picker to the rounded bounds
-            }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Notes")
-                    .font(.subheadline)
-                    .foregroundColor(.appSecondaryText)
-                
-                TextEditor(text: $viewModel.notes)
-                    .frame(height: 100)
-                    .padding(8)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.appCardBackground)
-                    .cornerRadius(12)
-                    .foregroundColor(.white)
-                    .overlay(
-                        Group {
-                            if viewModel.notes.isEmpty {
-                                Text("Describe the issue or service needed...")
-                                    .foregroundColor(.gray)
-                                    .padding(.leading, 12)
-                                    .padding(.top, 16)
-                                    .allowsHitTesting(false)
-                            }
-                        },
-                        alignment: .topLeading
-                    )
-            }
-            
-            Button(action: viewModel.submitServiceRequest) {
-                Text("Request Service")
-                    .font(.headline)
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.appEmerald)
-                    .cornerRadius(12)
             }
         }
     }
-}
