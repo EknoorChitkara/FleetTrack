@@ -145,7 +145,7 @@ struct MaintenanceLogRow: View {
             
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Completed Service")
+                    Text("Under Maintenance")
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
@@ -156,8 +156,8 @@ struct MaintenanceLogRow: View {
                     .font(.caption)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.appEmerald.opacity(0.1))
-                    .foregroundColor(.appEmerald)
+                    .background(Color.yellow.opacity(0.1))
+                    .foregroundColor(.yellow)
                     .cornerRadius(4)
                 
                 Text(description)

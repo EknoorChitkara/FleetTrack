@@ -9,6 +9,7 @@ public enum AlertType: String, Codable, CaseIterable {
     case system = "System"
     case emergency = "Emergency"
     case inventory = "Inventory"
+    case maintenance = "Maintenance"
 }
 
 public struct MaintenanceAlert: Identifiable, Codable, Hashable {

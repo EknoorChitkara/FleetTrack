@@ -14,7 +14,7 @@ struct FleetManagerVehiclesView: View {
     @State private var showAddVehicle = false
     
     // Filters
-    let filters = ["All", "Active", "Inactive", "In Maintenance", "Out of Service"]
+    let filters = ["All", "Active", "Inactive", "Maintenance", "Retired"]
     
     var filteredVehicles: [FMVehicle] {
         fleetVM.vehicles.filter { vehicle in

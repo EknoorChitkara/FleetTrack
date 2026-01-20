@@ -23,10 +23,6 @@ struct MaintenanceDashboardView: View {
                     // Header
                     headerView
                     
-                    // Quick Actions
-                    quickActionsSection
-                        .padding(.horizontal, AppTheme.spacing.md)
-                    
                     // Today's Tasks Card
                     TodaysTasksCard(
                         pendingCount: viewModel.pendingTasksCount,
@@ -37,17 +33,19 @@ struct MaintenanceDashboardView: View {
                     // Statistics Row
                     HStack(spacing: AppTheme.spacing.md) {
                         StatisticCard(
-                            icon: "checkmark",
+                            icon: "chart.bar.fill",
                             value: "\(viewModel.maintenanceSummary.completedTasksThisMonth)",
                             label: "Completed This Month",
-                            iconBackgroundColor: AppTheme.statusActiveBackground
+                            iconBackgroundColor: Color.purple.opacity(0.15),
+                            iconColor: Color.purple
                         )
                         
                         StatisticCard(
-                            icon: "clock",
+                            icon: "timer",
                             value: String(format: "%.1fh", viewModel.maintenanceSummary.averageCompletionTimeHours),
                             label: "Avg Completion Time",
-                            iconBackgroundColor: AppTheme.backgroundElevated
+                            iconBackgroundColor: Color.orange.opacity(0.15),
+                            iconColor: Color.orange
                         )
                     }
                     .padding(.horizontal, AppTheme.spacing.md)
@@ -57,6 +55,11 @@ struct MaintenanceDashboardView: View {
                     
                     // Task History Section
                     taskHistorySection
+                    
+                    // Quick Actions (moved to bottom)
+                    quickActionsSection
+                        .padding(.horizontal, AppTheme.spacing.md)
+                        .padding(.bottom, 80) // Extra padding to clear tab bar
                 }
                 .padding(.vertical, AppTheme.spacing.md)
             }
@@ -65,7 +68,7 @@ struct MaintenanceDashboardView: View {
             }
         }
         .sheet(isPresented: $showingTaskHistory) {
-            TaskHistoryView(completedTasks: viewModel.completedTasks)
+            TaskHistoryView()
         }
         .sheet(isPresented: $showProfile) {
             MaintenanceProfileView(user: user)
@@ -84,12 +87,12 @@ struct MaintenanceDashboardView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Maintenance Dashboard")
-                    .font(.title2)
+                Text("Maintenance")
+                    .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.textPrimary)
                 
-                Text("Welcome back, \(viewModel.currentUser.name)!")
+                Text("Management Dashboard")
                     .font(.subheadline)
                     .foregroundColor(AppTheme.textSecondary)
             }
@@ -146,7 +149,7 @@ struct MaintenanceDashboardView: View {
         VStack(alignment: .leading, spacing: AppTheme.spacing.md) {
             // Section Header
             HStack {
-                Text("Priority Tasks")
+                Text("Recent Tasks")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
                 

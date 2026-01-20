@@ -15,16 +15,13 @@ struct AlertsView: View {
 
     enum AlertFilter: String, CaseIterable {
         case all = "All"
-        case outOfStock = "Out of Stock"
         case lowStock = "Low Stock"
     }
 
     var filteredParts: [InventoryPart] {
         switch selectedFilter {
         case .all:
-            return inventoryViewModel.lowStockParts + inventoryViewModel.outOfStockParts
-        case .outOfStock:
-            return inventoryViewModel.outOfStockParts
+            return inventoryViewModel.lowStockParts
         case .lowStock:
             return inventoryViewModel.lowStockParts
         }
@@ -281,14 +278,32 @@ struct MaintenanceAlertCard: View {
                     .foregroundColor(AppTheme.textSecondary)
             }
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(alert.title)
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
                 
-                Text(alert.message)
-                    .font(.caption)
-                    .foregroundColor(AppTheme.textSecondary)
+                // Parse severity and description from message
+                VStack(alignment: .leading, spacing: 4) {
+                    if alert.message.contains("Severity:") {
+                        let components = alert.message.components(separatedBy: ". ")
+                        if let severityPart = components.first {
+                            // Remove period from severity
+                            Text(severityPart.replacingOccurrences(of: ".", with: ""))
+                                .font(.caption)
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
+                        if components.count > 1 {
+                            Text(components.dropFirst().joined(separator: ". "))
+                                .font(.caption)
+                                .foregroundColor(AppTheme.textSecondary)
+                        }
+                    } else {
+                        Text(alert.message)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                }
             }
         }
         .padding(AppTheme.spacing.md)

@@ -77,11 +77,11 @@ public class TasksViewModel: ObservableObject {
     }
 
     var inProgressTasks: [MaintenanceTask] {
-        filteredTasks.filter { $0.status == "In Progress" }
+        filteredTasks.filter { $0.status == "In Progress" && !$0.isPaused }
     }
 
     var pausedTasks: [MaintenanceTask] {
-        filteredTasks.filter { $0.status == "Paused" }
+        filteredTasks.filter { $0.isPaused }
     }
 
     var completedTasks: [MaintenanceTask] {
@@ -89,7 +89,7 @@ public class TasksViewModel: ObservableObject {
     }
 
     var failedTasks: [MaintenanceTask] {
-        filteredTasks.filter { $0.status == "Failed" }
+        filteredTasks.filter { $0.isFailed }
     }
 
     // MARK: - Initialization

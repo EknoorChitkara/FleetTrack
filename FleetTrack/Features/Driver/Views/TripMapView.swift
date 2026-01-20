@@ -29,10 +29,15 @@ struct TripMapView: View {
     @State private var showEndLog = false
     @State private var showingInspectionSheet = false
     @State private var hasCompletedInspection = false
+    @State private var assignedVehicle: Vehicle? = nil
+    @State private var showOdometerError = false
+    @State private var odometerErrorMessage = ""
+    @State private var startOdometerReading: Double = 0.0
+    @State private var showFuelError = false
     
     // Log variables
     @State private var logOdometer: String = ""
-    @State private var logFuel: Double = 0.5
+    @State private var logFuel: Double = 50.0 // 0-100%
     @State private var estimatedTime: String?
     @State private var routeDistance: Double?
     @State private var isNavigating = false
@@ -49,6 +54,15 @@ struct TripMapView: View {
     var isCompleted: Bool { (localTripStatus ?? trip.status) == .completed }
     var isPickupPhase: Bool { (localTripStatus ?? trip.status) == .scheduled }
     var isDeliveryPhase: Bool { (localTripStatus ?? trip.status) == .ongoing }
+    
+    // Check if trip is scheduled for today
+    var isScheduledForToday: Bool {
+        guard let startTime = trip.startTime else { return true } // If no startTime, allow starting
+        let calendar = Calendar.current
+        let tripDay = calendar.startOfDay(for: startTime)
+        let today = calendar.startOfDay(for: Date())
+        return tripDay <= today
+    }
     
     init(trip: Trip, driverName: String = "Unknown Driver", vehicleInfo: String = "Unknown Vehicle") {
         self.trip = trip
@@ -79,10 +93,8 @@ struct TripMapView: View {
         }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                statusBadge
-            }
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Close") {
                     dismiss()
@@ -112,8 +124,18 @@ struct TripMapView: View {
                 onCommit: { completeTrip() }
             )
         }
-        .sheet(isPresented: $showingInspectionSheet) {
-            DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: nil)) // We need to pass vehicle if possible, but VM handles basic checks
+        .fullScreenCover(isPresented: $showingInspectionSheet) {
+            DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: assignedVehicle))
+        }
+        .alert("Invalid Odometer Reading", isPresented: $showOdometerError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(odometerErrorMessage)
+        }
+        .alert("Empty Fuel Tank", isPresented: $showFuelError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Cannot start trip with empty fuel. Please refuel the vehicle before starting the trip.")
         }
         .onAppear {
             if localTripStatus == nil {
@@ -136,6 +158,7 @@ struct TripMapView: View {
             }
             
             checkDailyInspection()
+            fetchVehicle()
         }
         .onDisappear {
             locationProvider.stopTracking()
@@ -462,26 +485,31 @@ struct TripMapView: View {
             // Action Buttons
             if isPickupPhase {
                 Button(action: {
+                    if !isScheduledForToday {
+                        // Trip not scheduled for today - do nothing
+                        return
+                    }
                     if hasCompletedInspection {
                         logOdometer = ""
-                        logFuel = 0.5 // Reset fuel to default for start log
+                        logFuel = 50.0 // Reset fuel to default for start log
                         showStartLog = true
                     } else {
                         showingInspectionSheet = true
                     }
                 }) {
-                    Text(hasCompletedInspection ? "Start Trip" : "Pending Inspection")
+                    Text(!isScheduledForToday ? "Scheduled for Later" : (hasCompletedInspection ? "Start Trip" : "Pending Inspection"))
                         .font(.headline)
-                        .foregroundColor(.white) // Changed to white for better contrast
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(hasCompletedInspection ? Color.green : Color.orange) // Assuming Color.appEmerald is Color.green
+                        .background(!isScheduledForToday ? Color.gray : (hasCompletedInspection ? Color.green : Color.orange))
                         .cornerRadius(12)
                 }
+                .disabled(!isScheduledForToday)
             } else if isDeliveryPhase {
                 Button { 
                     logOdometer = ""
-                    logFuel = 0.5 // Reset fuel to default for end log
+                    logFuel = 50.0 // Reset fuel to default for end log
                     showEndLog = true 
                 } label: {
                     Label("End Trip", systemImage: "stop.circle.fill")
@@ -515,6 +543,21 @@ struct TripMapView: View {
 
     private func startDelivery() {
         guard !isProcessing else { return }
+        
+        // Validate odometer reading - cannot be negative
+        let odometerValue = Double(logOdometer) ?? 0.0
+        guard odometerValue >= 0 else {
+            odometerErrorMessage = "Odometer reading cannot be negative"
+            showOdometerError = true
+            return
+        }
+        
+        // Validate fuel level - must be greater than 0 (not empty)
+        guard logFuel > 0 else {
+            showFuelError = true
+            return
+        }
+        
         isProcessing = true
         
         Task {
@@ -530,6 +573,11 @@ struct TripMapView: View {
                 try await supabase.from("trips")
                     .update(updateData)
                     .eq("id", value: trip.id.uuidString).execute()
+                
+                // Store start odometer for validation when ending trip
+                await MainActor.run {
+                    self.startOdometerReading = Double(logOdometer) ?? 0.0
+                }
             } catch {
                 print("❌ Failed to update start trip: \(error)")
             }
@@ -592,6 +640,23 @@ struct TripMapView: View {
     }
     
     private func completeTrip() {
+        // Validate odometer reading
+        let endOdometer = Double(logOdometer) ?? 0.0
+        
+        // First check: cannot be negative
+        guard endOdometer >= 0 else {
+            odometerErrorMessage = "Odometer reading cannot be negative"
+            showOdometerError = true
+            return
+        }
+        
+        // Ensure end odometer is greater than start odometer
+        guard endOdometer > startOdometerReading else {
+            odometerErrorMessage = "End odometer reading (\(String(format: "%.1f", endOdometer)) km) must be greater than start reading (\(String(format: "%.1f", startOdometerReading)) km)"
+            showOdometerError = true
+            return
+        }
+        
         // Stop Geofencing
         RouteMonitoringManager.shared.stopMonitoring()
         
@@ -599,7 +664,7 @@ struct TripMapView: View {
             let updateData: [String: AnyEncodable] = [
                 "status": AnyEncodable("Completed"),
                 "end_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
-                "end_odometer": AnyEncodable(Double(logOdometer) ?? 0.0),
+                "end_odometer": AnyEncodable(endOdometer),
                 "end_fuel_level": AnyEncodable(logFuel)
             ]
             
@@ -636,6 +701,25 @@ struct TripMapView: View {
                  print("⚠️ Failed to check inspection status: \(error)")
                  // Allow trip if check fails to prevent blocking
                  await MainActor.run { hasCompletedInspection = true } 
+             }
+         }
+     }
+     
+     private func fetchVehicle() {
+         Task {
+             do {
+                 let vehicles: [Vehicle] = try await supabase
+                     .from("vehicles")
+                     .select()
+                     .eq("id", value: trip.vehicleId.uuidString)
+                     .execute()
+                     .value
+                 
+                 await MainActor.run {
+                     assignedVehicle = vehicles.first
+                 }
+             } catch {
+                 print("⚠️ Failed to fetch vehicle: \(error)")
              }
          }
      }

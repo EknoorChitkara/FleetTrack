@@ -12,6 +12,7 @@ import Foundation
 class TaskDetailViewModel: ObservableObject {
 
     @Published var task: MaintenanceTask
+    @Published var assignedDriver: Driver?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showingCompletionSheet: Bool = false
@@ -50,9 +51,17 @@ class TaskDetailViewModel: ObservableObject {
 
         do {
             try await MaintenanceService.shared.pauseTask(taskId: task.id)
-            task.status = "Paused"
+            // Keep status as "In Progress" for database compatibility
+            // But set pausedAt to indicate paused state
             task.pausedAt = Date()
+            task.updatedAt = Date()
+            
+            // Update shared task list
             TasksViewModel.shared.updateTask(task)
+            
+            // Force UI refresh
+            objectWillChange.send()
+            
             print("✅ Task paused via Service")
         } catch {
             errorMessage = "Failed to pause task: \(error.localizedDescription)"
@@ -67,7 +76,7 @@ class TaskDetailViewModel: ObservableObject {
 
         do {
             try await MaintenanceService.shared.resumeTask(taskId: task.id)
-            task.status = "In Progress"
+            // Status remains "In Progress"
             task.pausedAt = nil
             TasksViewModel.shared.updateTask(task)
             print("✅ Task resumed via Service")
@@ -96,6 +105,10 @@ class TaskDetailViewModel: ObservableObject {
             task.laborHours = laborHours
             TasksViewModel.shared.updateTask(task)
             showingCompletionSheet = false
+            
+            // Notify dashboard to refresh
+            NotificationCenter.default.post(name: NSNotification.Name("TaskCompleted"), object: nil)
+            
             print("✅ Task completed via Service")
         } catch {
             errorMessage = "Failed to complete task: \(error.localizedDescription)"
@@ -158,6 +171,37 @@ class TaskDetailViewModel: ObservableObject {
             print("❌ Error removing part: \(error)")
         }
         isLoading = false
+    }
+    
+    // MARK: - Driver Loading
+    
+    func loadAssignedDriver() async {
+        do {
+            // Step 1: Fetch the vehicle using registration number
+            guard let vehicle = try await MaintenanceService.shared.fetchVehicle(byRegistration: task.vehicleRegistrationNumber) else {
+                print("⚠️ Vehicle not found: \(task.vehicleRegistrationNumber)")
+                assignedDriver = nil
+                return
+            }
+            
+            // Step 2: Get the assigned driver ID from the vehicle
+            guard let driverId = vehicle.assignedDriverId else {
+                print("ℹ️ No driver assigned to vehicle: \(task.vehicleRegistrationNumber)")
+                assignedDriver = nil
+                return
+            }
+            
+            // Step 3: Fetch the driver details
+            assignedDriver = try await MaintenanceService.shared.fetchDriver(byId: driverId)
+            if let driver = assignedDriver {
+                print("✅ Loaded driver: \(driver.fullName) for vehicle \(task.vehicleRegistrationNumber)")
+                print("   📞 Phone: \(driver.phoneNumber ?? "nil")")
+                print("   📧 Email: \(driver.email)")
+            }
+        } catch {
+            print("❌ Error loading driver: \(error)")
+            assignedDriver = nil
+        }
     }
 
     // MARK: - Repair Log Updates

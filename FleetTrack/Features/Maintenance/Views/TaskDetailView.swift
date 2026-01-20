@@ -97,6 +97,9 @@ struct TaskDetailView: View {
         .sheet(isPresented: $viewModel.showingAddPartSheet) {
             AddPartSheetForTask(viewModel: viewModel)
         }
+        .task {
+            await viewModel.loadAssignedDriver()
+        }
     }
     
     // MARK: - Task Info Card
@@ -142,7 +145,7 @@ struct TaskDetailView: View {
                 .foregroundColor(AppTheme.textPrimary)
             
             // Current Status
-            StatusBadge(status: viewModel.task.status)
+            StatusBadge(status: viewModel.task.status, task: viewModel.task)
             
             // Action Buttons based on current status
             VStack(spacing: AppTheme.spacing.sm) {
@@ -228,43 +231,63 @@ struct TaskDetailView: View {
     
     // MARK: - Driver Contact Section
     
+    
     private var driverContactSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.spacing.md) {
             Text("Driver Contact")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
             
-            // Mock driver info - in real app, fetch from database using assignedDriverId
-            let driverName = "Rajesh Kumar"
-            let driverPhone = "+91 98765 43210"
-            
-            VStack(spacing: AppTheme.spacing.sm) {
-                InfoRow(icon: "person.fill", label: "Driver", value: driverName)
-                InfoRow(icon: "phone.fill", label: "Phone", value: driverPhone)
-                
-                // Call Button
-                Button(action: {
-                    if let url = URL(string: "tel://\(driverPhone.replacingOccurrences(of: " ", with: ""))") {
-                        UIApplication.shared.open(url)
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "phone.fill")
-                            .font(.system(size: 16))
+            if let driver = viewModel.assignedDriver {
+                // Real driver data
+                VStack(spacing: AppTheme.spacing.sm) {
+                    InfoRow(icon: "person.fill", label: "Driver", value: driver.fullName)
+                    
+                    if let phone = driver.phoneNumber, !phone.isEmpty {
+                        InfoRow(icon: "phone.fill", label: "Phone", value: phone)
                         
-                        Text("Call Driver")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
+                        // Call Button
+                        Button(action: {
+                            if let url = URL(string: "tel://\(phone.replacingOccurrences(of: " ", with: ""))") {
+                                UIApplication.shared.open(url)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "phone.fill")
+                                    .font(.system(size: 16))
+                                
+                                Text("Call Driver")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                
+                                Spacer()
+                            }
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(AppTheme.accentPrimary)
+                            .cornerRadius(AppTheme.cornerRadius.medium)
+                        }
+                        .padding(.top, 4)
                     }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(AppTheme.accentPrimary)
-                    .cornerRadius(AppTheme.cornerRadius.medium)
+                    
+                    InfoRow(icon: "envelope.fill", label: "Email", value: driver.email)
                 }
-                .padding(.top, 4)
+            } else if viewModel.task.assignedDriverId != nil {
+                // Loading state
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.accentPrimary))
+                    Spacer()
+                }
+                .padding(.vertical, AppTheme.spacing.md)
+            } else {
+                // No driver assigned
+                Text("No driver assigned to this vehicle")
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.textSecondary)
+                    .padding(.vertical, AppTheme.spacing.sm)
             }
         }
         .padding(AppTheme.spacing.md)
@@ -991,22 +1014,31 @@ struct AddPartSheetForTask: View {
                     .foregroundColor(AppTheme.accentPrimary)
                 }
             }
+            .task {
+                await inventoryViewModel.loadInventory()
+            }
         }
     }
+    
     
     private func addPart() {
         guard let qty = Int(quantity) else { return }
         
         let partName: String
+        let partId: UUID?
+        
         if isCustomPart {
             partName = customPartName
+            partId = nil  // Custom parts don't have inventory ID
         } else if let part = selectedPart {
             partName = part.name
+            partId = part.id  // Include inventory part ID for deduction
         } else {
             return
         }
         
         let newPart = PartUsage(
+            partId: partId,
             partName: partName,
             quantity: qty,
             unitPrice: calculatedUnitPrice
