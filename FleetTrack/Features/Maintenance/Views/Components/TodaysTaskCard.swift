@@ -29,7 +29,9 @@ struct TodaysTasksCard: View {
                 TaskCountBox(
                     title: "In Progress",
                     count: inProgressCount,
-                    backgroundColor: AppTheme.backgroundElevated
+                    backgroundColor: AppTheme.backgroundElevated,
+                    iconColor: Color.yellow,
+                    iconBackgroundColor: Color.yellow.opacity(0.15)
                 )
             }
         }
@@ -40,18 +42,20 @@ struct TaskCountBox: View {
     let title: String
     let count: Int
     let backgroundColor: Color
+    var iconColor: Color = AppTheme.accentPrimary
+    var iconBackgroundColor: Color = AppTheme.accentPrimary.opacity(0.15)
     
     var body: some View {
         VStack(spacing: AppTheme.spacing.md) {
             // Icon with circular background
             ZStack {
                 Circle()
-                    .fill(AppTheme.accentPrimary.opacity(0.15))
+                    .fill(iconBackgroundColor)
                     .frame(width: 48, height: 48)
                 
                 Image(systemName: iconForTitle)
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(AppTheme.accentPrimary)
+                    .foregroundColor(iconColor)
             }
             
             Text("\(count)")

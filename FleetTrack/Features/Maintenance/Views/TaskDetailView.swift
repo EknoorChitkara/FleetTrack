@@ -142,7 +142,7 @@ struct TaskDetailView: View {
                 .foregroundColor(AppTheme.textPrimary)
             
             // Current Status
-            StatusBadge(status: viewModel.task.status)
+            StatusBadge(status: viewModel.task.status, task: viewModel.task)
             
             // Action Buttons based on current status
             VStack(spacing: AppTheme.spacing.sm) {
@@ -991,22 +991,31 @@ struct AddPartSheetForTask: View {
                     .foregroundColor(AppTheme.accentPrimary)
                 }
             }
+            .task {
+                await inventoryViewModel.loadInventory()
+            }
         }
     }
+    
     
     private func addPart() {
         guard let qty = Int(quantity) else { return }
         
         let partName: String
+        let partId: UUID?
+        
         if isCustomPart {
             partName = customPartName
+            partId = nil  // Custom parts don't have inventory ID
         } else if let part = selectedPart {
             partName = part.name
+            partId = part.id  // Include inventory part ID for deduction
         } else {
             return
         }
         
         let newPart = PartUsage(
+            partId: partId,
             partName: partName,
             quantity: qty,
             unitPrice: calculatedUnitPrice
