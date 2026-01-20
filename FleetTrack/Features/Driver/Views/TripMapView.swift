@@ -26,6 +26,10 @@ struct TripMapView: View {
     @State private var showEndLog = false
     @State private var showingInspectionSheet = false
     @State private var hasCompletedInspection = false
+    @State private var showOdometerError = false
+    @State private var odometerErrorMessage = ""
+    @State private var startOdometerReading: Double = 0.0
+    @State private var showFuelError = false
     
     // Log variables
     @State private var logOdometer: String = ""
@@ -73,6 +77,7 @@ struct TripMapView: View {
         }
         .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 statusBadge
@@ -108,6 +113,16 @@ struct TripMapView: View {
         }
         .sheet(isPresented: $showingInspectionSheet) {
             DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: nil)) // We need to pass vehicle if possible, but VM handles basic checks
+        }
+        .alert("Invalid Odometer Reading", isPresented: $showOdometerError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(odometerErrorMessage)
+        }
+        .alert("Empty Fuel Tank", isPresented: $showFuelError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Cannot start trip with empty fuel. Please refuel the vehicle before starting the trip.")
         }
         .onAppear {
             if localTripStatus == nil {
@@ -409,6 +424,13 @@ struct TripMapView: View {
 
     private func startDelivery() {
         guard !isProcessing else { return }
+        
+        // Validate fuel level - must be greater than 0 (not empty)
+        guard logFuel > 0 else {
+            showFuelError = true
+            return
+        }
+        
         isProcessing = true
         
         Task {
@@ -424,6 +446,11 @@ struct TripMapView: View {
                 try await supabase.from("trips")
                     .update(updateData)
                     .eq("id", value: trip.id.uuidString).execute()
+                
+                // Store start odometer for validation when ending trip
+                await MainActor.run {
+                    self.startOdometerReading = Double(logOdometer) ?? 0.0
+                }
             } catch {
                 print("❌ Failed to update start trip: \(error)")
             }
@@ -481,6 +508,16 @@ struct TripMapView: View {
     }
     
     private func completeTrip() {
+        // Validate odometer reading
+        let endOdometer = Double(logOdometer) ?? 0.0
+        
+        // Ensure end odometer is greater than start odometer
+        guard endOdometer > startOdometerReading else {
+            odometerErrorMessage = "End odometer reading (\(String(format: "%.1f", endOdometer)) km) must be greater than start reading (\(String(format: "%.1f", startOdometerReading)) km)"
+            showOdometerError = true
+            return
+        }
+        
         // Stop Geofencing
         RouteMonitoringManager.shared.stopMonitoring()
         
@@ -488,7 +525,7 @@ struct TripMapView: View {
             let updateData: [String: AnyEncodable] = [
                 "status": AnyEncodable("Completed"),
                 "end_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
-                "end_odometer": AnyEncodable(Double(logOdometer) ?? 0.0),
+                "end_odometer": AnyEncodable(endOdometer),
                 "end_fuel_level": AnyEncodable(logFuel)
             ]
             

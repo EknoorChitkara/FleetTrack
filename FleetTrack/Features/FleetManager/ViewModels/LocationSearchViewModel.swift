@@ -39,9 +39,9 @@ class LocationSearchViewModel: ObservableObject {
     }
     
     private func setupSearchObserver() {
-        // Debounce search query
+        // Debounce search query to prevent excessive API calls
         $searchQuery
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(800), scheduler: RunLoop.main)
             .sink { [weak self] query in
                 guard let self = self else { return }
                 Task {

@@ -50,9 +50,17 @@ class TaskDetailViewModel: ObservableObject {
 
         do {
             try await MaintenanceService.shared.pauseTask(taskId: task.id)
-            task.status = "Paused"
+            // Keep status as "In Progress" for database compatibility
+            // But set pausedAt to indicate paused state
             task.pausedAt = Date()
+            task.updatedAt = Date()
+            
+            // Update shared task list
             TasksViewModel.shared.updateTask(task)
+            
+            // Force UI refresh
+            objectWillChange.send()
+            
             print("✅ Task paused via Service")
         } catch {
             errorMessage = "Failed to pause task: \(error.localizedDescription)"
@@ -67,7 +75,7 @@ class TaskDetailViewModel: ObservableObject {
 
         do {
             try await MaintenanceService.shared.resumeTask(taskId: task.id)
-            task.status = "In Progress"
+            // Status remains "In Progress"
             task.pausedAt = nil
             TasksViewModel.shared.updateTask(task)
             print("✅ Task resumed via Service")
@@ -96,6 +104,10 @@ class TaskDetailViewModel: ObservableObject {
             task.laborHours = laborHours
             TasksViewModel.shared.updateTask(task)
             showingCompletionSheet = false
+            
+            // Notify dashboard to refresh
+            NotificationCenter.default.post(name: NSNotification.Name("TaskCompleted"), object: nil)
+            
             print("✅ Task completed via Service")
         } catch {
             errorMessage = "Failed to complete task: \(error.localizedDescription)"

@@ -107,6 +107,15 @@ struct PlanTripView: View {
                 initialRegion: viewModel.mapRegion
             )
         }
+        .alert("Invalid Location", isPresented: $viewModel.showingSameLocationAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Pickup and drop-off locations cannot be the same.")
+        }
+        .task {
+            // Refresh data to ensure we have the latest trip statuses from the database
+            await fleetVM.loadData()
+        }
     }
     
     // MARK: - Floating Header
@@ -249,7 +258,7 @@ struct PlanTripView: View {
                             Image(systemName: "calendar")
                                 .foregroundColor(.appSecondaryText)
                             
-                            DatePicker("", selection: $viewModel.startTime, displayedComponents: [.date])
+                            DatePicker("", selection: $viewModel.startTime, in: viewModel.tripDateRange, displayedComponents: [.date])
                                 .labelsHidden()
                                 .colorScheme(.dark)
                                 .accentColor(.appEmerald)
@@ -453,9 +462,13 @@ struct PlanTripView: View {
     
     // Filter vehicles based on availability and proximity to pickup
     private var availableVehicles: [FMVehicle] {
-        fleetVM.vehicles.filter { vehicle in
-            // Only show active vehicles that have an assigned driver
-            vehicle.status == .active && vehicle.assignedDriverId != nil
+        let busyVehicleIds = Set(fleetVM.trips
+            .filter { $0.status == "In Progress" || $0.status == "Scheduled" }
+            .map { $0.vehicleId })
+        
+        return fleetVM.vehicles.filter { vehicle in
+            // Only show active vehicles that have an assigned driver AND are not currently busy
+            vehicle.status == .active && vehicle.assignedDriverId != nil && !busyVehicleIds.contains(vehicle.id)
         }
     }
     

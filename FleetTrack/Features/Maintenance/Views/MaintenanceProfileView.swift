@@ -80,7 +80,7 @@ struct MaintenanceProfileView: View {
                                     MaintenanceSettingRow(icon: "lock.fill", title: "Change Password", color: .orange)
                                 }
                                 NavigationLink(destination: MaintenancePrivacyView()) {
-                                    MaintenanceSettingRow(icon: "shield.fill", title: "Privacy Policy", color: .green)
+                                    MaintenanceSettingRow(icon: "shield.fill", title: "Privacy Policy", color: Color(hex: "2D7D46"))
                                 }
                             }
                             
