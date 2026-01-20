@@ -14,7 +14,6 @@ enum InspectionTab: String, CaseIterable {
     case summary = "Summary"
     case checklist = "Checklist"
     case history = "History"
-    case booking = "Booking"
 }
 
 enum ServiceType: String, CaseIterable, Identifiable {
