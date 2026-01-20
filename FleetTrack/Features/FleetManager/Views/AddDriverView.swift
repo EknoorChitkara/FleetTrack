@@ -114,7 +114,7 @@ struct AddDriverView: View {
                             
                             // License Number with Validation
                             VStack(alignment: .leading, spacing: 4) {
-                                ModernTextField(icon: "creditcard.fill", placeholder: "License No. (XX0000000000000)", text: $formData.licenseNumber, isRequired: true)
+                                ModernTextField(icon: "creditcard.fill", placeholder: "License No. (XX-0000000000000)", text: $formData.licenseNumber, isRequired: true)
                                     .onChange(of: formData.licenseNumber) { newValue in
                                         // Clean input: Uppercase, alphanumeric only, remove hyphens
                                         let raw = newValue.replacingOccurrences(of: "-", with: "")
@@ -173,7 +173,7 @@ struct AddDriverView: View {
                                         }
                                     } label: {
                                         HStack(spacing: 4) {
-                                            Text("\(selectedCountry.flag) \(selectedCountry.code)")
+                                            Text(selectedCountry.code)
                                                 .foregroundColor(.white)
                                                 .fixedSize() // Prevent compression
                                             Image(systemName: "chevron.down")
