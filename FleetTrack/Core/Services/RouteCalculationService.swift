@@ -71,12 +71,31 @@ class RouteCalculationService {
         )
     }
     
-    /// Get alternative routes
+    /// Get alternative routes (Returning RouteResult wrapper)
     func getAlternativeRoutes(
         from: CLLocationCoordinate2D,
         to: CLLocationCoordinate2D,
         transportType: MKDirectionsTransportType = .automobile
     ) async throws -> [RouteResult] {
+        let routes = try await fetchRawRoutes(from: from, to: to, transportType: transportType)
+        
+        return routes.map { route in
+            RouteResult(
+                route: route,
+                distance: route.distance,
+                expectedTravelTime: route.expectedTravelTime,
+                polyline: route.polyline,
+                steps: route.steps
+            )
+        }
+    }
+    
+    /// Fetch raw MKRoutes (Internal/Shared use)
+    func fetchRawRoutes(
+        from: CLLocationCoordinate2D,
+        to: CLLocationCoordinate2D,
+        transportType: MKDirectionsTransportType = .automobile
+    ) async throws -> [MKRoute] {
         let request = MKDirections.Request()
         request.source = MKMapItem(placemark: MKPlacemark(coordinate: from))
         request.destination = MKMapItem(placemark: MKPlacemark(coordinate: to))
@@ -86,15 +105,7 @@ class RouteCalculationService {
         let directions = MKDirections(request: request)
         let response = try await directions.calculate()
         
-        return response.routes.map { route in
-            RouteResult(
-                route: route,
-                distance: route.distance,
-                expectedTravelTime: route.expectedTravelTime,
-                polyline: route.polyline,
-                steps: route.steps
-            )
-        }
+        return response.routes
     }
     
     /// Calculate ETA (Estimated Time of Arrival)

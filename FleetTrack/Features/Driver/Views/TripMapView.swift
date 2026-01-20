@@ -18,7 +18,10 @@ struct TripMapView: View {
     let trip: Trip
     @Environment(\.dismiss) var dismiss
     @StateObject private var locationProvider = DeviceLocationProvider()
-    @State private var routePolyline: MKPolyline?
+    @State private var scoredRoutes: [ScoredRoute] = []
+    @State private var selectedRouteID: UUID? // Selection State
+    @State private var routePolyline: MKPolyline? // Legacy/Fallback support
+    @State private var plannedRoutePolyline: MKPolyline? // Static Planned Route
     
     @State private var showArriveAlert = false
     @State private var showCompleteAlert = false
@@ -59,6 +62,9 @@ struct TripMapView: View {
             UnifiedTripMap(
                 trip: trip,
                 provider: locationProvider,
+                scoredRoutes: scoredRoutes,
+                selectedRouteID: $selectedRouteID,
+                plannedPolyline: plannedRoutePolyline,
                 routePolyline: routePolyline,
                 isOffRoute: routeMonitor.isOffRoute
             )
@@ -116,8 +122,19 @@ struct TripMapView: View {
             if !isCompleted {
                 locationProvider.startTracking()
             }
-            // Initial route calculation
-            calculateRoute()
+            
+            // 1. Calculate the Static Plan (Start -> End)
+            calculatePlannedRoute()
+            
+            // 2. Calculate the Active Routes (Current -> End)
+            // If location is not yet available, this might wait for onChange
+            if let loc = locationProvider.currentLocation {
+                calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+            } else {
+                // Try estimating from start if no location yet, but ideally wait
+                // calculateDetailedRoutes(from: ...) 
+            }
+            
             checkDailyInspection()
         }
         .onDisappear {
@@ -126,26 +143,52 @@ struct TripMapView: View {
         .onChange(of: locationProvider.currentLocation) { newLoc in
             // Recalculate if needed (throttling logic can go here or in service)
              if let loc = newLoc, !isCompleted {
-                 calculateRoute(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+                 calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
              }
         }
     }
     
-    private func calculateRoute(from userLoc: CLLocationCoordinate2D? = nil) {
-        let start: CLLocationCoordinate2D
-        let end: CLLocationCoordinate2D
+    // Calculates the static "Official" path from Trip Start to Trip End
+    private func calculatePlannedRoute() {
+        guard let startLat = trip.startLat, let startLon = trip.startLong,
+              let endLat = trip.endLat, let endLon = trip.endLong else { return }
         
-        if let userLoc = userLoc {
-            start = userLoc
-        } else if let lat = trip.startLat, let lon = trip.startLong {
-            start = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        } else {
-            return
+        let start = CLLocationCoordinate2D(latitude: startLat, longitude: startLon)
+        let end = CLLocationCoordinate2D(latitude: endLat, longitude: endLon)
+        
+        Task {
+            do {
+                let result = try await RouteCalculationService.shared.calculateRoute(from: start, to: end)
+                await MainActor.run {
+                    self.plannedRoutePolyline = result.polyline
+                }
+            } catch {
+                print("⚠️ Failed to calculate planned route: \(error)")
+            }
         }
+    }
+    
+    // Calculates dynamic routes from User/Current Location to Destination
+    private func calculateDetailedRoutes(from userLoc: CLLocationCoordinate2D) {
+        var end: CLLocationCoordinate2D
         
         if isPickupPhase {
             guard let lat = trip.startLat, let lon = trip.startLong else { return }
-            end = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            let pickupLoc = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            
+            // Smart Switch: If user is ALREADY at/near pickup (< 300m), show route to Dropoff
+            // allowing them to preview the main trip.
+            let userLocation = CLLocation(latitude: userLoc.latitude, longitude: userLoc.longitude)
+            let pickupLocation = CLLocation(latitude: lat, longitude: lon)
+            let distanceInMeters = userLocation.distance(from: pickupLocation)
+            
+            if distanceInMeters < 300 {
+                print("📍 User is near pickup (\(Int(distanceInMeters))m). showing route to Dropoff.")
+                guard let dLat = trip.endLat, let dLon = trip.endLong else { return }
+                end = CLLocationCoordinate2D(latitude: dLat, longitude: dLon)
+            } else {
+                end = pickupLoc
+            }
         } else {
             // Delivery phase or completed (default to drops off)
             guard let lat = trip.endLat, let lon = trip.endLong else { return }
@@ -154,23 +197,48 @@ struct TripMapView: View {
         
         Task {
             do {
-                print("🗺️ calculating route: \(start.latitude),\(start.longitude) -> \(end.latitude),\(end.longitude)")
-                let result = try await RouteCalculationService.shared.calculateRoute(from: start, to: end)
+                print("🗺️ calculating dynamic routes: \(userLoc.latitude),\(userLoc.longitude) -> \(end.latitude),\(end.longitude)")
+                
+                // AI-Powered Route Selection
+                let scoredResults = try await RouteRecommendationEngine.shared.findBestRoutes(from: userLoc, to: end)
+                
                 await MainActor.run {
-                    self.routePolyline = result.polyline
-                    self.routeDistance = result.distanceInKilometers
-                    self.estimatedTime = result.formattedDuration
+                    self.updateRouteSelection(with: scoredResults)
                 }
             } catch {
-                print("⚠️ Route calculation failed: \(error)")
-                
-                // Fallback: If routing from User Location fails (e.g. Simulator in US, Trip in India),
-                // try routing from Trip Start to Trip End to at least show the strict path.
-                if userLoc != nil {
-                     print("🔄 Retrying with static trip route (ignoring current user location)...")
-                     calculateRoute(from: nil)
-                }
+                print("⚠️ Dynamic route calculation failed: \(error)")
+                // Note: We don't fallback to static route here because we have `plannedRoutePolyline` visible anyway.
             }
+        }
+    }
+    
+    private func updateRouteSelection(with routes: [ScoredRoute]) {
+        self.scoredRoutes = routes
+        // Auto-select recommended for display properties if needed
+        if let recommended = routes.first(where: { $0.isRecommended }) {
+            self.routePolyline = recommended.polyline
+            self.routeDistance = recommended.distance / 1000.0
+            self.estimatedTime = formatTime(seconds: recommended.expectedTravelTime)
+            
+            // Log for debugging
+            print("🏆 AI Recommended: \(recommended.routeType.rawValue) (Score: \(recommended.score))")
+            print("   - Fuel: \(recommended.fuelEstimate.liters)L")
+            print("   - Traffic Factor: \(recommended.fuelEstimate.trafficFactor)")
+        } else if let first = routes.first {
+             // Fallback
+             self.routePolyline = first.polyline
+             self.routeDistance = first.distance / 1000.0
+             self.estimatedTime = formatTime(seconds: first.expectedTravelTime)
+        }
+    }
+    
+    private func formatTime(seconds: TimeInterval) -> String {
+        let hours = Int(seconds) / 3600
+        let minutes = Int(seconds) / 60 % 60
+        if hours > 0 {
+            return String(format: "%dh %dm", hours, minutes)
+        } else {
+            return String(format: "%dm", minutes)
         }
     }
     
@@ -208,6 +276,18 @@ struct TripMapView: View {
         if isCompleted { return .green }
         if isPickupPhase { return .orange }
         return .blue
+    }
+    
+
+    
+    // Helper accessors
+    var selectedRoute: ScoredRoute? {
+        guard let id = selectedRouteID else { return nil }
+        return scoredRoutes.first(where: { $0.id == id })
+    }
+    
+    var recommendedRoute: ScoredRoute? {
+        scoredRoutes.first(where: { $0.isRecommended })
     }
     
     // MARK: - Completed Trip Bottom Card
@@ -288,6 +368,32 @@ struct TripMapView: View {
     
     private var activeBottomCard: some View {
         VStack(spacing: 12) {
+            
+            // AI Recommendation / Selection Banner
+            if let displayRoute = selectedRoute ?? recommendedRoute {
+                HStack {
+                    Image(systemName: displayRoute.isRecommended ? "sparkles" : "map.fill")
+                    VStack(alignment: .leading) {
+                        Text(displayRoute.isRecommended ? "AI Recommended: \(displayRoute.routeType.rawValue)" : "Selected: \(displayRoute.routeType.rawValue)")
+                            .fontWeight(.bold)
+                            .font(.subheadline)
+                        
+                        // Show comparative stats
+                        Text("~\(Int(displayRoute.fuelEstimate.liters))L Fuel • \(formatTime(seconds: displayRoute.expectedTravelTime))")
+                            .font(.caption)
+                            .opacity(0.9)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(Color.blue.opacity(0.9)) // Match Map Route Color
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 4)
+            }
+            
+            // Navigation status
             // Navigation status
             if isNavigating {
                 HStack {
@@ -461,7 +567,9 @@ struct TripMapView: View {
                         self.isProcessing = false
                         
                         // Recalculate route for navigation (from current location to DROP OFF)
-                        self.calculateRoute()
+                        if let loc = self.locationProvider.currentLocation {
+                            self.calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+                        }
                     }
                     
                 } catch {
@@ -474,7 +582,10 @@ struct TripMapView: View {
                  await MainActor.run { 
                     self.localTripStatus = .ongoing
                     self.isProcessing = false
-                    self.calculateRoute()
+                    // Fallback calc
+                    if let loc = self.locationProvider.currentLocation {
+                        self.calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+                    }
                  }
             }
         }
