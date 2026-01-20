@@ -76,27 +76,47 @@ struct VehicleDetailView: View {
                                 }
                                 
                                 Menu {
-                                    Button(action: {
-                                        fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: nil)
-                                        presentationMode.wrappedValue.dismiss()
-                                    }) {
-                                        Label("Unassign", systemImage: "person.fill.xmark")
+                                    // Show unassign option only if vehicle has an assigned driver
+                                    if currentVehicle.assignedDriverId != nil {
+                                        Button(action: {
+                                            fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: nil)
+                                        }) {
+                                            Label("Unassign Driver", systemImage: "person.fill.xmark")
+                                        }
+                                        
+                                        if !fleetVM.unassignedDrivers.isEmpty {
+                                            Divider()
+                                        }
                                     }
                                     
-                                    Divider()
-                                    
+                                    // Show available drivers
                                     ForEach(fleetVM.unassignedDrivers) { driver in
                                         Button(action: {
                                             fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: driver.id)
-                                            presentationMode.wrappedValue.dismiss()
                                         }) {
-                                            Text(driver.displayName)
+                                            Label(driver.displayName, systemImage: "person.fill")
                                         }
                                     }
                                 } label: {
-                                    QuickActionBtn(title: "Assign", icon: "person.badge.plus.fill", color: .green) {}
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "person.badge.plus.fill")
+                                            .font(.title3)
+                                            .foregroundColor(.white)
+                                            .padding(16)
+                                            .background(Color.green.opacity(0.2))
+                                            .cornerRadius(12)
+                                        
+                                        Text("Assign")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.white)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.white.opacity(0.05))
+                                    .cornerRadius(16)
                                 }
-                                .disabled(fleetVM.unassignedDrivers.isEmpty && vehicle.assignedDriverId == nil)
+                                .disabled(fleetVM.unassignedDrivers.isEmpty && currentVehicle.assignedDriverId == nil)
                                 
                                 QuickActionBtn(title: "Service", icon: "wrench.and.screwdriver.fill", color: .orange) {
                                     selectedServices = Set(vehicle.maintenanceServices ?? [])
