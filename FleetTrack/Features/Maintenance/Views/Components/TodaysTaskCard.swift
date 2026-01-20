@@ -13,7 +13,7 @@ struct TodaysTasksCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.spacing.md) {
-            Text("Today's Tasks")
+            Text("Summary")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
             

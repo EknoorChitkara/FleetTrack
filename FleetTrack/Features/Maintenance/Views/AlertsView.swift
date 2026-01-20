@@ -15,16 +15,13 @@ struct AlertsView: View {
 
     enum AlertFilter: String, CaseIterable {
         case all = "All"
-        case outOfStock = "Out of Stock"
         case lowStock = "Low Stock"
     }
 
     var filteredParts: [InventoryPart] {
         switch selectedFilter {
         case .all:
-            return inventoryViewModel.lowStockParts + inventoryViewModel.outOfStockParts
-        case .outOfStock:
-            return inventoryViewModel.outOfStockParts
+            return inventoryViewModel.lowStockParts
         case .lowStock:
             return inventoryViewModel.lowStockParts
         }

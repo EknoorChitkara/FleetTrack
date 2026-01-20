@@ -87,12 +87,12 @@ struct MaintenanceDashboardView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Maintenance Dashboard")
-                    .font(.title2)
+                Text("Maintenance")
+                    .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.textPrimary)
                 
-                Text("Welcome back, \(viewModel.currentUser.name)!")
+                Text("Management Dashboard")
                     .font(.subheadline)
                     .foregroundColor(AppTheme.textSecondary)
             }

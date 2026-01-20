@@ -82,7 +82,7 @@ struct DriverVehicleInspectionView: View {
             Alert(title: Text("Success"), message: Text(viewModel.confirmationMessage), dismissButton: .default(Text("OK")))
         }
         .fullScreenCover(isPresented: $isShowingReportIssue) {
-            ReportIssueView()
+            ReportIssueView(vehicle: viewModel.vehicle)
         }
     }
 }
@@ -368,6 +368,11 @@ struct InspectionHistoryView: View {
                         .background(Color.appCardBackground)
                         .cornerRadius(16)
                     }
+                }
+            }
+            .onAppear {
+                Task {
+                    await viewModel.fetchHistory()
                 }
             }
         }
