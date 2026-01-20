@@ -23,33 +23,34 @@ struct AddDriverView: View {
         let flag: String
         let code: String
         let limit: Int
+        let placeholder: String
     }
     
     let countries: [Country] = [
-        Country(name: "India", flag: "🇮🇳", code: "+91", limit: 10),
-        Country(name: "United States", flag: "🇺🇸", code: "+1", limit: 10),
-        Country(name: "United Kingdom", flag: "🇬🇧", code: "+44", limit: 10),
-        Country(name: "UAE", flag: "🇦🇪", code: "+971", limit: 9),
-        Country(name: "Canada", flag: "🇨🇦", code: "+1", limit: 10),
-        Country(name: "Australia", flag: "🇦🇺", code: "+61", limit: 9),
-        Country(name: "Germany", flag: "🇩🇪", code: "+49", limit: 11),
-        Country(name: "France", flag: "🇫🇷", code: "+33", limit: 9),
-        Country(name: "Japan", flag: "🇯🇵", code: "+81", limit: 10),
-        Country(name: "China", flag: "🇨🇳", code: "+86", limit: 11),
-        Country(name: "Brazil", flag: "🇧🇷", code: "+55", limit: 11),
-        Country(name: "Russia", flag: "🇷🇺", code: "+7", limit: 10),
-        Country(name: "Italy", flag: "🇮🇹", code: "+39", limit: 10),
-        Country(name: "South Korea", flag: "🇰🇷", code: "+82", limit: 10),
-        Country(name: "Spain", flag: "🇪🇸", code: "+34", limit: 9),
-        Country(name: "Mexico", flag: "🇲🇽", code: "+52", limit: 10),
-        Country(name: "Singapore", flag: "🇸🇬", code: "+65", limit: 8),
-        Country(name: "South Africa", flag: "🇿🇦", code: "+27", limit: 9),
-        Country(name: "Saudi Arabia", flag: "🇸🇦", code: "+966", limit: 9),
-        Country(name: "New Zealand", flag: "🇳🇿", code: "+64", limit: 9),
-        Country(name: "Netherlands", flag: "🇳🇱", code: "+31", limit: 9)
+        Country(name: "India", flag: "🇮🇳", code: "+91", limit: 10, placeholder: "XXXXXXXXXX"),
+        Country(name: "United States", flag: "🇺🇸", code: "+1", limit: 10, placeholder: "XXX XXX XXXX"),
+        Country(name: "United Kingdom", flag: "🇬🇧", code: "+44", limit: 10, placeholder: "XXXX XXXXXX"),
+        Country(name: "UAE", flag: "🇦🇪", code: "+971", limit: 9, placeholder: "X XXX XXXX"),
+        Country(name: "Canada", flag: "🇨🇦", code: "+1", limit: 10, placeholder: "XXX XXX XXXX"),
+        Country(name: "Australia", flag: "🇦🇺", code: "+61", limit: 9, placeholder: "XXX XXX XXX"),
+        Country(name: "Germany", flag: "🇩🇪", code: "+49", limit: 11, placeholder: "XXXX XXXXXXX"),
+        Country(name: "France", flag: "🇫🇷", code: "+33", limit: 9, placeholder: "X XX XX XX XX"),
+        Country(name: "Japan", flag: "🇯🇵", code: "+81", limit: 10, placeholder: "XX XXXX XXXX"),
+        Country(name: "China", flag: "🇨🇳", code: "+86", limit: 11, placeholder: "XXX XXXX XXXX"),
+        Country(name: "Brazil", flag: "🇧🇷", code: "+55", limit: 11, placeholder: "XX X XXXX XXXX"),
+        Country(name: "Russia", flag: "🇷🇺", code: "+7", limit: 10, placeholder: "XXX XXX XX XX"),
+        Country(name: "Italy", flag: "🇮🇹", code: "+39", limit: 10, placeholder: "XXX XXXXXXX"),
+        Country(name: "South Korea", flag: "🇰🇷", code: "+82", limit: 10, placeholder: "XX XXXX XXXX"),
+        Country(name: "Spain", flag: "🇪🇸", code: "+34", limit: 9, placeholder: "XXX XXX XXX"),
+        Country(name: "Mexico", flag: "🇲🇽", code: "+52", limit: 10, placeholder: "XX XX XXXX XXXX"),
+        Country(name: "Singapore", flag: "🇸🇬", code: "+65", limit: 8, placeholder: "XXXX XXXX"),
+        Country(name: "South Africa", flag: "🇿🇦", code: "+27", limit: 9, placeholder: "XX XXX XXXX"),
+        Country(name: "Saudi Arabia", flag: "🇸🇦", code: "+966", limit: 9, placeholder: "X XXX XXXX"),
+        Country(name: "New Zealand", flag: "🇳🇿", code: "+64", limit: 9, placeholder: "XX XXX XXXX"),
+        Country(name: "Netherlands", flag: "🇳🇱", code: "+31", limit: 9, placeholder: "X XX XX XX XX")
     ]
     
-    @State private var selectedCountry: Country = Country(name: "India", flag: "🇮🇳", code: "+91", limit: 10)
+    @State private var selectedCountry: Country = Country(name: "India", flag: "🇮🇳", code: "+91", limit: 10, placeholder: "XXXXXXXXXX")
     @State private var localPhoneNumber = ""
     
     private func updatePhoneNumber() {
@@ -189,7 +190,7 @@ struct AddDriverView: View {
                                     // Phone Number Input
                                     ZStack(alignment: .leading) {
                                         if localPhoneNumber.isEmpty {
-                                            Text("XXXXXXXXXX")
+                                            Text(selectedCountry.placeholder)
                                                 .foregroundColor(.gray.opacity(0.6))
                                                 .minimumScaleFactor(0.5)
                                         }

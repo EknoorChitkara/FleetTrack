@@ -59,6 +59,11 @@ struct LoginView: View {
                         .textContentType(.emailAddress)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        .onChange(of: email) { newValue in
+                            if newValue.count > 50 {
+                                email = String(newValue.prefix(50))
+                            }
+                        }
 
                     HStack {
                         if isPasswordVisible {

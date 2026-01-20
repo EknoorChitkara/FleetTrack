@@ -15,6 +15,7 @@ struct VehicleDetailView: View {
     @State private var showHistory = false
     @State private var selectedServices: Set<String> = []
     @State private var serviceDescription: String = ""
+    @State private var showRetireAlert = false
     
     private var currentVehicle: FMVehicle {
         fleetVM.vehicles.first(where: { $0.id == vehicle.id }) ?? vehicle
@@ -106,6 +107,10 @@ struct VehicleDetailView: View {
                                 QuickActionBtn(title: "History", icon: "clock.arrow.circlepath", color: .purple) {
                                     showHistory = true
                                 }
+                                
+                                QuickActionBtn(title: "Retire", icon: "archivebox.fill", color: .red) {
+                                    showRetireAlert = true
+                                }
                             }
                         }
                         .padding(.top)
@@ -190,6 +195,15 @@ struct VehicleDetailView: View {
         }
         .sheet(isPresented: $showHistory) {
             MaintenanceHistoryView(vehicle: currentVehicle)
+        }
+        .alert("Retire Vehicle", isPresented: $showRetireAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Retire", role: .destructive) {
+                fleetVM.retireVehicle(byId: vehicle.id)
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to retire this vehicle? This will unassign any active driver and move the vehicle to the retired archive.")
         }
     }
     
