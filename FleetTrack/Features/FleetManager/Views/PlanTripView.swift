@@ -460,11 +460,30 @@ struct PlanTripView: View {
         }
     }
     
-    // Filter vehicles based on availability and proximity to pickup
+    // Filter vehicles based on availability and same-day trip conflicts
     private var availableVehicles: [FMVehicle] {
+        let calendar = Calendar.current
+        let plannedTripDate = calendar.startOfDay(for: viewModel.startTime)
+        
         let busyVehicleIds = Set(fleetVM.trips
-            .filter { $0.status == "In Progress" || $0.status == "Scheduled" }
-            .map { $0.vehicleId })
+            .filter { trip in
+                // Only consider trips that could conflict with planned trip
+                guard let tripStartTime = trip.startTime else { return false }
+                
+                let tripDate = calendar.startOfDay(for: tripStartTime)
+                
+                // If not on the same day, no conflict
+                if tripDate != plannedTripDate {
+                    return false
+                }
+                
+                // Same day trips with these statuses create conflicts
+                // "In Progress" - vehicle is currently being used
+                // "Scheduled" - vehicle is reserved for that day
+                return trip.status == "In Progress" || trip.status == "Scheduled"
+            }
+            .map { $0.vehicleId }
+        )
         
         return fleetVM.vehicles.filter { vehicle in
             // Only show active vehicles that have an assigned driver AND are not currently busy
