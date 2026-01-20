@@ -19,7 +19,7 @@ struct DevelopmentConfig {
     
     /// The role to use when bypassing login
     /// Options: .fleetManager, .driver, .maintenancePersonnel
-    static let defaultRole: UserRole = .maintenancePersonnel
+    static let defaultRole: UserRole = .fleetManager
     
     /// Mock user to use when bypassing login
     static let mockUser = User(

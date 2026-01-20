@@ -36,6 +36,7 @@ struct ResetPasswordView: View {
     }
     
     var body: some View {
+        /*
         NavigationStack {
             ZStack {
                 Color.appBackground.ignoresSafeArea()
@@ -132,6 +133,8 @@ struct ResetPasswordView: View {
                 }
             }
         }
+        */
+        Color.clear
     }
     
     private func setupSession() async {

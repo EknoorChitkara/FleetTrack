@@ -14,6 +14,7 @@ struct AddVehicleView: View {
     @State private var showError = false
     @State private var showRegistrationError = false
     @State private var showDuplicateAlert = false
+    @State private var showSaveConfirmation = false
     @FocusState private var focusedField: Field?
     
     enum Field {
@@ -56,8 +57,7 @@ struct AddVehicleView: View {
                                 }
                             }
                         } else {
-                            fleetVM.addVehicle(formData)
-                            presentationMode.wrappedValue.dismiss()
+                            showSaveConfirmation = true
                         }
                     }) {
                         Text("Save")
@@ -65,6 +65,15 @@ struct AddVehicleView: View {
                             .foregroundColor(!isValidRegistration ? .gray : .appEmerald)
                     }
                     .disabled(!isValidRegistration)
+                    .alert("Confirm Save", isPresented: $showSaveConfirmation) {
+                        Button("Cancel", role: .cancel) { }
+                        Button("Save") {
+                            fleetVM.addVehicle(formData)
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    } message: {
+                        Text("Are you sure you want to save this vehicle to your fleet?")
+                    }
                 }
                 .padding()
                 
@@ -78,7 +87,7 @@ struct AddVehicleView: View {
                         
                         VStack(spacing: 16) {
                             VStack(spacing: 8) {
-                                ModernTextField(icon: "number.square.fill", placeholder: "Registration Number (e.g., XX-00-XX0000)", text: $formData.registrationNumber, isRequired: true)
+                                ModernTextField(icon: "number.square.fill", placeholder: "Registration No. (e.g., XX-00-XX0000)", text: $formData.registrationNumber, isRequired: true)
                                     .focused($focusedField, equals: .registration)
                                 
                                 if showRegistrationError && !isValidRegistration {

@@ -17,6 +17,7 @@ struct PasswordResetView: View {
     let onSuccess: () -> Void
     
     var body: some View {
+        /*
         NavigationView {
             VStack(spacing: 24) {
                 if viewModel.isLoading {
@@ -44,6 +45,8 @@ struct PasswordResetView: View {
         } message: {
             Text("Your password has been reset successfully. You can now log in with your new password.")
         }
+        */
+        Color.clear
     }
     
     private var resetForm: some View {

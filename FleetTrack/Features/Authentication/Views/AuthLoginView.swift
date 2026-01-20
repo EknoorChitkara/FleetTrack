@@ -13,6 +13,7 @@ struct AuthLoginView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     
     var body: some View {
+        /*
         VStack(spacing: 20) {
             Image(systemName: "lock.shield.fill")
                 .font(.system(size: 60))
@@ -91,5 +92,7 @@ struct AuthLoginView: View {
             }
         }
         .padding()
+        */
+        Color.clear
     }
 }
