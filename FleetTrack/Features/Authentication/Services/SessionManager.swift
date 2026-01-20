@@ -29,15 +29,6 @@ class SessionManager: ObservableObject {
         Task { @MainActor in
             self.isLoading = true
             
-            // Bypass logic for development
-            if DevelopmentConfig.bypassLogin {
-                print("⚠️ DEVELOPMENT BYPASS ENABLED: Logging in as \(DevelopmentConfig.defaultRole)")
-                self.currentUser = DevelopmentConfig.mockUser
-                self.isAuthenticated = true
-                self.isLoading = false
-                return
-            }
-            
             // 1. Initial Check
             await checkCurrentSession()
             

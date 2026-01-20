@@ -15,11 +15,11 @@ import Foundation
 struct DevelopmentConfig {
     /// Set to `true` to skip login and go directly to the dashboard
     /// Set to `false` to restore normal login flow
-    static let bypassLogin = true
+    static let bypassLogin = false
     
     /// The role to use when bypassing login
     /// Options: .fleetManager, .driver, .maintenancePersonnel
-    static let defaultRole: UserRole = .fleetManager
+    static let defaultRole: UserRole = .maintenancePersonnel
     
     /// Mock user to use when bypassing login
     static let mockUser = User(

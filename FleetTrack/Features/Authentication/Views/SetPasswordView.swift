@@ -17,7 +17,6 @@ struct SetPasswordView: View {
     @State private var showSuccess = false
     
     var body: some View {
-        /*
         ZStack {
             Color.appBackground.ignoresSafeArea()
             
@@ -107,8 +106,6 @@ struct SetPasswordView: View {
                 Spacer()
             }
         }
-        */
-        Color.clear
     }
     
     private var isFormValid: Bool {

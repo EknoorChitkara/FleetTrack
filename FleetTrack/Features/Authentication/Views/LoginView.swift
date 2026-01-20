@@ -25,7 +25,6 @@ struct LoginView: View {
     }
 
     var body: some View {
-        /*
         NavigationStack {
             VStack(spacing: 24) {
                 Spacer()
@@ -135,8 +134,6 @@ struct LoginView: View {
                 VerificationView(email: otpEmail)
             }
         }
-        */
-        Color.clear
     }
 
     private func login() async {

@@ -17,7 +17,6 @@ struct VerificationView: View {
     @State private var message = ""
     
     var body: some View {
-        /*
         ZStack {
             Color.appBackground.ignoresSafeArea()
             
@@ -102,8 +101,6 @@ struct VerificationView: View {
                 }
             }
         }
-        */
-        Color.clear
     }
     
     private func verifyCode() async {
