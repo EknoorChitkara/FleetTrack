@@ -1,5 +1,5 @@
 //
-//  GeofencingView.swift
+//  AddEditGeofenceView.swift
 //  FleetTrack
 //
 //  Created for Fleet Manager
@@ -8,9 +8,12 @@
 import SwiftUI
 import MapKit
 
-struct GeofencingView: View {
+struct AddEditGeofenceView: View {
     @Environment(\.presentationMode) var presentationMode
     @ObservedObject private var manager = CircularGeofenceManager.shared
+    
+    // Optional geofence for edit mode
+    let geofence: CircularGeofence?
     
     // Form State
     @State private var fenceName = ""
@@ -21,8 +24,12 @@ struct GeofencingView: View {
     @State private var isSaving = false
     
     // Map State
-    // Default to San Francisco or user location if available
     @State private var centerCoordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
+    
+    // Computed property to determine mode
+    private var isEditMode: Bool {
+        geofence != nil
+    }
     
     var body: some View {
         ZStack {
@@ -41,7 +48,7 @@ struct GeofencingView: View {
                                 .shadow(radius: 4)
                         }
                         Spacer()
-                        Text("Add Geofence")
+                        Text(isEditMode ? "Edit Geofence" : "Add Geofence")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
@@ -168,7 +175,17 @@ struct GeofencingView: View {
                 .padding()
             }
         }
-        // Force status bar style if needed, or use ZStack layer for status bar bg
+        .onAppear {
+            // Pre-populate fields if editing
+            if let geofence = geofence {
+                fenceName = geofence.name
+                radius = geofence.radiusMeters
+                centerCoordinate = CLLocationCoordinate2D(
+                    latitude: geofence.latitude,
+                    longitude: geofence.longitude
+                )
+            }
+        }
     }
     
     // MARK: - Logic
@@ -202,25 +219,30 @@ struct GeofencingView: View {
         guard !fenceName.isEmpty else { return }
         isSaving = true
         
-        let newGeofence = CircularGeofence(
-            id: UUID(),
+        let geofenceToSave = CircularGeofence(
+            id: geofence?.id ?? UUID(),
             name: fenceName,
             latitude: centerCoordinate.latitude,
             longitude: centerCoordinate.longitude,
             radiusMeters: radius,
             notifyOnEntry: true,
-            notifyOnExit: true
+            notifyOnExit: true,
+            isActive: geofence?.isActive ?? true // Preserve status when editing, default to active when adding
         )
         
         Task {
             do {
-                try await manager.saveGeofence(newGeofence)
+                if isEditMode {
+                    try await manager.updateGeofence(geofenceToSave)
+                } else {
+                    try await manager.saveGeofence(geofenceToSave)
+                }
                 await MainActor.run {
                     isSaving = false
                     presentationMode.wrappedValue.dismiss()
                 }
             } catch {
-                print("Failed to save geofence: \(error)")
+                print("Failed to \(isEditMode ? "update" : "save") geofence: \(error)")
                 await MainActor.run {
                     isSaving = false
                     // Ideally show error alert
