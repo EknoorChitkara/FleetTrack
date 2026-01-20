@@ -45,6 +45,7 @@ struct ModernTextField: View {
     @Binding var text: String
     var isRequired: Bool = false
     var keyboardType: UIKeyboardType = .default
+    var autocapitalization: UITextAutocapitalizationType = .none
     
     var body: some View {
         HStack(spacing: 12) {
@@ -59,12 +60,13 @@ struct ModernTextField: View {
                         .font(.body)
                         .foregroundColor(.gray.opacity(0.6))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                 }
                 TextField("", text: $text)
                     .font(.body)
                     .foregroundColor(.white)
                     .keyboardType(keyboardType)
-                    .autocapitalization(.none)
+                    .autocapitalization(autocapitalization)
             }
             
             if isRequired && text.isEmpty {
@@ -74,6 +76,7 @@ struct ModernTextField: View {
         }
         .padding(.horizontal)
         .frame(height: 60)
+        .frame(maxWidth: .infinity)
         .background(Color.appCardBackground)
         .cornerRadius(16)
         .overlay(

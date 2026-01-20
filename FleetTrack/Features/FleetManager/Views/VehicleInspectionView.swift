@@ -54,8 +54,6 @@ struct VehicleInspectionView: View {
                                 Divider().background(Color.gray.opacity(0.2))
                                 InspectionRow(label: "Model", value: vehicle.model)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InspectionRow(label: "VIN", value: vehicle.vin ?? "N/A")
-                                Divider().background(Color.gray.opacity(0.2))
                                 InspectionRow(label: "Fuel Type", value: vehicle.fuelType.rawValue)
                                 Divider().background(Color.gray.opacity(0.2))
                                 InspectionRow(label: "Capacity", value: vehicle.capacity)
@@ -68,8 +66,6 @@ struct VehicleInspectionView: View {
                             // Status Section
                             VStack(spacing: 0) {
                                 InspectionRow(label: "Current Status", value: vehicle.status.rawValue)
-                                Divider().background(Color.gray.opacity(0.2))
-                                InspectionRow(label: "Mileage", value: formatMileage(vehicle.mileage))
                                 Divider().background(Color.gray.opacity(0.2))
                                 InspectionRow(label: "Last Service", value: formatOptionalDate(vehicle.lastService))
                             }

@@ -129,6 +129,9 @@ class VehicleInspectionViewModel: ObservableObject {
             showingConfirmation = true
             isSubmitted = true
             
+            // Refresh history to show the new record
+            await fetchHistory()
+            
         } catch {
             print("❌ Error submitting inspection: \(error)")
             confirmationMessage = "Failed to submit inspection. Please try again."

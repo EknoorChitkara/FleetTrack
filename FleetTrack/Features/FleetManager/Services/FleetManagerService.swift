@@ -288,6 +288,25 @@ class FleetManagerService {
         print("✅ [reassignDriver] Successfully updated vehicle \(vehicleId) in database")
     }
     
+    /// Retire a vehicle and unassign its driver
+    func retireVehicle(byId id: UUID) async throws {
+        print("💾 [retireVehicle] Retiring vehicle: \(id)")
+        
+        let update: [String: AnyJSON] = [
+            "status": .string("Retired"),
+            "assigned_driver_id": .null,
+            "assigned_driver_name": .null
+        ]
+        
+        try await client
+            .from("vehicles")
+            .update(update)
+            .eq("id", value: id)
+            .execute()
+            
+        print("✅ [retireVehicle] Successfully retired vehicle \(id) in database")
+    }
+    
     // MARK: - Trip Management
     
     func addTrip(_ data: TripCreationData) async throws {
