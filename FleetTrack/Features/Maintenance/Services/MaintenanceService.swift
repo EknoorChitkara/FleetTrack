@@ -256,7 +256,7 @@ public class MaintenanceService {
     /// Mark task as failed
     public func failTask(taskId: UUID, reason: String) async throws {
         struct TaskUpdate: Encodable {
-            let status: String = "Failed"
+            let status: String = "Cancelled"  // Use Cancelled status, track failure via failedReason
             let failedReason: String
             let completedDate: Date = Date()
             let isLocked: Bool = true
@@ -279,7 +279,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) marked as failed")
+        print("✅ Task \(taskId) marked as failed (status: Cancelled, reason: \(reason))")
     }
 
     /// Add a part usage to a task
