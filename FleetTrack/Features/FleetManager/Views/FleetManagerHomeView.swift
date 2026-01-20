@@ -170,7 +170,9 @@ struct FleetManagerHomeView: View {
         }
         .background(Color.appBackground.ignoresSafeArea())
         .sheet(isPresented: $showGeofencing) {
-            GeofencingView()
+            NavigationView {
+                GeofencingListView()
+            }
         }
     }
     
