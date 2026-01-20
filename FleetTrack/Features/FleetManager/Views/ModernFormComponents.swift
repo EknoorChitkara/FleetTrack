@@ -59,6 +59,7 @@ struct ModernTextField: View {
                         .font(.body)
                         .foregroundColor(.gray.opacity(0.6))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                 }
                 TextField("", text: $text)
                     .font(.body)
