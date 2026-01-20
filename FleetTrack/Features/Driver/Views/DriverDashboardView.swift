@@ -75,7 +75,7 @@ struct DriverDashboardView: View {
             DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: viewModel.assignedVehicle))
         }
         .fullScreenCover(isPresented: $isShowingReportIssue) {
-            ReportIssueView()
+            ReportIssueView(vehicle: viewModel.assignedVehicle)
         }
     }
     
@@ -98,10 +98,9 @@ struct DriverDashboardView: View {
                         HapticManager.shared.triggerSelection()
                         isShowingProfile = true
                     } label: {
-                        Image(systemName: "person.circle.fill")
+                        Image(systemName: "person.crop.circle.fill")
                             .font(.system(size: 40))
-                            .foregroundColor(.white.opacity(0.8))
-                            .background(Circle().fill(Color.white.opacity(0.1)))
+                            .foregroundColor(.appEmerald)
                     }
                     .accessibilityLabel("Profile and Settings")
                 }
