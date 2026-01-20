@@ -17,14 +17,6 @@ class DriverAlertsViewModel: ObservableObject {
     @Published var alerts: [MaintenanceAlert] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var selectedTab: AlertTab = .all
-    
-    // MARK: - Enums
-    
-    enum AlertTab: String, CaseIterable {
-        case all = "All"
-        case unread = "Unread"
-    }
     
     // MARK: - Dependencies
     
@@ -55,37 +47,6 @@ class DriverAlertsViewModel: ObservableObject {
         }
         
         isLoading = false
-    }
-    
-    // MARK: - Computed Properties
-    
-    // Per user request:
-    // "All" tab should show EMERGENCY alerts
-    // "Unread" tab should show MAINTENANCE alerts (everything else)
-    
-    var currentTabAlerts: [MaintenanceAlert] {
-        switch selectedTab {
-        case .all:
-            return emergencyAlerts
-        case .unread:
-            return maintenanceAlerts
-        }
-    }
-    
-    private var emergencyAlerts: [MaintenanceAlert] {
-        alerts.filter { $0.type == .emergency }
-    }
-    
-    private var maintenanceAlerts: [MaintenanceAlert] {
-        alerts.filter { $0.type != .emergency }
-    }
-    
-    var emergencyCount: Int {
-        emergencyAlerts.count
-    }
-    
-    var maintenanceCount: Int {
-        maintenanceAlerts.count
     }
     
     // MARK: - Actions

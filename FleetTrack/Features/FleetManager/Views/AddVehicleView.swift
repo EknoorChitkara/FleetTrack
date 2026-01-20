@@ -14,6 +14,7 @@ struct AddVehicleView: View {
     @State private var showError = false
     @State private var showRegistrationError = false
     @State private var showDuplicateAlert = false
+    @State private var showSaveConfirmation = false
     @FocusState private var focusedField: Field?
     
     enum Field {
@@ -56,15 +57,23 @@ struct AddVehicleView: View {
                                 }
                             }
                         } else {
-                            fleetVM.addVehicle(formData)
-                            presentationMode.wrappedValue.dismiss()
+                            showSaveConfirmation = true
                         }
                     }) {
                         Text("Save")
                             .fontWeight(.bold)
-                            .foregroundColor(!isValidRegistration ? .gray : .appEmerald)
+                            .foregroundColor(!isFormValid ? .gray : .appEmerald)
                     }
-                    .disabled(!isValidRegistration)
+                    .disabled(!isFormValid)
+                    .alert("Confirm Save", isPresented: $showSaveConfirmation) {
+                        Button("Cancel", role: .cancel) { }
+                        Button("Save") {
+                            fleetVM.addVehicle(formData)
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    } message: {
+                        Text("Are you sure you want to save this vehicle to your fleet?")
+                    }
                 }
                 .padding()
                 
@@ -78,8 +87,45 @@ struct AddVehicleView: View {
                         
                         VStack(spacing: 16) {
                             VStack(spacing: 8) {
-                                ModernTextField(icon: "number.square.fill", placeholder: "Registration Number (e.g., XX-00-XX0000)", text: $formData.registrationNumber, isRequired: true)
+                                ModernTextField(icon: "number.square.fill", placeholder: "Registration No. (e.g., XX-00-XX0000)", text: $formData.registrationNumber, isRequired: true, autocapitalization: .allCharacters)
                                     .focused($focusedField, equals: .registration)
+                                    .onChange(of: formData.registrationNumber) { newValue in
+                                        let filtered = newValue.uppercased().filter { $0.isLetter || $0.isNumber }
+                                        var result = ""
+                                        
+                                        for (index, char) in filtered.enumerated() {
+                                            // 1. First two must be letters (XX)
+                                            if index < 2 {
+                                                if char.isLetter { result.append(char) }
+                                            }
+                                            // 2. Next two must be numbers (00)
+                                            else if index < 4 {
+                                                if index == 2 { result.append("-") }
+                                                if char.isNumber { result.append(char) }
+                                            }
+                                            // 3. Next 1 or 2 must be letters (XX)
+                                            else if index < 6 {
+                                                if index == 4 { result.append("-") }
+                                                if char.isLetter { result.append(char) }
+                                            }
+                                            // 4. Remaining must be numbers (0000)
+                                            else if index < 10 {
+                                                // If index 5 was a letter, we might have 1 or 2 letters in this section
+                                                // The regex format usually expects XX-00-A1234 or XX-00-AA1234
+                                                // So we check if we already have the second letter or start numbers
+                                                if char.isNumber || (char.isLetter && result.last?.isLetter == true && result.filter({$0 == "-"}).count == 2 && result.components(separatedBy: "-").last?.count ?? 0 < 2) {
+                                                    result.append(char)
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Cap at 12 characters (XX-00-XX0000)
+                                        if result.count > 12 {
+                                            result = String(result.prefix(12))
+                                        }
+                                        
+                                        formData.registrationNumber = result
+                                    }
                                 
                                 if showRegistrationError && !isValidRegistration {
                                     Text("Invalid format. Expected: XX-00-XX0000")
@@ -198,6 +244,13 @@ struct AddVehicleView: View {
         }
     }
     
+    private var isFormValid: Bool {
+        return isValidRegistration && 
+               !formData.manufacturer.trimmingCharacters(in: .whitespaces).isEmpty &&
+               !formData.model.trimmingCharacters(in: .whitespaces).isEmpty &&
+               !formData.capacity.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     private var isValidRegistration: Bool {
         let regEx = "^[A-Z]{2}-\\d{2}-[A-Z]{1,2}\\d{4}$"
         let pred = NSPredicate(format:"SELF MATCHES %@", regEx)

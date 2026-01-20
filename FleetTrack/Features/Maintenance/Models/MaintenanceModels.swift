@@ -72,7 +72,7 @@ public enum TaskStatus: String, Codable, CaseIterable, Hashable {
         case .paused:
             return .gray
         case .completed:
-            return .green
+            return Color(hex: "2D7D46")
         case .failed:
             return .red
         case .cancelled:
@@ -250,21 +250,26 @@ public struct MaintenanceTask: Identifiable, Codable, Hashable, Equatable {
     public var canBeEdited: Bool {
         !isLocked && !isCompleted
     }
+    
+    // Check if task is paused based on pausedAt field
+    public var isPaused: Bool {
+        status == "In Progress" && pausedAt != nil
+    }
 
     public var canBeStarted: Bool {
         status == "Pending"
     }
 
     public var canBePaused: Bool {
-        status == "In Progress"
+        status == "In Progress" && pausedAt == nil
     }
 
     public var canBeResumed: Bool {
-        status == "Paused"
+        isPaused
     }
 
     public var canBeCompleted: Bool {
-        status == "In Progress" || status == "Paused"
+        status == "In Progress"
     }
 
     public var totalCost: Double {

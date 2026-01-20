@@ -102,17 +102,37 @@ class LocationSearchService: NSObject, ObservableObject {
                     return
                 }
                 
-                // Convert completions to results with coordinates
-                var results: [LocationSearchResult] = []
-                
-                for completion in completions.prefix(10) {
-                    if let result = await resolveCompletion(completion) {
-                        results.append(result)
+                // Start a timeout task
+                let timeoutTask = Task {
+                    try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds timeout
+                    if !Task.isCancelled {
+                        print("Search timed out")
+                        return true
                     }
-                    
-                    if Task.isCancelled { break }
+                    return false
                 }
                 
+                // Convert completions to results with coordinates in parallel
+                let results = await withTaskGroup(of: LocationSearchResult?.self) { group -> [LocationSearchResult] in
+                    for completion in completions.prefix(10) {
+                        group.addTask {
+                            return await self.resolveCompletion(completion)
+                        }
+                    }
+                    
+                    var resolvedResults: [LocationSearchResult] = []
+                    for await result in group {
+                        if let result = result {
+                            resolvedResults.append(result)
+                        }
+                        
+                        // If timeout occurred, stop processing
+                        if Task.isCancelled { break }
+                    }
+                    return resolvedResults
+                }
+                
+                timeoutTask.cancel()
                 continuation.resume(returning: results)
             }
         }

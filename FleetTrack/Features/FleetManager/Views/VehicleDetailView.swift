@@ -15,6 +15,7 @@ struct VehicleDetailView: View {
     @State private var showHistory = false
     @State private var selectedServices: Set<String> = []
     @State private var serviceDescription: String = ""
+    @State private var showRetireAlert = false
     
     private var currentVehicle: FMVehicle {
         fleetVM.vehicles.first(where: { $0.id == vehicle.id }) ?? vehicle
@@ -75,27 +76,47 @@ struct VehicleDetailView: View {
                                 }
                                 
                                 Menu {
-                                    Button(action: {
-                                        fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: nil)
-                                        presentationMode.wrappedValue.dismiss()
-                                    }) {
-                                        Label("Unassign", systemImage: "person.fill.xmark")
+                                    // Show unassign option only if vehicle has an assigned driver
+                                    if currentVehicle.assignedDriverId != nil {
+                                        Button(action: {
+                                            fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: nil)
+                                        }) {
+                                            Label("Unassign Driver", systemImage: "person.fill.xmark")
+                                        }
+                                        
+                                        if !fleetVM.unassignedDrivers.isEmpty {
+                                            Divider()
+                                        }
                                     }
                                     
-                                    Divider()
-                                    
+                                    // Show available drivers
                                     ForEach(fleetVM.unassignedDrivers) { driver in
                                         Button(action: {
                                             fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: driver.id)
-                                            presentationMode.wrappedValue.dismiss()
                                         }) {
-                                            Text(driver.displayName)
+                                            Label(driver.displayName, systemImage: "person.fill")
                                         }
                                     }
                                 } label: {
-                                    QuickActionBtn(title: "Assign", icon: "person.badge.plus.fill", color: .green) {}
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "person.badge.plus.fill")
+                                            .font(.title3)
+                                            .foregroundColor(.white)
+                                            .padding(16)
+                                            .background(Color.green.opacity(0.2))
+                                            .cornerRadius(12)
+                                        
+                                        Text("Assign")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.white)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.white.opacity(0.05))
+                                    .cornerRadius(16)
                                 }
-                                .disabled(fleetVM.unassignedDrivers.isEmpty && vehicle.assignedDriverId == nil)
+                                .disabled(fleetVM.unassignedDrivers.isEmpty && currentVehicle.assignedDriverId == nil)
                                 
                                 QuickActionBtn(title: "Service", icon: "wrench.and.screwdriver.fill", color: .orange) {
                                     selectedServices = Set(vehicle.maintenanceServices ?? [])
@@ -105,6 +126,10 @@ struct VehicleDetailView: View {
                                 
                                 QuickActionBtn(title: "History", icon: "clock.arrow.circlepath", color: .purple) {
                                     showHistory = true
+                                }
+                                
+                                QuickActionBtn(title: "Retire", icon: "archivebox.fill", color: .red) {
+                                    showRetireAlert = true
                                 }
                             }
                         }
@@ -190,6 +215,15 @@ struct VehicleDetailView: View {
         }
         .sheet(isPresented: $showHistory) {
             MaintenanceHistoryView(vehicle: currentVehicle)
+        }
+        .alert("Retire Vehicle", isPresented: $showRetireAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Retire", role: .destructive) {
+                fleetVM.retireVehicle(byId: vehicle.id)
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to retire this vehicle? This will unassign any active driver and move the vehicle to the retired archive.")
         }
     }
     

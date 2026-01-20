@@ -33,23 +33,6 @@ struct DriverAlertsView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-                .padding(.bottom, 20)
-                
-                // Segments / Tabs
-                HStack(spacing: 12) {
-                    TabButton(
-                        title: "Emergency (\(viewModel.emergencyCount))",
-                        isSelected: viewModel.selectedTab == .all,
-                        action: { viewModel.selectedTab = .all }
-                    )
-                    
-                    TabButton(
-                        title: "Maintainance(\(viewModel.maintenanceCount))",
-                        isSelected: viewModel.selectedTab == .unread,
-                        action: { viewModel.selectedTab = .unread }
-                    )
-                }
-                .padding(.horizontal, 20)
                 .padding(.bottom, 24)
                 
                 // Content
@@ -58,14 +41,14 @@ struct DriverAlertsView: View {
                     ProgressView()
                         .tint(.green)
                     Spacer()
-                } else if viewModel.currentTabAlerts.isEmpty {
+                } else if viewModel.alerts.isEmpty {
                     Spacer()
                     EmptyStateView()
                     Spacer()
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(viewModel.currentTabAlerts) { alert in
+                            ForEach(viewModel.alerts) { alert in
                                 AlertCell(alert: alert)
                             }
                         }
