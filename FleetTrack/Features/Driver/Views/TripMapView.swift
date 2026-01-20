@@ -137,12 +137,24 @@ struct TripMapView: View {
         } message: {
             Text("Cannot start trip with empty fuel. Please refuel the vehicle before starting the trip.")
         }
+        .alert("Trip Summary", isPresented: $showTripSummary) {
+            Button("OK") {
+                dismiss() // Dismiss view after user acknowledges summary
+            }
+        } message: {
+            Text(tripSummaryMessage)
+        }
         .onAppear {
             if localTripStatus == nil {
                 localTripStatus = trip.status
             }
             if !isCompleted {
                 locationProvider.startTracking()
+            }
+            
+            // Initialize start odometer from trip if available (persistency)
+            if let startOdo = trip.startOdometer {
+                self.startOdometerReading = startOdo
             }
             
             // 1. Calculate the Static Plan (Start -> End)
@@ -563,7 +575,7 @@ struct TripMapView: View {
         Task {
             // 1. Update Trip Status & Logs
             let updateData: [String: AnyEncodable] = [
-                "status": AnyEncodable("In Progress"),
+                "status": AnyEncodable(TripStatus.ongoing.rawValue),
                 "start_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
                 "start_odometer": AnyEncodable(Double(logOdometer) ?? 0.0),
                 "start_fuel_level": AnyEncodable(logFuel)
@@ -639,6 +651,11 @@ struct TripMapView: View {
         }
     }
     
+    @State private var showTripSummary = false
+    @State private var tripSummaryMessage = ""
+    
+    // ... existing code ...
+    
     private func completeTrip() {
         // Validate odometer reading
         let endOdometer = Double(logOdometer) ?? 0.0
@@ -660,9 +677,35 @@ struct TripMapView: View {
         // Stop Geofencing
         RouteMonitoringManager.shared.stopMonitoring()
         
+        // Calculate Efficiency
+        let distance = endOdometer - startOdometerReading
+        let startFuel = trip.startFuelLevel ?? 50.0 // Default or fetched
+        let endFuel = logFuel
+        
+        // Fuel Consumed %
+        // Assuming no refuel for simplicity of this calculation as requested
+        let fuelConsumedPercent = max(0, startFuel - endFuel)
+        
+        var efficiencyMsg = "\n\nDistance: \(String(format: "%.1f", distance)) km"
+        
+        if let vehicle = assignedVehicle, let capacity = vehicle.tankCapacity {
+            let litersConsumed = (fuelConsumedPercent / 100.0) * capacity
+            efficiencyMsg += "\nFuel Consumed: \(String(format: "%.1f", litersConsumed)) L"
+            
+            if litersConsumed > 0 {
+                let kmPerLiter = distance / litersConsumed
+                efficiencyMsg += "\nEfficiency: \(String(format: "%.1f", kmPerLiter)) km/L"
+                
+                // Update AI Model (Mock update for now)
+                print("🧠 Updating AI with real-world efficiency: \(kmPerLiter) km/L")
+            }
+        } else {
+             efficiencyMsg += "\nFuel Consumed: \(String(format: "%.0f", fuelConsumedPercent))% (Tank capacity unknown)"
+        }
+        
         Task {
             let updateData: [String: AnyEncodable] = [
-                "status": AnyEncodable("Completed"),
+                "status": AnyEncodable(TripStatus.completed.rawValue),
                 "end_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
                 "end_odometer": AnyEncodable(endOdometer),
                 "end_fuel_level": AnyEncodable(logFuel)
@@ -672,7 +715,11 @@ struct TripMapView: View {
                 try await supabase.from("trips")
                     .update(updateData)
                     .eq("id", value: trip.id.uuidString).execute()
-                await MainActor.run { dismiss() }
+                
+                await MainActor.run {
+                    self.tripSummaryMessage = "Trip Completed Successfully! 🚀\(efficiencyMsg)"
+                    self.showTripSummary = true
+                }
             } catch {
                 print("❌ Failed to update end trip: \(error)")
                 await MainActor.run { isProcessing = false }

@@ -60,6 +60,8 @@ struct DriverDashboardView: View {
         }
         .fullScreenCover(item: $tripToStart, onDismiss: {
             Task {
+                // Slight delay to ensure DB propagation and UI transition smoothness
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
                 await viewModel.loadDashboardData(user: localUser)
             }
         }) { trip in
@@ -107,7 +109,7 @@ struct DriverDashboardView: View {
                 .padding(.horizontal)
                 .padding(.top, 20)
                 
-                if viewModel.isLoading {
+                if viewModel.isLoading && viewModel.driver == nil {
                     ProgressView()
                         .tint(.appEmerald)
                         .padding(.top, 100)
