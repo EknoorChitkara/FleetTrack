@@ -151,15 +151,20 @@ struct LoginView: View {
         isLoading = true
         message = ""
 
+        // Check Network Connectivity using OfflineSyncManager
+        if !OfflineSyncManager.shared.isOnline {
+            isLoading = false
+            message = "⚠️ No Internet Connection. Please check your network."
+            return
+        }
+
         do {
             // Step 1: Verify Password using an isolated "Ghost Client"
-            // We do this to avoid triggering the global SessionManager
-            // until the 2FA (Step 2) is actually completed.
             let ghostClient = SupabaseClient(
                 supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
                 supabaseKey: SupabaseConfig.supabaseAnonKey,
                 options: SupabaseClientOptions(
-                    auth: .init(storage: isolatedStorage)
+                    auth: .init(storage: NoOpStorage())
                 )
             )
             
@@ -167,7 +172,6 @@ struct LoginView: View {
             print("✅ Step 1: Password Verified (via Ghost Client)")
 
             // Step 2: Trigger Code Send on the MAIN client
-            // signInWithOTP does NOT create a session, so it won't trigger RootView
             try await supabase.auth.signInWithOTP(email: trimmedEmail)
             print("✅ Step 2: Code Sent to \(trimmedEmail)")
 
@@ -179,19 +183,26 @@ struct LoginView: View {
         } catch {
             await MainActor.run {
                 print("❌ Login error: \(error)")
-                Task {
-                    let userExists = await checkUserExists(email: trimmedEmail)
-                    let isFormatValid = ValidationHelpers.isValidEmail(trimmedEmail)
-                    
-                    await MainActor.run {
-                        if !isFormatValid {
-                            message = "❌ incorrect email"
-                        } else if !userExists {
-                            message = "❌ both password and email are incorrect"
-                        } else {
-                            message = "❌ password incorrect"
+                
+                // FE Distinguished Validation
+                if !ValidationHelpers.isValidEmail(trimmedEmail) {
+                    message = "❌ Invalid email format"
+                    isLoading = false
+                } else if trimmedEmail.first?.isNumber == true {
+                    message = "❌ Email cannot start with a number"
+                    isLoading = false
+                } else {
+                    // Try to check if user exists to distinguish error
+                    Task {
+                        let userExists = await checkUserExists(email: trimmedEmail)
+                        await MainActor.run {
+                            if !userExists {
+                                message = "❌ Email & Password are incorrect (User not found)"
+                            } else {
+                                message = "❌ Password incorrect"
+                            }
+                            isLoading = false
                         }
-                        isLoading = false
                     }
                 }
             }
@@ -213,13 +224,8 @@ struct LoginView: View {
         }
     }
     
-    // Helper to keep Ghost Client session isolated
+    // Help to keep Ghost Client session isolated
     private var isolatedStorage: AuthLocalStorage {
-        class NoOpStorage: AuthLocalStorage {
-            func store(key: String, value: Data) throws {}
-            func retrieve(key: String) throws -> Data? { return nil }
-            func remove(key: String) throws {}
-        }
         return NoOpStorage()
     }
 
@@ -245,4 +251,11 @@ struct LoginView: View {
         }
         isLoading = false
     }
+}
+
+// MARK: - Helper Storage
+private class NoOpStorage: @unchecked Sendable, AuthLocalStorage {
+    func store(key: String, value: Data) throws {}
+    func retrieve(key: String) throws -> Data? { return nil }
+    func remove(key: String) throws {}
 }

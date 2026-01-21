@@ -194,12 +194,18 @@ struct DriverCustomTabBar: View {
             DriverTabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == 2) {
                 selectedTab = 2
             }
+            
+            Spacer()
+            
+            DriverTabBarItem(icon: "person.fill", title: "User", isSelected: selectedTab == 3) {
+                selectedTab = 3
+            }
         }
-        .padding(.horizontal, 32)
+        .padding(.horizontal, 24)
         .padding(.vertical, 12)
         .background(Color.appCardBackground.opacity(0.95))
         .clipShape(Capsule())
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 16)
         .padding(.bottom, 8)
         .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10)
     }

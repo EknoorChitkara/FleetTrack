@@ -44,6 +44,22 @@ struct AllTripsView: View {
                         .clipShape(Circle())
                     
                     Spacer()
+                    
+                    Button(action: {
+                        // Action for button
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Export")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.appEmerald)
+                        .cornerRadius(8)
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)

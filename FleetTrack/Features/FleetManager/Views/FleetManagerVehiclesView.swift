@@ -18,7 +18,10 @@ struct FleetManagerVehiclesView: View {
     
     var filteredVehicles: [FMVehicle] {
         fleetVM.vehicles.filter { vehicle in
-            let matchesSearch = searchText.isEmpty || vehicle.registrationNumber.lowercased().contains(searchText.lowercased())
+            let cleanedSearch = searchText.replacingOccurrences(of: "-", with: "").lowercased()
+            let cleanedReg = vehicle.registrationNumber.replacingOccurrences(of: "-", with: "").lowercased()
+            
+            let matchesSearch = searchText.isEmpty || cleanedReg.contains(cleanedSearch)
             let matchesFilter = selectedFilter == "All" || vehicle.status.rawValue == selectedFilter
             return matchesSearch && matchesFilter
         }
@@ -53,7 +56,32 @@ struct FleetManagerVehiclesView: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
-                    TextField("Search vehicles...", text: $searchText)
+                    TextField("Search vehicles (e.g. MH-12)", text: Binding(
+                        get: { searchText },
+                        set: { newValue in
+                            // Auto-hyphenation logic
+                            // Remove existing hyphens to re-process
+                            let clean = newValue.replacingOccurrences(of: "-", with: "").uppercased()
+                            var formatted = ""
+                            
+                            // Example Pattern: MH12AB1234 -> MH-12-AB-1234
+                            // Simple logic: Insert hyphen after 2nd and 4th characters if length permits
+                            // This is a basic generic formatter that helps readability
+                            for (index, char) in clean.enumerated() {
+                                if index == 2 || index == 4 {
+                                    formatted += "-"
+                                }
+                                formatted.append(char)
+                            }
+                            
+                            // Handle deletion logic (prevent getting stuck) by allowing direct set if deleting
+                            if newValue.count < searchText.count {
+                                searchText = newValue.uppercased()
+                            } else {
+                                searchText = formatted
+                            }
+                        }
+                    ))
                         .foregroundColor(.white)
                 }
                 .padding()

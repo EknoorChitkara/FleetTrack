@@ -113,6 +113,13 @@ struct AddDriverView: View {
                                     }
                                 }
                             
+                            if !formData.fullName.isEmpty && formData.fullName.replacingOccurrences(of: " ", with: "").allSatisfy({ $0.isNumber }) {
+                                Text("Name cannot be only numbers")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .padding(.leading)
+                            }
+                            
                             // License Number with Validation
                             VStack(alignment: .leading, spacing: 4) {
                                 ModernTextField(icon: "creditcard.fill", placeholder: "License No. (XX-0000000000000)", text: $formData.licenseNumber, isRequired: true)
@@ -240,10 +247,24 @@ struct AddDriverView: View {
                                         .font(.caption)
                                         .foregroundColor(.red)
                                         .padding(.leading)
+                                } else if formData.email.first?.isNumber == true {
+                                    Text("Email cannot start with a number")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .padding(.leading)
                                 }
                             }
                             
-                            ModernTextField(icon: "house.fill", placeholder: "Address", text: $formData.address, isRequired: true)
+                            VStack(alignment: .leading, spacing: 4) {
+                                ModernTextField(icon: "house.fill", placeholder: "Address", text: $formData.address, isRequired: true)
+                                
+                                if !formData.address.isEmpty && formData.address.replacingOccurrences(of: " ", with: "").allSatisfy({ $0.isNumber }) {
+                                    Text("Address cannot be only numbers")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .padding(.leading)
+                                }
+                            }
                         }
                         .padding(.horizontal)
                         
@@ -269,6 +290,11 @@ struct AddDriverView: View {
         let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
         guard emailPred.evaluate(with: formData.email) else { return false }
+        guard formData.email.first?.isNumber != true else { return false }
+        
+        // Name & Address constraints
+        guard !formData.fullName.replacingOccurrences(of: " ", with: "").allSatisfy({ $0.isNumber }) else { return false }
+        guard !formData.address.replacingOccurrences(of: " ", with: "").allSatisfy({ $0.isNumber }) else { return false }
         
         return true
     }

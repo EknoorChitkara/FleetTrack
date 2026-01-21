@@ -10,10 +10,17 @@ struct TripRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
+            // Status Indicator Strip
+            Rectangle()
+                .fill(statusColor(trip.status))
+                .frame(width: 4)
+                .cornerRadius(2)
+                .padding(.vertical, 12)
+            
             Circle()
-                .fill(Color.purple.opacity(0.1))
+                .fill(statusColor(trip.status).opacity(0.1))
                 .frame(width: 40, height: 40)
-                .overlay(Image(systemName: "map.fill").foregroundColor(.purple))
+                .overlay(Image(systemName: "map.fill").foregroundColor(statusColor(trip.status)))
             
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(trip.startAddress ?? "Start") → \(trip.endAddress ?? "End")")
@@ -37,9 +44,19 @@ struct TripRow: View {
                 }
             }
         }
-        .padding()
+        .padding(.trailing) // Remove default padding from left/strip side
         .background(Color.appCardBackground)
         .cornerRadius(12)
+    }
+    
+    private func statusColor(_ status: String) -> Color {
+        switch status.lowercased() {
+        case "completed": return .green
+        case "ongoing": return .orange
+        case "scheduled": return .blue
+        case "cancelled": return .red
+        default: return .gray
+        }
     }
 }
 
@@ -83,7 +100,7 @@ struct VehicleCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(vehicle.registrationNumber)
+                    Text(vehicle.registrationNumber + (vehicle.status == .retired ? " –" : ""))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                     Text(vehicle.model)
@@ -165,7 +182,7 @@ struct DriverCard: View {
                 .foregroundColor(.appEmerald)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(driver.displayName)
+                Text(driver.displayName + (driver.isActive == false ? " –" : ""))
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
                 Text(driver.licenseNumber ?? "No License")

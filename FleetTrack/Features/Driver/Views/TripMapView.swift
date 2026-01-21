@@ -34,6 +34,7 @@ struct TripMapView: View {
     @State private var odometerErrorMessage = ""
     @State private var startOdometerReading: Double = 0.0
     @State private var showFuelError = false
+    @State private var showDistAlert = false
     
     // Log variables
     @State private var logOdometer: String = ""
@@ -519,19 +520,25 @@ struct TripMapView: View {
                 }
                 .disabled(!isScheduledForToday)
             } else if isDeliveryPhase {
-                Button { 
-                    logOdometer = ""
-                    logFuel = 50.0 // Reset fuel to default for end log
-                    showEndLog = true 
+                Button {
+                    // Prevent Ending logic
+                    if let dist = routeDistance, dist > 0.5 { // Check if distance > 0.5km (500m)
+                        showDistAlert = true
+                    } else {
+                        logOdometer = ""
+                        logFuel = 50.0 // Reset fuel to default for end log
+                        showEndLog = true
+                    }
                 } label: {
                     Label("End Trip", systemImage: "stop.circle.fill")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(Color.red)
+                        .background((routeDistance ?? 0) > 0.5 ? Color.gray : Color.red)
                         .foregroundColor(.white)
                         .cornerRadius(12)
                 }
+                .disabled((routeDistance ?? 0) > 0.5) // UI Level Disable
             }
         }
         .padding()
@@ -539,6 +546,11 @@ struct TripMapView: View {
         .cornerRadius(20)
         .shadow(radius: 10)
         .padding()
+        .alert("Too Far From Destination", isPresented: $showDistAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("You are not at the destination yet. Please reach the destination to end the trip.")
+        }
     }
     
     // MARK: - Actions

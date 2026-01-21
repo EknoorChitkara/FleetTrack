@@ -16,6 +16,7 @@ struct VehicleDetailView: View {
     @State private var selectedServices: Set<String> = []
     @State private var serviceDescription: String = ""
     @State private var showRetireAlert = false
+    @State private var showAssignmentSuccess = false
     
     private var currentVehicle: FMVehicle {
         fleetVM.vehicles.first(where: { $0.id == vehicle.id }) ?? vehicle
@@ -93,6 +94,8 @@ struct VehicleDetailView: View {
                                     ForEach(fleetVM.unassignedDrivers) { driver in
                                         Button(action: {
                                             fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: driver.id)
+                                            // Frontend confirmation simulation
+                                            showAssignmentSuccess = true
                                         }) {
                                             Label(driver.displayName, systemImage: "person.fill")
                                         }
@@ -224,6 +227,11 @@ struct VehicleDetailView: View {
             }
         } message: {
             Text("Are you sure you want to retire this vehicle? This will unassign any active driver and move the vehicle to the retired archive.")
+        }
+        .alert("Success", isPresented: $showAssignmentSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Driver assigned successfully to vehicle \(vehicle.registrationNumber).")
         }
     }
     

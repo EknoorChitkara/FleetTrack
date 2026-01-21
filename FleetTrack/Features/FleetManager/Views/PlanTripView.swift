@@ -12,6 +12,7 @@ struct PlanTripView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var fleetVM: FleetViewModel
     @StateObject private var viewModel = PlanTripViewModel()
+    @State private var showSuccessAlert = false
     
     @State private var bottomSheetHeight: CGFloat = 180
     @State private var dragOffset: CGFloat = 0
@@ -115,6 +116,13 @@ struct PlanTripView: View {
         .task {
             // Refresh data to ensure we have the latest trip statuses from the database
             await fleetVM.loadData()
+        }
+        .alert("Success", isPresented: $showSuccessAlert) {
+            Button("OK", role: .cancel) {
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Trip created successfully! The driver has been notified.")
         }
     }
     
@@ -255,10 +263,11 @@ struct PlanTripView: View {
                     // Date and Status
                     HStack {
                         HStack(spacing: 8) {
-                            Image(systemName: "calendar")
+                            Image(systemName: "clock")
                                 .foregroundColor(.appSecondaryText)
                             
-                            DatePicker("", selection: $viewModel.startTime, in: viewModel.tripDateRange, displayedComponents: [.date])
+                            // Updated to date and time
+                            DatePicker("", selection: $viewModel.startTime, in: viewModel.tripDateRange, displayedComponents: [.date, .hourAndMinute])
                                 .labelsHidden()
                                 .colorScheme(.dark)
                                 .accentColor(.appEmerald)
@@ -270,7 +279,9 @@ struct PlanTripView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.green)
                                 .font(.system(size: 12))
-                            Text("Available")
+                            
+                            // Show dynamic available count
+                            Text("\(availableVehicles.count) Available")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.green)
                         }
@@ -497,7 +508,8 @@ struct PlanTripView: View {
         Button(action: {
             viewModel.createTrip(fleetVM: fleetVM) { success in
                 if success {
-                    presentationMode.wrappedValue.dismiss()
+                    // Show success alert instead of immediate dismiss
+                    showSuccessAlert = true
                 }
             }
         }) {
