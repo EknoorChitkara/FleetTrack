@@ -32,6 +32,9 @@ struct VehicleInspectionView: View {
                         .padding(.vertical, 8)
                         .background(Color.white.opacity(0.1))
                         .cornerRadius(20)
+                        .accessibilityLabel("Done")
+                        .accessibilityHint("Dismiss the inspection info view")
+                        .accessibilityIdentifier("inspection_done_button")
                     }
                     .padding(.horizontal)
                     .padding(.top)
@@ -62,6 +65,9 @@ struct VehicleInspectionView: View {
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Vehicle Specifications")
+                            .accessibilityIdentifier("inspection_specs_section")
                             
                             // Status Section
                             VStack(spacing: 0) {
@@ -71,6 +77,9 @@ struct VehicleInspectionView: View {
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Vehicle Status Information")
+                            .accessibilityIdentifier("inspection_status_section")
                         }
                         .padding()
                     }
@@ -111,5 +120,8 @@ struct InspectionRow: View {
                 .foregroundColor(.white)
         }
         .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityIdentifier("inspection_row_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }

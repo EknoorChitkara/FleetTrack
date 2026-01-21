@@ -54,6 +54,9 @@ struct CompletedTaskRow: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Completed Task: \(task.component.rawValue) for vehicle \(task.vehicleRegistrationNumber). Finished on \(formattedDate(task.dueDate)).")
+        .accessibilityIdentifier("maintenance_completed_task_\(task.id.uuidString.prefix(8))")
     }
     
     private func formattedDate(_ date: Date) -> String {

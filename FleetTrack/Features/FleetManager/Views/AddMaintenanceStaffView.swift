@@ -67,6 +67,8 @@ struct AddMaintenanceStaffView: View {
                             .font(.system(size: 24))
                             .foregroundColor(.gray)
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("add_maintenance_cancel_button")
                     Spacer()
                     Text("Add Maintenance")
                         .font(.headline)
@@ -81,6 +83,9 @@ struct AddMaintenanceStaffView: View {
                             .foregroundColor(!isFormValid ? .gray : .appEmerald)
                     }
                     .disabled(!isFormValid)
+                    .accessibilityLabel("Save")
+                    .accessibilityHint(isFormValid ? "Double tap to save maintenance staff" : "Form incomplete")
+                    .accessibilityIdentifier("add_maintenance_save_button")
                     .alert(isPresented: $showSuccessAlert) {
                         Alert(
                             title: Text("Success"),
@@ -145,6 +150,9 @@ struct AddMaintenanceStaffView: View {
                                         .background(Color.white.opacity(0.1))
                                         .cornerRadius(8)
                                     }
+                                    .accessibilityLabel("Country Code: \(selectedCountry.name) \(selectedCountry.code)")
+                                    .accessibilityHint("Double tap to change country")
+                                    .accessibilityIdentifier("add_maintenance_country_picker")
                                     
                                     ZStack(alignment: .leading) {
                                         if localPhoneNumber.isEmpty {
@@ -179,6 +187,10 @@ struct AddMaintenanceStaffView: View {
                                     RoundedRectangle(cornerRadius: 16)
                                         .stroke(Color.white.opacity(0.05), lineWidth: 1)
                                 )
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("Phone number. Country code \(selectedCountry.code). Current number \(localPhoneNumber). \(formData.phoneNumber.isEmpty ? "Required" : "")")
+                                .accessibilityHint("Double tap to edit phone number")
+                                .accessibilityIdentifier("add_maintenance_phone_field")
                                 
                                 if !localPhoneNumber.isEmpty && localPhoneNumber.count != selectedCountry.limit {
                                      Text("Phone must be in format \(selectedCountry.code) \(String(repeating: "X", count: selectedCountry.limit))")

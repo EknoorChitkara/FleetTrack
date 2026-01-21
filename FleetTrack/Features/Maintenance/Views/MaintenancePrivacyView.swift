@@ -25,12 +25,15 @@ struct MaintenancePrivacyView: View {
                             .clipShape(Circle())
                             .foregroundColor(AppTheme.textPrimary)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("maintenance_privacy_back_button")
                     
                     Spacer()
                     
                     Text("Privacy & Security")
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
                     
@@ -89,6 +92,9 @@ struct MaintenancePrivacyCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(content)")
+        .accessibilityIdentifier("maintenance_privacy_card_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 

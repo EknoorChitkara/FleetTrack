@@ -6,6 +6,7 @@
 //
 
 import Supabase
+import UIKit
 import SwiftUI
 
 struct LoginView: View {
@@ -33,6 +34,7 @@ struct LoginView: View {
                     .font(.system(size: 80))
                     .foregroundColor(.appEmerald)
                     .shadow(color: .appEmerald.opacity(0.3), radius: 10)
+                    .accessibilityLabel("FleetTrack Logo")
 
                 VStack(spacing: 8) {
                     Text("FleetTrack")
@@ -58,6 +60,8 @@ struct LoginView: View {
                         )
                         .textContentType(.emailAddress)
                         .autocorrectionDisabled()
+                        .accessibilityLabel("Email Address")
+                        .accessibilityIdentifier("login_email_field")
                         .textInputAutocapitalization(.never)
                         .onChange(of: email) { newValue in
                             if newValue.count > 50 {
@@ -68,8 +72,12 @@ struct LoginView: View {
                     HStack {
                         if isPasswordVisible {
                             TextField("Password", text: $password)
+                                .accessibilityLabel("Password")
+                                .accessibilityIdentifier("login_password_field")
                         } else {
                             SecureField("Password", text: $password)
+                                .accessibilityLabel("Password")
+                                .accessibilityIdentifier("login_password_field")
                         }
 
                         Button(action: {
@@ -78,6 +86,9 @@ struct LoginView: View {
                             Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
                                 .foregroundColor(.appSecondaryText)
                         }
+                        .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+                        .accessibilityRemoveTraits(.isButton)
+                        .accessibilityAddTraits(.isButton)
                     }
                     .padding()
                     .background(Color.appCardBackground)
@@ -115,6 +126,7 @@ struct LoginView: View {
                     .cornerRadius(12)
                     .shadow(color: isFormValid ? .appEmerald.opacity(0.4) : Color.clear, radius: 8, x: 0, y: 4)
                 }
+                .accessibilityHint(isFormValid ? "Double tap to sign in" : "Enter email and password to enable sign in")
                 .padding(.horizontal)
                 .disabled(isLoading || !isFormValid)
 
@@ -145,6 +157,7 @@ struct LoginView: View {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             message = "❌ Please enter email and password"
+            UIAccessibility.post(notification: .announcement, argument: "Error: Please enter email and password")
             return
         }
 
@@ -191,6 +204,7 @@ struct LoginView: View {
                         } else {
                             message = "❌ password incorrect"
                         }
+                        UIAccessibility.post(notification: .announcement, argument: message)
                         isLoading = false
                     }
                 }
