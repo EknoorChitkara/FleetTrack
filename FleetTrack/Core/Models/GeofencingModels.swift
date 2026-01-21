@@ -106,6 +106,7 @@ struct CircularGeofence: Codable, Identifiable {
     let radiusMeters: Double
     let notifyOnEntry: Bool
     let notifyOnExit: Bool
+    let isActive: Bool
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -115,6 +116,33 @@ struct CircularGeofence: Codable, Identifiable {
         case radiusMeters = "radius_meters"
         case notifyOnEntry = "notify_on_entry"
         case notifyOnExit = "notify_on_exit"
+        case isActive = "is_active"
+    }
+    
+    // Custom init from decoder to handle missing isActive field
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        latitude = try container.decode(Double.self, forKey: .latitude)
+        longitude = try container.decode(Double.self, forKey: .longitude)
+        radiusMeters = try container.decode(Double.self, forKey: .radiusMeters)
+        notifyOnEntry = try container.decode(Bool.self, forKey: .notifyOnEntry)
+        notifyOnExit = try container.decode(Bool.self, forKey: .notifyOnExit)
+        // Default to true if field is missing (for existing records)
+        isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
+    }
+    
+    // Standard init for creating new instances
+    init(id: UUID, name: String, latitude: Double, longitude: Double, radiusMeters: Double, notifyOnEntry: Bool, notifyOnExit: Bool, isActive: Bool) {
+        self.id = id
+        self.name = name
+        self.latitude = latitude
+        self.longitude = longitude
+        self.radiusMeters = radiusMeters
+        self.notifyOnEntry = notifyOnEntry
+        self.notifyOnExit = notifyOnExit
+        self.isActive = isActive
     }
     
     var coordinate: CLLocationCoordinate2D {
