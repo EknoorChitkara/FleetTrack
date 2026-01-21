@@ -26,10 +26,10 @@ struct FleetManagerManageDriversView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20))
                             .padding(10)
-                            .background(Color(white: 0.2))
-                            .clipShape(Circle())
                             .foregroundColor(.white)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("manage_drivers_back_button")
                     
                     Spacer()
                     
@@ -69,6 +69,7 @@ struct FleetManagerManageDriversView: View {
                             }
                         }
                         .padding()
+                        .accessibilityIdentifier("manage_drivers_list")
                     }
                 }
             }

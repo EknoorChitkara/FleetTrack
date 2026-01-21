@@ -33,6 +33,8 @@ struct AlertDetailView: View {
                         dismiss()
                     }
                     .foregroundColor(.white)
+                    .accessibilityLabel("Close alert details")
+                    .accessibilityIdentifier("alert_detail_close_button")
                 }
             }
             .task {
@@ -89,6 +91,9 @@ struct AlertDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white.opacity(0.1))
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(alert.title), received \(alert.timestamp.formatted(date: .abbreviated, time: .shortened))")
+        .accessibilityIdentifier("alert_header_\(alert.id.uuidString.prefix(8))")
     }
     
     private var messageSection: some View {
@@ -109,6 +114,9 @@ struct AlertDetailView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.1), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Alert Message: \(alert.message)")
+        .accessibilityIdentifier("alert_message_section")
     }
     
     private var actionsSection: some View {
@@ -129,6 +137,9 @@ struct AlertDetailView: View {
                 .background(Color.blue)
                 .cornerRadius(12)
             }
+            .accessibilityLabel("Call Driver")
+            .accessibilityHint("Starts a phone call to the driver")
+            .accessibilityIdentifier("alert_detail_call_button")
             
             if alert.tripId != nil {
                 if let trip = fetchedTrip {
@@ -155,6 +166,9 @@ struct AlertDetailView: View {
                         .background(Color.appEmerald)
                         .cornerRadius(12)
                     }
+                    .accessibilityLabel("Track Driver")
+                    .accessibilityHint("Opens the map to track the current trip")
+                    .accessibilityIdentifier("alert_detail_track_button")
                 } else {
                      // Loading state for button
                      HStack {

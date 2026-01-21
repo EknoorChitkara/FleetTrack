@@ -47,6 +47,8 @@ struct AddEditGeofenceView: View {
                                 .foregroundColor(.white)
                                 .shadow(radius: 4)
                         }
+                        .accessibilityLabel("Cancel")
+                        .accessibilityIdentifier("geofence_cancel_button")
                         Spacer()
                         Text(isEditMode ? "Edit Geofence" : "Add Geofence")
                             .font(.headline)
@@ -70,6 +72,9 @@ struct AddEditGeofenceView: View {
                             }
                             .disabled(fenceName.isEmpty)
                             .opacity(fenceName.isEmpty ? 0.6 : 1.0)
+                            .accessibilityLabel("Save Geofence")
+                            .accessibilityHint(fenceName.isEmpty ? "Required: Enter a zone name" : "Double tap to save this geofence")
+                            .accessibilityIdentifier("geofence_save_button")
                         }
                     }
                     .padding()
@@ -82,12 +87,16 @@ struct AddEditGeofenceView: View {
                             TextField("Search Location...", text: $searchText, onCommit: performSearch)
                                 .foregroundColor(.white)
                                 .submitLabel(.search)
+                                .accessibilityLabel("Search for a location")
+                                .accessibilityIdentifier("geofence_search_field")
                             
                             if !searchText.isEmpty {
                                 Button(action: { searchText = "" }) {
                                     Image(systemName: "xmark.circle.fill")
                                         .foregroundColor(.gray)
                                 }
+                                .accessibilityLabel("Clear search")
+                                .accessibilityIdentifier("geofence_search_clear_button")
                             }
                         }
                         .padding()
@@ -112,6 +121,8 @@ struct AddEditGeofenceView: View {
                                             .padding()
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                         }
+                                        .accessibilityLabel("Select \(item.name ?? "Unknown location")")
+                                        .accessibilityIdentifier("geofence_search_result_\(item.name?.lowercased().replacingOccurrences(of: " ", with: "_") ?? "unknown")")
                                         Divider().background(Color.gray.opacity(0.3))
                                     }
                                 }
@@ -149,6 +160,8 @@ struct AddEditGeofenceView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color.white.opacity(0.1), lineWidth: 1)
                             )
+                            .accessibilityLabel("Zone Name")
+                            .accessibilityIdentifier("geofence_name_field")
                     }
                     
                     // Radius Slider
@@ -166,6 +179,9 @@ struct AddEditGeofenceView: View {
                         
                         Slider(value: $radius, in: 100...2000, step: 50)
                             .tint(.appEmerald)
+                            .accessibilityLabel("Geofence Radius")
+                            .accessibilityValue("\(Int(radius)) meters")
+                            .accessibilityIdentifier("geofence_radius_slider")
                     }
                 }
                 .padding(24)

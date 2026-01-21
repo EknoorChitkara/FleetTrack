@@ -24,9 +24,10 @@ struct FleetManagerPrivacyView: View {
                             .font(.system(size: 20))
                             .padding(10)
                             .background(Color(white: 0.2))
-                            .clipShape(Circle())
                             .foregroundColor(.white)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("privacy_back_button")
                     
                     Spacer()
                     
@@ -91,5 +92,8 @@ struct PrivacyCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(white: 0.1))
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(content)")
+        .accessibilityIdentifier("privacy_card_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }

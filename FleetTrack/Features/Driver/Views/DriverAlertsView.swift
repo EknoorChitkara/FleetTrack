@@ -138,6 +138,8 @@ struct AlertCell: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(hex: "1C1C1E")) // Slightly lighter card bg
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabelString)
     }
     
     private func timeAgo(from date: Date) -> String {
@@ -145,6 +147,13 @@ struct AlertCell: View {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
      }
+}
+
+extension AlertCell {
+    var accessibilityLabelString: String {
+        let typeString = alert.type == .emergency ? "Emergency" : "Maintenance"
+        return "\(typeString) Alert: \(alert.title), \(alert.message). \(timeAgo(from: alert.date))"
+    }
 }
 
 // Helper for Hex Color if not present in codebase extensions

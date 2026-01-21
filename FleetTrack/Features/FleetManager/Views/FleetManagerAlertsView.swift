@@ -44,6 +44,8 @@ struct FleetManagerAlertsView: View {
                             Image(systemName: "arrow.clockwise")
                                 .foregroundColor(.appEmerald)
                         }
+                        .accessibilityLabel("Refresh Alerts")
+                        .accessibilityIdentifier("fleet_alerts_refresh_button")
                     }
                 }
                 .padding(.horizontal)
@@ -73,6 +75,7 @@ struct FleetManagerAlertsView: View {
                             }
                         }
                         .padding(.horizontal)
+                        .accessibilityIdentifier("fleet_alerts_list")
                     }
                 }
             }
@@ -171,6 +174,10 @@ struct AlertRowView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(alert.isRead ? "Read" : "Unread") Alert. \(alert.title): \(alert.message). \(timeString)")
+        .accessibilityHint(alert.isRead ? "Double tap to view details" : "Double tap to view and mark as read")
+        .accessibilityIdentifier("fleet_alert_row_\(alert.id.uuidString.prefix(8))")
     }
 }
     

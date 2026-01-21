@@ -51,6 +51,8 @@ struct DriverTripsView: View {
                                 .font(.title2)
                                 .foregroundColor(.appEmerald)
                         }
+                        .accessibilityLabel("Refresh Trips")
+                        .accessibilityIdentifier("driver_trips_refresh_button")
                     }
                     .padding(.horizontal)
                     .padding(.top, 20)
@@ -73,6 +75,8 @@ struct DriverTripsView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity)
+                            .accessibilityLabel(filter.rawValue)
+                            .accessibilityAddTraits(selectedFilter == filter ? [.isSelected, .isButton] : [.isButton])
                         }
                     }
                     .padding(.top, 16)
@@ -263,6 +267,10 @@ struct DriverTripCardView: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Trip Status: \(trip.status?.rawValue ?? "Unknown"). \(trip.startAddress ?? "Unknown Start") to \(trip.endAddress ?? "Unknown Destination"). \(trip.startTime != nil ? "Date: \(trip.startTime!.formatted(date: .abbreviated, time: .shortened))" : "")")
+        .accessibilityHint("Double tap to view trip details")
+        .accessibilityIdentifier("driver_trip_card_\(trip.id.uuidString.prefix(8))")
     }
 }
 

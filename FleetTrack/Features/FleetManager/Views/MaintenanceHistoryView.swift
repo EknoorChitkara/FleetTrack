@@ -21,6 +21,8 @@ struct MaintenanceHistoryView: View {
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Close")
+                    .accessibilityIdentifier("maintenance_history_close_button")
                     
                     Spacer()
                     
@@ -120,6 +122,9 @@ struct SummaryCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
+        .accessibilityIdentifier("maintenance_summary_card_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 
@@ -168,5 +173,8 @@ struct MaintenanceLogRow: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Log from \(date.formatted(date: .abbreviated, time: .omitted)). Services: \(services.joined(separator: ", ")). Description: \(description)")
+        .accessibilityIdentifier("maintenance_log_row")
     }
 }
