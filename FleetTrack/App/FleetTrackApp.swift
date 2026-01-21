@@ -19,6 +19,7 @@ class AppState: ObservableObject {
     @Published var showError = false
     @Published var errorMessage = ""
     @Published var deepLinkURL: URL?
+    @Published var navigateToTripStart = false
 }
 
 @main
@@ -230,6 +231,17 @@ struct FleetTrackApp: App {
                     }
                 }
             }
+        } else if urlString.contains("trip/start") {
+            print("🚀 Trip start deep link received")
+            Task { @MainActor in
+                appState.navigateToTripStart = true
+            }
+        } else if urlString.contains("trip/end") {
+            print("🏁 Trip end deep link received")
+            // Handle trip end navigation
+        } else if urlString.contains("maintenance/resolve") {
+            print("🔧 Maintenance deep link received")
+            // Handle maintenance navigation
         } else {
             print("❓ Unknown deep link type: \(urlString)")
         }
