@@ -21,6 +21,7 @@ struct BasicMapView: View {
                 userTrackingMode: .constant(.none)
             )
             .ignoresSafeArea()
+            .accessibilityLabel("Map showing current location")
             
             // Controls overlay
             VStack {
@@ -42,6 +43,8 @@ struct BasicMapView: View {
                             .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                     }
                     .padding()
+                    .accessibilityLabel("Center on my location")
+                    .accessibilityHint("Double tap to move map to your current position")
                 }
             }
             

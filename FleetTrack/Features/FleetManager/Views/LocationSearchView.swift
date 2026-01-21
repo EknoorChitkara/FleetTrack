@@ -82,6 +82,8 @@ struct LocationSearchView: View {
                         .foregroundColor(.white)
                         .frame(width: 40, height: 40)
                 }
+                .accessibilityLabel("Back")
+                .accessibilityIdentifier("location_search_back_button")
                 
                 // Search bar
                 HStack(spacing: 12) {
@@ -101,6 +103,8 @@ struct LocationSearchView: View {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.appSecondaryText)
                         }
+                        .accessibilityLabel("Clear search")
+                        .accessibilityIdentifier("location_search_clear_button")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -140,10 +144,11 @@ struct LocationSearchView: View {
                     .foregroundColor(.appSecondaryText)
             }
             .padding()
-            .background(Color.appCardBackground)
-            .background(.ultraThinMaterial)
             .cornerRadius(12)
         }
+        .accessibilityLabel("Use Current Location")
+        .accessibilityHint("Uses your current device location as the search result")
+        .accessibilityIdentifier("location_search_current_location_button")
     }
     
     // MARK: - Recent Searches
@@ -166,6 +171,8 @@ struct LocationSearchView: View {
                             .font(.system(size: 13))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Clear recent searches")
+                    .accessibilityIdentifier("location_search_clear_recents_button")
                 }
             }
             
@@ -249,6 +256,10 @@ struct LocationSearchView: View {
                 alignment: .bottom
             )
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(result.title), \(result.subtitle)")
+        .accessibilityHint("Double tap to select this location")
+        .accessibilityIdentifier("location_search_result_\(result.id.uuidString.prefix(8))")
     }
     
     // MARK: - Loading Skeleton

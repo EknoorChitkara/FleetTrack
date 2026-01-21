@@ -143,6 +143,8 @@ struct PlanTripView: View {
                             .foregroundColor(.white)
                     )
             }
+            .accessibilityLabel("Back")
+            .accessibilityIdentifier("plan_trip_back_button")
             
             Spacer()
             
@@ -189,6 +191,8 @@ struct PlanTripView: View {
                             .font(.system(size: 16))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Search Pickup Location")
+                    .accessibilityIdentifier("pickup_search_button")
                     
                     // Pin button
                     Button(action: { showingStartPinSelection = true }) {
@@ -196,6 +200,8 @@ struct PlanTripView: View {
                             .font(.system(size: 16))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Select Pickup on Map")
+                    .accessibilityIdentifier("pickup_pin_button")
                 }
             }
             .padding(.horizontal, 16)
@@ -226,6 +232,8 @@ struct PlanTripView: View {
                             .font(.system(size: 16))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Search Dropoff Location")
+                    .accessibilityIdentifier("dropoff_search_button")
                     
                     // Pin button
                     Button(action: { showingEndPinSelection = true }) {
@@ -233,6 +241,8 @@ struct PlanTripView: View {
                             .font(.system(size: 16))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Select Dropoff on Map")
+                    .accessibilityIdentifier("dropoff_pin_button")
                 }
             }
             .padding(.horizontal, 16)
@@ -272,6 +282,8 @@ struct PlanTripView: View {
                                 .colorScheme(.dark)
                                 .accentColor(.appEmerald)
                         }
+                        .accessibilityLabel("Trip Date")
+                        .accessibilityIdentifier("plan_trip_date_picker")
                         
                         Spacer()
                         
@@ -380,6 +392,9 @@ struct PlanTripView: View {
             .background(.ultraThinMaterial)
             .cornerRadius(12)
         }
+        .accessibilityLabel(viewModel.driverId != nil ? "Driver: \(fleetVM.drivers.first(where: { $0.id == viewModel.driverId })?.displayName ?? "")" : "Select Driver")
+        .accessibilityHint("Double tap to choose a driver")
+        .accessibilityIdentifier("plan_trip_driver_selector")
     }
     
     // MARK: - Vehicle Selector
@@ -469,6 +484,9 @@ struct PlanTripView: View {
             .background(.ultraThinMaterial)
             .cornerRadius(12)
         }
+        .accessibilityLabel(viewModel.vehicleId != nil ? "Vehicle: \(fleetVM.vehicles.first(where: { $0.id == viewModel.vehicleId })?.registrationNumber ?? "")" : "Select Vehicle")
+        .accessibilityHint("Double tap to choose a vehicle")
+        .accessibilityIdentifier("plan_trip_vehicle_selector")
     }
     
     // Filter vehicles based on availability and same-day trip conflicts
@@ -534,6 +552,9 @@ struct PlanTripView: View {
             )
         }
         .disabled(!viewModel.isFormValid)
+        .accessibilityLabel("Plan Trip")
+        .accessibilityHint(viewModel.isFormValid ? "Double tap to schedule this trip" : "Please complete the location and vehicle selection")
+        .accessibilityIdentifier("plan_trip_submit_button")
         .padding(.top, 8)
     }
 }

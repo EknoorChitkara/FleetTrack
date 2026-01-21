@@ -46,6 +46,9 @@ struct StatisticCard: View {
         .padding(AppTheme.spacing.lg)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.large)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityIdentifier("maintenance_stat_card_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 

@@ -47,6 +47,9 @@ struct TripRow: View {
         .padding(.trailing) // Remove default padding from left/strip side
         .background(Color.appCardBackground)
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Trip from \(trip.startAddress ?? "Start") to \(trip.endAddress ?? "End"). Purpose: \(trip.purpose ?? "Trip"). Distance: \(trip.formattedDistance).")
+        .accessibilityIdentifier("fleet_trip_row_\(trip.id.uuidString.prefix(8))")
     }
     
     private func statusColor(_ status: String) -> Color {
@@ -89,6 +92,9 @@ struct ActivityRow: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(activity.title): \(activity.description). Time: \(activity.timestamp.formatted(date: .omitted, time: .shortened))")
+        .accessibilityIdentifier("fleet_activity_row")
     }
 }
 
@@ -159,6 +165,12 @@ struct VehicleCard: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Vehicle \(vehicle.registrationNumber), \(vehicle.model). Status: \(vehicle.status.rawValue). Assigned to: \(vehicle.assignedDriverName ?? "Unassigned").")
+        .accessibilityAction(named: "Delete Vehicle") {
+            fleetVM.deleteVehicle(byId: vehicle.id)
+        }
+        .accessibilityIdentifier("fleet_vehicle_card_\(vehicle.registrationNumber)")
     }
     
     private func statusColor(_ status: VehicleStatus) -> Color {
@@ -223,5 +235,11 @@ struct DriverCard: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Driver \(driver.displayName). Status: \(driver.status?.rawValue ?? "Unknown"). Phone: \(driver.phoneNumber ?? "None").")
+        .accessibilityAction(named: "Delete Driver") {
+            onDelete?()
+        }
+        .accessibilityIdentifier("fleet_driver_card_\(driver.id.uuidString.prefix(8))")
     }
 }

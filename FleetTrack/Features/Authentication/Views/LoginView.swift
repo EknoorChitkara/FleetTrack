@@ -6,6 +6,7 @@
 //
 
 import Supabase
+import UIKit
 import SwiftUI
 
 struct LoginView: View {
@@ -33,6 +34,7 @@ struct LoginView: View {
                     .font(.system(size: 80))
                     .foregroundColor(.appEmerald)
                     .shadow(color: .appEmerald.opacity(0.3), radius: 10)
+                    .accessibilityLabel("FleetTrack Logo")
 
                 VStack(spacing: 8) {
                     Text("FleetTrack")
@@ -58,6 +60,8 @@ struct LoginView: View {
                         )
                         .textContentType(.emailAddress)
                         .autocorrectionDisabled()
+                        .accessibilityLabel("Email Address")
+                        .accessibilityIdentifier("login_email_field")
                         .textInputAutocapitalization(.never)
                         .onChange(of: email) { newValue in
                             if newValue.count > 50 {
@@ -68,8 +72,12 @@ struct LoginView: View {
                     HStack {
                         if isPasswordVisible {
                             TextField("Password", text: $password)
+                                .accessibilityLabel("Password")
+                                .accessibilityIdentifier("login_password_field")
                         } else {
                             SecureField("Password", text: $password)
+                                .accessibilityLabel("Password")
+                                .accessibilityIdentifier("login_password_field")
                         }
 
                         Button(action: {
@@ -78,6 +86,9 @@ struct LoginView: View {
                             Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
                                 .foregroundColor(.appSecondaryText)
                         }
+                        .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+                        .accessibilityRemoveTraits(.isButton)
+                        .accessibilityAddTraits(.isButton)
                     }
                     .padding()
                     .background(Color.appCardBackground)
@@ -115,6 +126,7 @@ struct LoginView: View {
                     .cornerRadius(12)
                     .shadow(color: isFormValid ? .appEmerald.opacity(0.4) : Color.clear, radius: 8, x: 0, y: 4)
                 }
+                .accessibilityHint(isFormValid ? "Double tap to sign in" : "Enter email and password to enable sign in")
                 .padding(.horizontal)
                 .disabled(isLoading || !isFormValid)
 
@@ -145,26 +157,22 @@ struct LoginView: View {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             message = "❌ Please enter email and password"
+            UIAccessibility.post(notification: .announcement, argument: "Error: Please enter email and password")
             return
         }
 
         isLoading = true
         message = ""
 
-        // Check Network Connectivity using OfflineSyncManager
-        if !OfflineSyncManager.shared.isOnline {
-            isLoading = false
-            message = "⚠️ No Internet Connection. Please check your network."
-            return
-        }
-
         do {
             // Step 1: Verify Password using an isolated "Ghost Client"
+            // We do this to avoid triggering the global SessionManager
+            // until the 2FA (Step 2) is actually completed.
             let ghostClient = SupabaseClient(
                 supabaseURL: URL(string: SupabaseConfig.supabaseURL)!,
                 supabaseKey: SupabaseConfig.supabaseAnonKey,
                 options: SupabaseClientOptions(
-                    auth: .init(storage: NoOpStorage())
+                    auth: .init(storage: isolatedStorage)
                 )
             )
             
@@ -172,6 +180,7 @@ struct LoginView: View {
             print("✅ Step 1: Password Verified (via Ghost Client)")
 
             // Step 2: Trigger Code Send on the MAIN client
+            // signInWithOTP does NOT create a session, so it won't trigger RootView
             try await supabase.auth.signInWithOTP(email: trimmedEmail)
             print("✅ Step 2: Code Sent to \(trimmedEmail)")
 
@@ -183,26 +192,20 @@ struct LoginView: View {
         } catch {
             await MainActor.run {
                 print("❌ Login error: \(error)")
-                
-                // FE Distinguished Validation
-                if !ValidationHelpers.isValidEmail(trimmedEmail) {
-                    message = "❌ Invalid email format"
-                    isLoading = false
-                } else if trimmedEmail.first?.isNumber == true {
-                    message = "❌ Email cannot start with a number"
-                    isLoading = false
-                } else {
-                    // Try to check if user exists to distinguish error
-                    Task {
-                        let userExists = await checkUserExists(email: trimmedEmail)
-                        await MainActor.run {
-                            if !userExists {
-                                message = "❌ Email & Password are incorrect (User not found)"
-                            } else {
-                                message = "❌ Password incorrect"
-                            }
-                            isLoading = false
+                Task {
+                    let userExists = await checkUserExists(email: trimmedEmail)
+                    let isFormatValid = ValidationHelpers.isValidEmail(trimmedEmail)
+                    
+                    await MainActor.run {
+                        if !isFormatValid {
+                            message = "❌ incorrect email"
+                        } else if !userExists {
+                            message = "❌ both password and email are incorrect"
+                        } else {
+                            message = "❌ password incorrect"
                         }
+                        UIAccessibility.post(notification: .announcement, argument: message)
+                        isLoading = false
                     }
                 }
             }
@@ -224,8 +227,13 @@ struct LoginView: View {
         }
     }
     
-    // Help to keep Ghost Client session isolated
+    // Helper to keep Ghost Client session isolated
     private var isolatedStorage: AuthLocalStorage {
+        class NoOpStorage: AuthLocalStorage {
+            func store(key: String, value: Data) throws {}
+            func retrieve(key: String) throws -> Data? { return nil }
+            func remove(key: String) throws {}
+        }
         return NoOpStorage()
     }
 
@@ -251,11 +259,4 @@ struct LoginView: View {
         }
         isLoading = false
     }
-}
-
-// MARK: - Helper Storage
-private class NoOpStorage: @unchecked Sendable, AuthLocalStorage {
-    func store(key: String, value: Data) throws {}
-    func retrieve(key: String) throws -> Data? { return nil }
-    func remove(key: String) throws {}
 }

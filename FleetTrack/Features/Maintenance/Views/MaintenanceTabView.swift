@@ -135,6 +135,10 @@ struct MaintenanceTabBarItem: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title) tab")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : [.isButton])
+        .accessibilityIdentifier("maintenance_tab_\(title.lowercased())")
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }

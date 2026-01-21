@@ -33,6 +33,8 @@ struct FleetManagerProfileView: View {
                                     .font(.system(size: 30))
                                     .foregroundColor(.gray)
                             }
+                            .accessibilityLabel("Close")
+                            .accessibilityIdentifier("profile_close_button")
                         }
                         .padding(.horizontal)
                         .padding(.top, 20)
@@ -71,7 +73,13 @@ struct FleetManagerProfileView: View {
                                     .background(Color.appEmerald)
                                     .cornerRadius(20)
                             }
+                            .accessibilityLabel("Edit Profile")
+                            .accessibilityHint("Double tap to edit your profile information")
+                            .accessibilityIdentifier("profile_edit_button")
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("User \(user.name), Email \(user.email)")
+                        .accessibilityIdentifier("user_info_section")
                         
                         // Settings Sections
                         VStack(spacing: 24) {
@@ -134,6 +142,9 @@ struct FleetManagerProfileView: View {
                             .cornerRadius(12)
                         }
                         .disabled(isLoggingOut)
+                        .accessibilityLabel("Logout")
+                        .accessibilityHint("Double tap to log out of your account")
+                        .accessibilityIdentifier("profile_logout_button")
                         .padding(.horizontal)
                         .padding(.bottom, 40)
                     }
@@ -162,6 +173,7 @@ struct ProfileSection<Content: View>: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.appSecondaryText)
                 .padding(.leading, 8)
+                .accessibilityAddTraits(.isHeader)
             
             VStack(spacing: 0) {
                 content
@@ -204,5 +216,9 @@ struct SettingRow: View {
                 .foregroundColor(.gray)
         }
         .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityHint("Go to \(title)")
+        .accessibilityIdentifier("setting_row_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }

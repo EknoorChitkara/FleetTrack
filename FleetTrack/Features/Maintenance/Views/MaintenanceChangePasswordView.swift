@@ -29,12 +29,15 @@ struct MaintenanceChangePasswordView: View {
                             .clipShape(Circle())
                             .foregroundColor(AppTheme.textPrimary)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("maintenance_password_back_button")
                     
                     Spacer()
                     
                     Text("Change Password")
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
                     
@@ -66,6 +69,8 @@ struct MaintenanceChangePasswordView: View {
                         .cornerRadius(12)
                 }
                 .padding(.horizontal)
+                .accessibilityLabel("Change Password")
+                .accessibilityIdentifier("maintenance_password_save_button")
                 
                 Spacer()
             }
@@ -89,6 +94,8 @@ struct MaintenanceAuthTextField: View {
                 .background(AppTheme.backgroundSecondary)
                 .cornerRadius(8)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityLabel(title)
+                .accessibilityIdentifier("maintenance_password_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))_input")
         }
     }
 }

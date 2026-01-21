@@ -63,6 +63,9 @@ struct AllTripsView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Trips, total \(fleetVM.trips.count)")
+                .accessibilityIdentifier("all_trips_header")
                 
                 // Segment Control
                 HStack(spacing: 12) {
@@ -75,6 +78,9 @@ struct AllTripsView: View {
                     }
                 }
                 .padding(.horizontal)
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Trip filter")
+                .accessibilityIdentifier("all_trips_filter_segments")
                 
                 // Content
                 if displayedTrips.isEmpty {
@@ -101,6 +107,7 @@ struct AllTripsView: View {
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 100) // Space for tab bar
+                        .accessibilityIdentifier("all_trips_list")
                     }
                 }
             }
@@ -123,5 +130,9 @@ struct TripSegmentButton: View {
                 .foregroundColor(isSelected ? .black : .white)
                 .cornerRadius(8)
         }
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityHint(isSelected ? "Currently showing these trips" : "Double tap to show these trips")
+        .accessibilityIdentifier("trip_segment_\(title.lowercased().prefix(4))")
     }
 }

@@ -24,9 +24,10 @@ struct FleetManagerHelpSupportView: View {
                             .font(.system(size: 20))
                             .padding(10)
                             .background(Color(white: 0.2))
-                            .clipShape(Circle())
                             .foregroundColor(.white)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("help_support_back_button")
                     
                     Spacer()
                     

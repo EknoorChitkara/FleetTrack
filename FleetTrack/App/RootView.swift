@@ -85,6 +85,8 @@ struct RootView: View {
                     .tint(.appEmerald)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Loading FleetTrack configuration")
     }
 
     private var logoutButton: some ToolbarContent {

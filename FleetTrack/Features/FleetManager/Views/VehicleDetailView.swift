@@ -39,6 +39,8 @@ struct VehicleDetailView: View {
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("vehicle_detail_back_button")
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text(currentVehicle.registrationNumber)
@@ -57,6 +59,9 @@ struct VehicleDetailView: View {
                         .foregroundColor(.gray)
                     }
                     .padding(.leading, 8)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Vehicle \(currentVehicle.registrationNumber), \(currentVehicle.model), Status \(currentVehicle.status.rawValue)")
+                    .accessibilityIdentifier("vehicle_header_info")
                     
                     Spacer()
                 }
@@ -120,6 +125,9 @@ struct VehicleDetailView: View {
                                     .cornerRadius(16)
                                 }
                                 .disabled(fleetVM.unassignedDrivers.isEmpty && currentVehicle.assignedDriverId == nil)
+                                .accessibilityLabel("Assign Driver")
+                                .accessibilityHint("Double tap to assign or unassign a driver to this vehicle")
+                                .accessibilityIdentifier("vehicle_assign_button")
                                 
                                 QuickActionBtn(title: "Service", icon: "wrench.and.screwdriver.fill", color: .orange) {
                                     selectedServices = Set(vehicle.maintenanceServices ?? [])
@@ -154,6 +162,9 @@ struct VehicleDetailView: View {
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Vehicle Information")
+                            .accessibilityIdentifier("vehicle_info_section")
                             
                             Text("Current Status")
                                 .font(.headline)
@@ -198,6 +209,9 @@ struct VehicleDetailView: View {
                             .padding()
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Current Status")
+                            .accessibilityIdentifier("vehicle_status_section")
                         }
                     }
                     .padding()
@@ -278,6 +292,9 @@ struct QuickActionBtn: View {
             .background(Color.white.opacity(0.05))
             .cornerRadius(16)
         }
+        .accessibilityLabel(title)
+        .accessibilityHint("Double tap to perform \(title) action")
+        .accessibilityIdentifier("quick_action_\(title.lowercased())")
     }
 }
 
@@ -302,6 +319,9 @@ struct InfoRow: View {
                 .foregroundColor(.white)
         }
         .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityIdentifier("info_row_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 
@@ -327,6 +347,8 @@ struct ServiceSelectionView: View {
                         presentationMode.wrappedValue.dismiss()
                     }
                     .foregroundColor(.gray)
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("service_selection_cancel_button")
                     
                     Spacer()
                     
@@ -349,6 +371,8 @@ struct ServiceSelectionView: View {
                         .foregroundColor(selectedServices.isEmpty ? .gray : .appEmerald)
                         .fontWeight(.bold)
                         .disabled(selectedServices.isEmpty)
+                        .accessibilityLabel("Save")
+                        .accessibilityIdentifier("service_selection_save_button")
                     }
                 }
                 .padding()
@@ -415,6 +439,10 @@ struct ServiceSelectionView: View {
                                             .stroke(selectedServices.contains(service) ? Color.appEmerald.opacity(0.3) : Color.white.opacity(0.05), lineWidth: 1)
                                     )
                                 }
+                                .accessibilityLabel(service)
+                                .accessibilityAddTraits(selectedServices.contains(service) ? [.isSelected] : [])
+                                .accessibilityIdentifier("service_option_\(service.lowercased().replacingOccurrences(of: " ", with: "_"))")
+                            }
                             }
                         }
                         .padding(.horizontal)
@@ -425,4 +453,4 @@ struct ServiceSelectionView: View {
             }
         }
     }
-}
+

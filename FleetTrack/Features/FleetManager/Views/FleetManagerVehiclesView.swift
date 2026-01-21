@@ -47,6 +47,9 @@ struct FleetManagerVehiclesView: View {
                             .font(.system(size: 30))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Add Vehicle")
+                    .accessibilityHint("Double tap to add a new vehicle to the fleet")
+                    .accessibilityIdentifier("fleet_vehicles_add_button")
                 }
                 .padding(.horizontal)
                 .padding(.top, 20) // Reduced top padding
@@ -83,11 +86,14 @@ struct FleetManagerVehiclesView: View {
                         }
                     ))
                         .foregroundColor(.white)
+                        .accessibilityIdentifier("fleet_vehicles_search")
                 }
                 .padding()
                 .background(Color.appCardBackground)
                 .cornerRadius(12)
                 .padding(.horizontal)
+                .accessibilityLabel("Search vehicles")
+                .accessibilityIdentifier("fleet_vehicles_search_bar")
                 
                 // Filter Pills
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -124,6 +130,7 @@ struct FleetManagerVehiclesView: View {
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 100)
+                        .accessibilityIdentifier("fleet_vehicles_list")
                     }
                 }
             }
@@ -155,5 +162,8 @@ struct FilterPill: View {
             .foregroundColor(isSelected ? .black : .gray)
             .cornerRadius(20)
         }
+        .accessibilityLabel("\(title) filter, \(count) items")
+        .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : [.isButton])
+        .accessibilityIdentifier("fleet_vehicles_filter_\(title.lowercased())")
     }
 }
