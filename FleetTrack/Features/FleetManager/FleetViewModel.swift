@@ -56,9 +56,10 @@ class FleetViewModel: ObservableObject {
             fuelType: data.fuelType,
             capacity: data.capacity,
             registrationDate: data.registrationDate,
-            status: data.status,
+            status: .active, // Defaulting to active as requested to remove from form
             assignedDriverId: data.assignedDriverId,
-            assignedDriverName: getDriverName(for: data.assignedDriverId)
+            assignedDriverName: getDriverName(for: data.assignedDriverId),
+            tankCapacity: Double(data.tankCapacity)
         )
         
         vehicles.append(newVehicle)

@@ -12,6 +12,7 @@ struct PlanTripView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var fleetVM: FleetViewModel
     @StateObject private var viewModel = PlanTripViewModel()
+    @State private var showSuccessAlert = false
     
     @State private var bottomSheetHeight: CGFloat = 180
     @State private var dragOffset: CGFloat = 0
@@ -116,6 +117,13 @@ struct PlanTripView: View {
             // Refresh data to ensure we have the latest trip statuses from the database
             await fleetVM.loadData()
         }
+        .alert("Success", isPresented: $showSuccessAlert) {
+            Button("OK", role: .cancel) {
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Trip created successfully! The driver has been notified.")
+        }
     }
     
     // MARK: - Floating Header
@@ -160,87 +168,135 @@ struct PlanTripView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 4)
             
-            // Pickup Address
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(Color.green)
-                    .frame(width: 12, height: 12)
-                
-                TextField("Pickup Location", text: $viewModel.startAddress)
-                    .font(.system(size: 15))
-                    .foregroundColor(.white)
-                    .padding(.vertical, 14)
-                
-                Spacer()
-                
-                if viewModel.isGeocodingStart {
-                    ProgressView()
-                        .tint(.appEmerald)
-                } else {
-                    // Search button
-                    Button(action: { showingStartSearch = true }) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16))
-                            .foregroundColor(.appEmerald)
-                    }
-                    .accessibilityLabel("Search Pickup Location")
-                    .accessibilityIdentifier("pickup_search_button")
+            // Pickup Address with Suggestions
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 12, height: 12)
                     
-                    // Pin button
-                    Button(action: { showingStartPinSelection = true }) {
-                        Image(systemName: "mappin")
-                            .font(.system(size: 16))
-                            .foregroundColor(.appEmerald)
+                    TextField("Pickup Location", text: $viewModel.startAddress)
+                        .font(.system(size: 15))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 14)
+                    
+                    Spacer()
+                    
+                    if viewModel.isGeocodingStart {
+                        ProgressView()
+                            .tint(.appEmerald)
+                    } else {
+                        // Pin button
+                        Button(action: { showingStartPinSelection = true }) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 16))
+                                .foregroundColor(.appEmerald)
+                        }
+                        .accessibilityLabel("Select Pickup on Map")
+                        .accessibilityIdentifier("pickup_pin_button")
                     }
-                    .accessibilityLabel("Select Pickup on Map")
-                    .accessibilityIdentifier("pickup_pin_button")
+                }
+                .padding(.horizontal, 16)
+                .background(Color.black.opacity(0.3))
+                .background(.ultraThinMaterial)
+                .cornerRadius(12)
+                
+                // Suggestions Dropdown
+                if viewModel.showPickupSuggestions {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(viewModel.pickupSuggestions, id: \.self) { suggestion in
+                            Button(action: {
+                                withAnimation {
+                                    viewModel.selectPickupSuggestion(suggestion)
+                                }
+                            }) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(suggestion.title)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                    Text(suggestion.subtitle)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 12)
+                                .background(Color.white.opacity(0.05))
+                            }
+                            Divider().background(Color.gray.opacity(0.2))
+                        }
+                    }
+                    .background(Color.appCardBackground)
+                    .cornerRadius(12)
+                    .padding(.top, 4)
+                    .padding(.horizontal, 4)
                 }
             }
-            .padding(.horizontal, 16)
-            .background(Color.black.opacity(0.3))
-            .background(.ultraThinMaterial)
-            .cornerRadius(12)
             
-            // Dropoff Address
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(Color(hex: "F9D854"))
-                    .frame(width: 12, height: 12)
-                
-                TextField("Dropoff Location", text: $viewModel.endAddress)
-                    .font(.system(size: 15))
-                    .foregroundColor(.white)
-                    .padding(.vertical, 14)
-                
-                Spacer()
-                
-                if viewModel.isGeocodingEnd {
-                    ProgressView()
-                        .tint(.appEmerald)
-                } else {
-                    // Search button
-                    Button(action: { showingEndSearch = true }) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 16))
-                            .foregroundColor(.appEmerald)
-                    }
-                    .accessibilityLabel("Search Dropoff Location")
-                    .accessibilityIdentifier("dropoff_search_button")
+            // Dropoff Address with Suggestions
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Circle()
+                        .fill(Color(hex: "F9D854"))
+                        .frame(width: 12, height: 12)
                     
-                    // Pin button
-                    Button(action: { showingEndPinSelection = true }) {
-                        Image(systemName: "mappin")
-                            .font(.system(size: 16))
-                            .foregroundColor(.appEmerald)
+                    TextField("Dropoff Location", text: $viewModel.endAddress)
+                        .font(.system(size: 15))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 14)
+                    
+                    Spacer()
+                    
+                    if viewModel.isGeocodingEnd {
+                        ProgressView()
+                            .tint(.appEmerald)
+                    } else {
+                        // Pin button
+                        Button(action: { showingEndPinSelection = true }) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 16))
+                                .foregroundColor(.appEmerald)
+                        }
+                        .accessibilityLabel("Select Dropoff on Map")
+                        .accessibilityIdentifier("dropoff_pin_button")
                     }
-                    .accessibilityLabel("Select Dropoff on Map")
-                    .accessibilityIdentifier("dropoff_pin_button")
+                }
+                .padding(.horizontal, 16)
+                .background(Color.black.opacity(0.3))
+                .background(.ultraThinMaterial)
+                .cornerRadius(12)
+                
+                // Suggestions Dropdown
+                if viewModel.showDropoffSuggestions {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(viewModel.dropoffSuggestions, id: \.self) { suggestion in
+                            Button(action: {
+                                withAnimation {
+                                    viewModel.selectDropoffSuggestion(suggestion)
+                                }
+                            }) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(suggestion.title)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                    Text(suggestion.subtitle)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 12)
+                                .background(Color.white.opacity(0.05))
+                            }
+                            Divider().background(Color.gray.opacity(0.2))
+                        }
+                    }
+                    .background(Color.appCardBackground)
+                    .cornerRadius(12)
+                    .padding(.top, 4)
+                    .padding(.horizontal, 4)
                 }
             }
-            .padding(.horizontal, 16)
-            .background(Color.black.opacity(0.3))
-            .background(.ultraThinMaterial)
-            .cornerRadius(12)
         }
         .padding(16)
         .background(Color.appCardBackground.opacity(0.95))
@@ -265,10 +321,11 @@ struct PlanTripView: View {
                     // Date and Status
                     HStack {
                         HStack(spacing: 8) {
-                            Image(systemName: "calendar")
+                            Image(systemName: "clock")
                                 .foregroundColor(.appSecondaryText)
                             
-                            DatePicker("", selection: $viewModel.startTime, in: viewModel.tripDateRange, displayedComponents: [.date])
+                            // Updated to date and time
+                            DatePicker("", selection: $viewModel.startTime, in: viewModel.tripDateRange, displayedComponents: [.date, .hourAndMinute])
                                 .labelsHidden()
                                 .colorScheme(.dark)
                                 .accentColor(.appEmerald)
@@ -277,19 +334,6 @@ struct PlanTripView: View {
                         .accessibilityIdentifier("plan_trip_date_picker")
                         
                         Spacer()
-                        
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                                .font(.system(size: 12))
-                            Text("Available")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.green)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.green.opacity(0.1))
-                        .cornerRadius(8)
                     }
                     .padding()
                     .background(Color.black.opacity(0.2))
@@ -478,11 +522,30 @@ struct PlanTripView: View {
         .accessibilityIdentifier("plan_trip_vehicle_selector")
     }
     
-    // Filter vehicles based on availability and proximity to pickup
+    // Filter vehicles based on availability and same-day trip conflicts
     private var availableVehicles: [FMVehicle] {
+        let calendar = Calendar.current
+        let plannedTripDate = calendar.startOfDay(for: viewModel.startTime)
+        
         let busyVehicleIds = Set(fleetVM.trips
-            .filter { $0.status == "In Progress" || $0.status == "Scheduled" }
-            .map { $0.vehicleId })
+            .filter { trip in
+                // Only consider trips that could conflict with planned trip
+                guard let tripStartTime = trip.startTime else { return false }
+                
+                let tripDate = calendar.startOfDay(for: tripStartTime)
+                
+                // If not on the same day, no conflict
+                if tripDate != plannedTripDate {
+                    return false
+                }
+                
+                // Same day trips with these statuses create conflicts
+                // "In Progress" - vehicle is currently being used
+                // "Scheduled" - vehicle is reserved for that day
+                return trip.status == "In Progress" || trip.status == "Scheduled"
+            }
+            .map { $0.vehicleId }
+        )
         
         return fleetVM.vehicles.filter { vehicle in
             // Only show active vehicles that have an assigned driver AND are not currently busy
@@ -496,7 +559,8 @@ struct PlanTripView: View {
         Button(action: {
             viewModel.createTrip(fleetVM: fleetVM) { success in
                 if success {
-                    presentationMode.wrappedValue.dismiss()
+                    // Show success alert instead of immediate dismiss
+                    showSuccessAlert = true
                 }
             }
         }) {

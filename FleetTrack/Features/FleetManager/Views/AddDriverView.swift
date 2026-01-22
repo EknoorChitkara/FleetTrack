@@ -128,8 +128,18 @@ struct AddDriverView: View {
             VStack(spacing: 16) {
                 ModernTextField(icon: "person.fill", placeholder: "Full Name", text: $formData.fullName, isRequired: true)
                     .onChange(of: formData.fullName) { newValue in
-                        if newValue.count > 50 {
-                            formData.fullName = String(newValue.prefix(50))
+                        var text = newValue
+                        // Remove all leading numbers
+                        while let first = text.first, first.isNumber {
+                            text = String(text.dropFirst())
+                        }
+                        // Limit to 50 characters
+                        if text.count > 50 {
+                            text = String(text.prefix(50))
+                        }
+                        // Update state if changed
+                        if text != newValue {
+                            formData.fullName = text
                         }
                     }
                 
