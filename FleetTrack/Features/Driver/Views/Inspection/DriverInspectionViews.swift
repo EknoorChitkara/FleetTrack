@@ -110,6 +110,9 @@ struct InspectionTabBar: View {
                         )
                         .cornerRadius(12)
                 }
+                .accessibilityLabel("\(tab.rawValue) tab")
+                .accessibilityAddTraits(selectedTab == tab ? [.isSelected] : [])
+                .accessibilityIdentifier("inspection_tab_\(tab.rawValue.lowercased())")
             }
         }
         .background(Color.appCardBackground)
@@ -192,6 +195,37 @@ struct InspectionSummaryView: View {
                 }
             }
             
+            // Future Scope: Tyre Cost Calculation
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Future Scope: Tyre Cost")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Spacer()
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.appEmerald)
+                }
+                
+                Text("Upcoming AI-powered tyre wear analysis and cost estimation based on driving patterns.")
+                    .font(.subheadline)
+                    .foregroundColor(.appSecondaryText)
+                
+                HStack {
+                    Image(systemName: "leaf.fill")
+                        .foregroundColor(.green)
+                    Text("Eco-Drive Analysis Incoming")
+                        .font(.caption)
+                        .foregroundColor(.appEmerald)
+                }
+            }
+            .padding(20)
+            .background(Color.appCardBackground)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.appEmerald.opacity(0.3), lineWidth: 1)
+            )
+            
             // Quick Actions
             VStack(alignment: .leading, spacing: 16) {
                 Text("Quick Actions")
@@ -211,6 +245,7 @@ struct InspectionSummaryView: View {
                         .background(Color.appEmerald)
                         .cornerRadius(12)
                 }
+                .accessibilityIdentifier("inspection_start_button")
                 
                 Button {
                     isShowingReportIssue = true
@@ -223,6 +258,7 @@ struct InspectionSummaryView: View {
                         .background(Color.red)
                         .cornerRadius(12)
                 }
+                .accessibilityIdentifier("inspection_report_issue_button")
             }
             .padding()
             .background(Color.appCardBackground)
@@ -317,6 +353,7 @@ struct InspectionChecklistView: View {
                 .background(Color.red.opacity((allItemsChecked || viewModel.isSubmitted) ? 0.3 : 1.0))
                 .cornerRadius(12)
                 .disabled(allItemsChecked || viewModel.isSubmitted)
+                .accessibilityIdentifier("inspection_checklist_report_button")
             }
         }
     }

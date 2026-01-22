@@ -49,6 +49,9 @@ struct OfflineAwareTripMap<Provider: TripLocationProvider>: View {
                 .background(Color.orange)
                 .cornerRadius(16)
                 .padding(.top, 8)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Offline Mode\(isUsingCachedRoute ? ", Using Cached Route" : "")")
+                .accessibilityIdentifier("map_offline_indicator")
             }
         }
         .onAppear {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct AddVehicleView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -24,7 +25,6 @@ struct AddVehicleView: View {
     // Mock data for dropdowns
     let vehicleTypes: [VehicleType] = [.truck, .van, .car, .other]
     let fuelTypes = FuelType.allCases
-    let statuses = VehicleStatus.allCases
     
     var body: some View {
         ZStack {
@@ -40,6 +40,8 @@ struct AddVehicleView: View {
                             .font(.system(size: 24))
                             .foregroundColor(.gray)
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("add_vehicle_cancel_button")
                     Spacer()
                     Text("Add Vehicle")
                         .font(.headline)
@@ -49,6 +51,7 @@ struct AddVehicleView: View {
                         if fleetVM.isVehicleRegistered(formData.registrationNumber) {
                             withAnimation(.spring()) {
                                 showDuplicateAlert = true
+                                UIAccessibility.post(notification: .announcement, argument: "Error: Vehicle with this registration already exists")
                             }
                             // Auto-hide alert after 3 seconds
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -65,6 +68,9 @@ struct AddVehicleView: View {
                             .foregroundColor(!isFormValid ? .gray : .appEmerald)
                     }
                     .disabled(!isFormValid)
+                    .accessibilityLabel("Save")
+                    .accessibilityHint(isFormValid ? "Double tap to save vehicle" : "Form incomplete")
+                    .accessibilityIdentifier("add_vehicle_save_button")
                     .alert("Confirm Save", isPresented: $showSaveConfirmation) {
                         Button("Cancel", role: .cancel) { }
                         Button("Save") {
@@ -87,48 +93,39 @@ struct AddVehicleView: View {
                         
                         VStack(spacing: 16) {
                             VStack(spacing: 8) {
-                                ModernTextField(icon: "number.square.fill", placeholder: "Registration No. (e.g., XX-00-XX0000)", text: $formData.registrationNumber, isRequired: true, autocapitalization: .allCharacters)
+                                ModernTextField(icon: "number.square.fill", placeholder: "Registration No. (e.g., XX-00-XX-0000)", text: $formData.registrationNumber, isRequired: true, autocapitalization: .allCharacters)
                                     .focused($focusedField, equals: .registration)
+                                    .accessibilityHint("Format: State Code, District Code, Alphabetical Series, and Number. Example: MH-14-AB-1234")
                                     .onChange(of: formData.registrationNumber) { newValue in
                                         let filtered = newValue.uppercased().filter { $0.isLetter || $0.isNumber }
-                                        var result = ""
+                                        var clean = ""
                                         
+                                        // Strictly restrict the structure as they type
                                         for (index, char) in filtered.enumerated() {
-                                            // 1. First two must be letters (XX)
-                                            if index < 2 {
-                                                if char.isLetter { result.append(char) }
-                                            }
-                                            // 2. Next two must be numbers (00)
-                                            else if index < 4 {
-                                                if index == 2 { result.append("-") }
-                                                if char.isNumber { result.append(char) }
-                                            }
-                                            // 3. Next 1 or 2 must be letters (XX)
-                                            else if index < 6 {
-                                                if index == 4 { result.append("-") }
-                                                if char.isLetter { result.append(char) }
-                                            }
-                                            // 4. Remaining must be numbers (0000)
-                                            else if index < 10 {
-                                                // If index 5 was a letter, we might have 1 or 2 letters in this section
-                                                // The regex format usually expects XX-00-A1234 or XX-00-AA1234
-                                                // So we check if we already have the second letter or start numbers
-                                                if char.isNumber || (char.isLetter && result.last?.isLetter == true && result.filter({$0 == "-"}).count == 2 && result.components(separatedBy: "-").last?.count ?? 0 < 2) {
-                                                    result.append(char)
-                                                }
+                                            if index < 2 { // First two must be letters
+                                                if char.isLetter { clean.append(char) }
+                                            } else if index < 4 { // Next two must be numbers
+                                                if char.isNumber { clean.append(char) }
+                                            } else if index < 6 { // Next two must be letters
+                                                if char.isLetter { clean.append(char) }
+                                            } else if index < 10 { // Next four must be numbers
+                                                if char.isNumber { clean.append(char) }
                                             }
                                         }
                                         
-                                        // Cap at 12 characters (XX-00-XX0000)
-                                        if result.count > 12 {
-                                            result = String(result.prefix(12))
+                                        var formatted = ""
+                                        for (index, char) in clean.enumerated() {
+                                            if index == 2 || index == 4 || index == 6 {
+                                                formatted.append("-")
+                                            }
+                                            formatted.append(char)
                                         }
                                         
-                                        formData.registrationNumber = result
+                                        formData.registrationNumber = formatted
                                     }
                                 
                                 if showRegistrationError && !isValidRegistration {
-                                    Text("Invalid format. Expected: XX-00-XX0000")
+                                    Text("Invalid format. Expected: XX-00-XX-0000")
                                         .font(.caption)
                                         .foregroundColor(.red)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -149,6 +146,11 @@ struct AddVehicleView: View {
                                     .frame(maxWidth: .infinity)
                                     .focused($focusedField, equals: .manufacturer)
                                     .onTapGesture { validateRegistrationOnInteraction() }
+                                    .onChange(of: formData.manufacturer) { newValue in
+                                        if let first = newValue.first, !first.isLetter {
+                                            formData.manufacturer = String(newValue.dropFirst())
+                                        }
+                                    }
                             }
                             
                             HStack(spacing: 16) {
@@ -156,26 +158,33 @@ struct AddVehicleView: View {
                                     .frame(maxWidth: .infinity)
                                     .focused($focusedField, equals: .model)
                                     .onTapGesture { validateRegistrationOnInteraction() }
+                                    .onChange(of: formData.model) { newValue in
+                                        if let first = newValue.first, !first.isLetter {
+                                            formData.model = String(newValue.dropFirst())
+                                        }
+                                    }
                                 ModernPicker(icon: "fuelpump.fill", title: "Fuel", selection: $formData.fuelType, options: fuelTypes)
                                     .frame(maxWidth: .infinity)
                                     .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
                                     .onChange(of: formData.fuelType) { _ in validateRegistrationOnInteraction() }
                             }
                             
-                            HStack(spacing: 16) {
-                                ModernTextField(icon: "scalemass.fill", placeholder: "Capacity", text: $formData.capacity, isRequired: true)
-                                    .frame(maxWidth: .infinity)
-                                    .focused($focusedField, equals: .capacity)
-                                    .onTapGesture { validateRegistrationOnInteraction() }
-                                ModernDatePicker(icon: "calendar", title: "Reg Date", selection: $formData.registrationDate, throughDate: Date())
-                                    .frame(maxWidth: .infinity)
-                                    .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
-                                    .onChange(of: formData.registrationDate) { _ in validateRegistrationOnInteraction() }
-                            }
-                            
-                            ModernPicker(icon: "checkmark.circle.fill", title: "Status", selection: $formData.status, options: statuses)
+                            ModernDatePicker(icon: "calendar", title: "Registration Date", selection: $formData.registrationDate, throughDate: Date())
                                 .simultaneousGesture(TapGesture().onEnded { validateRegistrationOnInteraction() })
-                                .onChange(of: formData.status) { _ in validateRegistrationOnInteraction() }
+                                .onChange(of: formData.registrationDate) { _ in validateRegistrationOnInteraction() }
+                            
+                            ModernTextField(icon: "scalemass.fill", placeholder: "Capacity", text: $formData.capacity, isRequired: true)
+                                .focused($focusedField, equals: .capacity)
+                                .onTapGesture { validateRegistrationOnInteraction() }
+                                .onChange(of: formData.capacity) { newValue in
+                                    formData.capacity = newValue.filter { $0.isNumber }
+                                }
+                                
+                            ModernTextField(icon: "fuelpump.fill", placeholder: "Fuel Capacity (Liters)", text: $formData.tankCapacity, isRequired: true)
+                                .onTapGesture { validateRegistrationOnInteraction() }
+                                .onChange(of: formData.tankCapacity) { newValue in
+                                    formData.tankCapacity = newValue.filter { $0.isNumber }
+                                }
                         }
                         .padding(.horizontal)
                         
@@ -248,11 +257,12 @@ struct AddVehicleView: View {
         return isValidRegistration && 
                !formData.manufacturer.trimmingCharacters(in: .whitespaces).isEmpty &&
                !formData.model.trimmingCharacters(in: .whitespaces).isEmpty &&
-               !formData.capacity.trimmingCharacters(in: .whitespaces).isEmpty
+               !formData.capacity.trimmingCharacters(in: .whitespaces).isEmpty &&
+               !formData.tankCapacity.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     private var isValidRegistration: Bool {
-        let regEx = "^[A-Z]{2}-\\d{2}-[A-Z]{1,2}\\d{4}$"
+        let regEx = "^[A-Z]{2}-\\d{2}-[A-Z]{2}-\\d{4}$"
         let pred = NSPredicate(format:"SELF MATCHES %@", regEx)
         return pred.evaluate(with: formData.registrationNumber.uppercased())
     }

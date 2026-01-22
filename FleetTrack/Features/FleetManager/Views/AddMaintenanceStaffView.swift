@@ -67,6 +67,8 @@ struct AddMaintenanceStaffView: View {
                             .font(.system(size: 24))
                             .foregroundColor(.gray)
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("add_maintenance_cancel_button")
                     Spacer()
                     Text("Add Maintenance")
                         .font(.headline)
@@ -81,6 +83,9 @@ struct AddMaintenanceStaffView: View {
                             .foregroundColor(!isFormValid ? .gray : .appEmerald)
                     }
                     .disabled(!isFormValid)
+                    .accessibilityLabel("Save")
+                    .accessibilityHint(isFormValid ? "Double tap to save maintenance staff" : "Form incomplete")
+                    .accessibilityIdentifier("add_maintenance_save_button")
                     .alert(isPresented: $showSuccessAlert) {
                         Alert(
                             title: Text("Success"),
@@ -104,12 +109,33 @@ struct AddMaintenanceStaffView: View {
                         VStack(spacing: 16) {
                             ModernTextField(icon: "person.fill", placeholder: "Full Name", text: $formData.fullName, isRequired: true)
                                 .onChange(of: formData.fullName) { newValue in
-                                    if newValue.count > 50 {
-                                        formData.fullName = String(newValue.prefix(50))
+                                    var text = newValue
+                                    // Remove all leading numbers
+                                    while let first = text.first, first.isNumber {
+                                        text = String(text.dropFirst())
+                                    }
+                                    // Limit to 50 characters
+                                    if text.count > 50 {
+                                        text = String(text.prefix(50))
+                                    }
+                                    // Update state if changed
+                                    if text != newValue {
+                                        formData.fullName = text
                                     }
                                 }
                             
                             ModernTextField(icon: "star.fill", placeholder: "Specialization (e.g., Mechanic)", text: $formData.specialization, isRequired: true)
+                                .onChange(of: formData.specialization) { newValue in
+                                    var text = newValue
+                                    // Remove all leading numbers
+                                    while let first = text.first, first.isNumber {
+                                        text = String(text.dropFirst())
+                                    }
+                                    // Update state if changed
+                                    if text != newValue {
+                                        formData.specialization = text
+                                    }
+                                }
                             
                             // Phone Number with Validation
                             VStack(alignment: .leading, spacing: 4) {
@@ -145,6 +171,9 @@ struct AddMaintenanceStaffView: View {
                                         .background(Color.white.opacity(0.1))
                                         .cornerRadius(8)
                                     }
+                                    .accessibilityLabel("Country Code: \(selectedCountry.name) \(selectedCountry.code)")
+                                    .accessibilityHint("Double tap to change country")
+                                    .accessibilityIdentifier("add_maintenance_country_picker")
                                     
                                     ZStack(alignment: .leading) {
                                         if localPhoneNumber.isEmpty {
@@ -179,6 +208,10 @@ struct AddMaintenanceStaffView: View {
                                     RoundedRectangle(cornerRadius: 16)
                                         .stroke(Color.white.opacity(0.05), lineWidth: 1)
                                 )
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("Phone number. Country code \(selectedCountry.code). Current number \(localPhoneNumber). \(formData.phoneNumber.isEmpty ? "Required" : "")")
+                                .accessibilityHint("Double tap to edit phone number")
+                                .accessibilityIdentifier("add_maintenance_phone_field")
                                 
                                 if !localPhoneNumber.isEmpty && localPhoneNumber.count != selectedCountry.limit {
                                      Text("Phone must be in format \(selectedCountry.code) \(String(repeating: "X", count: selectedCountry.limit))")

@@ -28,16 +28,20 @@ struct TaskHistoryView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(AppTheme.textPrimary)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("maintenance_history_back_button")
                     
                     Text("Task History")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(AppTheme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
                 }
                 .padding()
                 .background(AppTheme.backgroundPrimary)
+                .accessibilityIdentifier("maintenance_history_header")
                 
                 // Task list
                 if isLoading {

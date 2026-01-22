@@ -25,12 +25,15 @@ struct MaintenanceAboutView: View {
                             .clipShape(Circle())
                             .foregroundColor(AppTheme.textPrimary)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("maintenance_about_back_button")
                     
                     Spacer()
                     
                     Text("About")
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
                     
@@ -60,6 +63,9 @@ struct MaintenanceAboutView: View {
                         .foregroundColor(AppTheme.textSecondary)
                         .padding(.top, 10)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Fleet Dashboard, Version 1.0.0. Copyright 2026 Fleet Dashboard Inc.")
+                .accessibilityIdentifier("maintenance_about_info")
                 
                 Spacer()
                 Spacer()

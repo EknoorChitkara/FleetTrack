@@ -25,12 +25,15 @@ struct MaintenanceHelpSupportView: View {
                             .clipShape(Circle())
                             .foregroundColor(AppTheme.textPrimary)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("maintenance_help_back_button")
                     
                     Spacer()
                     
                     Text("Help & Support")
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                     
                     Spacer()
                     

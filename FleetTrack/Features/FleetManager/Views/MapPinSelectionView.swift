@@ -30,7 +30,7 @@ struct MapPinSelectionView: View {
         self.searchType = searchType
         
         // Set pin color based on type
-        self.pinColor = searchType == .pickup ? .green : Color(hex: "F9D854")
+        self.pinColor = searchType == .pickup ? .green : Color(hexCode: "F9D854")
         
         // Initialize map region
         if let location = selectedLocation.wrappedValue {
@@ -59,6 +59,9 @@ struct MapPinSelectionView: View {
                     .foregroundColor(pinColor)
                     .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 3)
                     .offset(y: -25) // Offset to point at actual location
+                    .accessibilityLabel("Location Pin")
+                    .accessibilityHint("Drag the map to move the pin to your desired location")
+                    .accessibilityIdentifier("map_selection_pin")
                 
                 Spacer()
             }
@@ -80,6 +83,8 @@ struct MapPinSelectionView: View {
                             )
                     }
                     .padding()
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("map_selection_close_button")
                     
                     Spacer()
                 }
@@ -144,6 +149,9 @@ struct MapPinSelectionView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Current Selection: \(displayAddress)")
+            .accessibilityIdentifier("map_selection_info_section")
             
             // Confirm button
             Button(action: {
@@ -161,10 +169,13 @@ struct MapPinSelectionView: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isGeocodingLocation ? Color.gray.opacity(0.3) : Color(hex: "F9D854"))
+                        .fill(isGeocodingLocation ? Color.gray.opacity(0.3) : Color(hexCode: "F9D854"))
                 )
             }
             .disabled(isGeocodingLocation)
+            .accessibilityLabel("Confirm Location")
+            .accessibilityHint(isGeocodingLocation ? "Waiting for address" : "Double tap to select this location")
+            .accessibilityIdentifier("map_selection_confirm_button")
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 30)

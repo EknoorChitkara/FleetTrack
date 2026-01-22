@@ -68,6 +68,9 @@ struct FleetManagerAnalyticsView: View {
             .padding()
             .background(Color.appCardBackground)
             .cornerRadius(12)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Total Cost: \(formatCurrency(viewModel.totalFleetCost))")
+            .accessibilityIdentifier("kpi_total_cost")
             
             // Total Distance
             VStack(alignment: .leading, spacing: 8) {
@@ -83,6 +86,9 @@ struct FleetManagerAnalyticsView: View {
             .padding()
             .background(Color.appCardBackground)
             .cornerRadius(12)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Total Distance: \(Int(viewModel.totalDistance)) kilometers")
+            .accessibilityIdentifier("kpi_total_distance")
             
             // Efficiency
             VStack(alignment: .leading, spacing: 8) {
@@ -98,6 +104,9 @@ struct FleetManagerAnalyticsView: View {
             .padding()
             .background(Color.appCardBackground)
             .cornerRadius(12)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Efficiency: \(String(format: "%.1f", viewModel.fleetEfficiency)) kilometers per liter")
+            .accessibilityIdentifier("kpi_efficiency")
         }
     }
     
@@ -141,6 +150,9 @@ struct FleetManagerAnalyticsView: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Cost Trends chart for the last 6 months. Showing fuel and maintenance costs.")
+        .accessibilityIdentifier("analytics_cost_trends_chart")
     }
     
     private var distanceTrendChart: some View {
@@ -177,6 +189,9 @@ struct FleetManagerAnalyticsView: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Fleet Mileage chart showing distance trends.")
+        .accessibilityIdentifier("analytics_mileage_chart")
     }
     
     private var vehicleCostDistributionChart: some View {
@@ -204,6 +219,9 @@ struct FleetManagerAnalyticsView: View {
         .padding()
         .background(Color.appCardBackground)
         .cornerRadius(16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Cost by Vehicle Type chart.")
+        .accessibilityIdentifier("analytics_cost_distribution_chart")
     }
     
     // MARK: - Helpers

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MaintenanceEditProfileView: View {
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var authVM = AuthViewModel()
     let user: User
     
     // State for form fields
@@ -41,12 +42,15 @@ struct MaintenanceEditProfileView: View {
                                 .clipShape(Circle())
                                 .foregroundColor(AppTheme.textPrimary)
                         }
+                        .accessibilityLabel("Back")
+                        .accessibilityIdentifier("maintenance_edit_profile_back_button")
                         
                         Spacer()
                         
                         Text("Edit Profile")
                             .font(.headline)
                             .foregroundColor(AppTheme.textPrimary)
+                            .accessibilityAddTraits(.isHeader)
                         
                         Spacer()
                         
@@ -62,6 +66,7 @@ struct MaintenanceEditProfileView: View {
                         Text("Personal Information")
                             .font(.headline)
                             .foregroundColor(AppTheme.textSecondary)
+                            .accessibilityAddTraits(.isHeader)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Full Name")
@@ -72,6 +77,8 @@ struct MaintenanceEditProfileView: View {
                                 .background(AppTheme.backgroundSecondary)
                                 .cornerRadius(8)
                                 .foregroundColor(AppTheme.textPrimary)
+                                .accessibilityLabel("Full Name")
+                                .accessibilityIdentifier("maintenance_profile_name_input")
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
@@ -95,6 +102,8 @@ struct MaintenanceEditProfileView: View {
                                 .background(AppTheme.backgroundSecondary)
                                 .cornerRadius(8)
                                 .foregroundColor(AppTheme.textPrimary)
+                                .accessibilityLabel("Email")
+                                .accessibilityIdentifier("maintenance_profile_email_input")
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
@@ -114,22 +123,40 @@ struct MaintenanceEditProfileView: View {
                     
                     // Save Button
                     Button(action: {
-                        // Save Logic - would call a service normally
-                        presentationMode.wrappedValue.dismiss()
+                        Task {
+                            let success = await authVM.updateProfile(name: fullName, email: email, phone: phone)
+                            if success {
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                        }
                     }) {
-                        Text("Save Changes")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(AppTheme.accentPrimary)
-                            .cornerRadius(12)
+                        if authVM.isLoading {
+                            ProgressView().tint(.black)
+                        } else {
+                            Text("Save Changes")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.black)
+                        }
                     }
+                    .disabled(authVM.isLoading)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppTheme.accentPrimary)
+                    .cornerRadius(12)
                     .padding(.horizontal)
                     .padding(.bottom, 40)
+                    .accessibilityLabel("Save Changes")
+                    .accessibilityIdentifier("maintenance_profile_save_button")
                 }
             }
             .navigationBarHidden(true)
+            .alert("Error", isPresented: $authVM.showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                if let msg = authVM.errorMessage {
+                    Text(msg)
+                }
+            }
         }
     }
 }
