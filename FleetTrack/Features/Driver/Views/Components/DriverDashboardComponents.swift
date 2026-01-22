@@ -211,12 +211,6 @@ struct DriverCustomTabBar: View {
             DriverTabBarItem(icon: "bell.fill", title: "Alerts", isSelected: selectedTab == 2) {
                 selectedTab = 2
             }
-            
-            Spacer()
-            
-            DriverTabBarItem(icon: "person.fill", title: "User", isSelected: selectedTab == 3) {
-                selectedTab = 3
-            }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)

@@ -35,11 +35,18 @@ struct TripMapView: View {
     @State private var odometerErrorMessage = ""
     @State private var startOdometerReading: Double = 0.0
     @State private var showFuelError = false
+    @State private var showStartTripError = false
+    @State private var startTripErrorMessage = ""
     @State private var showDistAlert = false
+    @State private var routeLineColor: Color = .blue
     
-    // Log variables
-    @State private var logOdometer: String = ""
-    @State private var logFuel: Double = 50.0 // 0-100%
+    // Log Sheet Data
+    @State private var odometerReading = ""
+    @State private var fuelLevel = 50.0
+    @State private var odometerPhoto: UIImage?
+    @State private var fuelGaugePhoto: UIImage?
+    @State private var selectedStartRouteIndex: Int?
+    
     @State private var estimatedTime: String?
     @State private var routeDistance: Double?
     @State private var isNavigating = false
@@ -73,117 +80,143 @@ struct TripMapView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Map view
-            UnifiedTripMap(
-                trip: trip,
-                provider: locationProvider,
-                scoredRoutes: scoredRoutes,
-                selectedRouteID: $selectedRouteID,
-                plannedPolyline: plannedRoutePolyline,
-                routePolyline: routePolyline,
-                isOffRoute: routeMonitor.isOffRoute
-            )
-            .edgesIgnoringSafeArea(.all)
-            
-            // Bottom Card
-            if isCompleted {
-                completedBottomCard
-            } else {
-                activeBottomCard
+        contentView
+            .navigationTitle(navigationTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                toolbarContent
             }
-        }
-        .navigationTitle(navigationTitle)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Close") {
+            .sheet(isPresented: $showStartLog) {
+                startTripSheet
+            }
+            .sheet(isPresented: $showEndLog) {
+                endTripSheet
+            }
+            .fullScreenCover(isPresented: $showingInspectionSheet) {
+                DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: assignedVehicle))
+            }
+            .alert("Invalid Odometer Reading", isPresented: $showOdometerError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(odometerErrorMessage)
+            }
+            .alert("Empty Fuel Tank", isPresented: $showFuelError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Cannot start trip with empty fuel. Please refuel the vehicle before starting the trip.")
+            }
+            .alert("Start Trip Failed", isPresented: $showStartTripError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(startTripErrorMessage)
+            }
+            .alert("Trip Summary", isPresented: $showTripSummary) {
+                Button("OK") {
                     dismiss()
                 }
-                .foregroundColor(.white)
-                .accessibilityIdentifier("trip_map_close_button")
+            } message: {
+                Text(tripSummaryMessage)
+            }
+            .onAppear(perform: onAppearActions)
+            .onDisappear {
+                locationProvider.stopTracking()
+            }
+            .onChange(of: locationProvider.currentLocation) { newLoc in
+                if let loc = newLoc, !isCompleted {
+                    calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+                }
+            }
+    }
+    
+    private var contentView: some View {
+        ZStack(alignment: .bottom) {
+            mapView
+            bottomCardView
+        }
+    }
+    
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button("Close") {
+                dismiss()
+            }
+            .foregroundColor(.white)
+            .accessibilityIdentifier("trip_map_close_button")
+        }
+        
+        if !isCompleted && !isPickupPhase {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                NavigationLink(destination: RefuelView(viewModel: RefuelViewModel(tripId: trip.id, vehicleId: trip.vehicleId, driverId: trip.driverId))) {
+                    Image(systemName: "fuelpump.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .padding(12)
+                        .background(Color.blue)
+                        .clipShape(Circle())
+                        .shadow(radius: 4)
+                }
             }
         }
-        .sheet(isPresented: $showStartLog) {
-            TripLogSheet(
-                title: "Start Trip",
-                subtitle: "Please log the vehicle status to start delivery",
-                buttonTitle: "Confirm & Start",
-                buttonColor: .green,
-                odometer: $logOdometer,
-                fuelLevel: $logFuel,
-                onCommit: { startDelivery() }
-            )
-        }
-        .sheet(isPresented: $showEndLog) {
-            TripLogSheet(
-                title: "End Trip",
-                subtitle: "Final vehicle status after delivery",
-                buttonTitle: "Complete Trip",
-                buttonColor: .red,
-                odometer: $logOdometer,
-                fuelLevel: $logFuel,
-                onCommit: { completeTrip() }
-            )
-        }
-        .fullScreenCover(isPresented: $showingInspectionSheet) {
-            DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: assignedVehicle))
-        }
-        .alert("Invalid Odometer Reading", isPresented: $showOdometerError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text(odometerErrorMessage)
-        }
-        .alert("Empty Fuel Tank", isPresented: $showFuelError) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Cannot start trip with empty fuel. Please refuel the vehicle before starting the trip.")
-        }
-        .alert("Trip Summary", isPresented: $showTripSummary) {
-            Button("OK") {
-                dismiss() // Dismiss view after user acknowledges summary
+    }
+    
+    private var startTripSheet: some View {
+        TripLogSheet(
+            title: "Start Trip",
+            subtitle: "Please log the vehicle status to start delivery",
+            buttonTitle: "Confirm & Start",
+            buttonColor: .green,
+            odometer: $odometerReading,
+            fuelLevel: $fuelLevel,
+            odometerUnscaledImage: $odometerPhoto,
+            fuelGaugeUnscaledImage: $fuelGaugePhoto,
+            availableRoutes: scoredRoutes.map { $0.routeType.rawValue },
+            selectedRouteIndex: $selectedStartRouteIndex,
+            onCommit: {
+                startTrip()
             }
-        } message: {
-            Text(tripSummaryMessage)
-        }
-        .onAppear {
-            if localTripStatus == nil {
-                localTripStatus = trip.status
+        )
+        .interactiveDismissDisabled()
+    }
+    
+    private var endTripSheet: some View {
+        TripLogSheet(
+            title: "Complete Trip",
+            subtitle: "Please log final readings",
+            buttonTitle: "Complete Trip",
+            buttonColor: .blue,
+            odometer: $odometerReading,
+            fuelLevel: $fuelLevel,
+            odometerUnscaledImage: $odometerPhoto,
+            fuelGaugeUnscaledImage: $fuelGaugePhoto,
+            selectedRouteIndex: .constant(nil),
+            onCommit: {
+                completeTrip()
             }
-            if !isCompleted {
-                locationProvider.startTracking()
-            }
-            
-            // Initialize start odometer from trip if available (persistency)
-            if let startOdo = trip.startOdometer {
-                self.startOdometerReading = startOdo
-            }
-            
-            // 1. Calculate the Static Plan (Start -> End)
-            calculatePlannedRoute()
-            
-            // 2. Calculate the Active Routes (Current -> End)
-            // If location is not yet available, this might wait for onChange
-            if let loc = locationProvider.currentLocation {
-                calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
-            } else {
-                // Try estimating from start if no location yet, but ideally wait
-                // calculateDetailedRoutes(from: ...) 
-            }
-            
-            checkDailyInspection()
-            fetchVehicle()
+        )
+    }
+    
+    private func onAppearActions() {
+        if localTripStatus == nil {
+            localTripStatus = trip.status
         }
-        .onDisappear {
-            locationProvider.stopTracking()
+        if !isCompleted {
+            locationProvider.startTracking()
         }
-        .onChange(of: locationProvider.currentLocation) { newLoc in
-            // Recalculate if needed (throttling logic can go here or in service)
-             if let loc = newLoc, !isCompleted {
-                 calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
-             }
+        
+        if let startOdo = trip.startOdometer {
+            self.startOdometerReading = startOdo
         }
+        
+        calculatePlannedRoute()
+        
+        if let loc = locationProvider.currentLocation {
+            calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+        }
+        
+        checkDailyInspection()
+        fetchVehicle()
     }
     
     // Calculates the static "Official" path from Trip Start to Trip End
@@ -202,6 +235,65 @@ struct TripMapView: View {
                 }
             } catch {
                 print("⚠️ Failed to calculate planned route: \(error)")
+            }
+        }
+    }
+    
+     private func completeTrip() {
+        guard let endOdo = Double(odometerReading),
+              let odoPhoto = odometerPhoto,
+              let gaugePhoto = fuelGaugePhoto else { return }
+        
+        Task {
+            do {
+                // 1. Upload Photos
+                let time = Date().timeIntervalSince1970
+                let odoPath = "trips/\(trip.id)/end_odo_\(time).jpg"
+                let gaugePath = "trips/\(trip.id)/end_fuel_\(time).jpg"
+                
+                guard let odoData = odoPhoto.jpegData(compressionQuality: 0.7),
+                      let gaugeData = gaugePhoto.jpegData(compressionQuality: 0.7) else { return }
+                
+                let odoUrl = try await TripService.shared.uploadTripPhoto(data: odoData, path: odoPath)
+                let gaugeUrl = try await TripService.shared.uploadTripPhoto(data: gaugeData, path: gaugePath)
+
+                // 2. Complete Trip
+                try await TripService.shared.completeTrip(
+                    tripId: trip.id,
+                    endOdometer: endOdo,
+                    endFuelLevel: fuelLevel,
+                    odometerPhotoUrl: odoUrl,
+                    gaugePhotoUrl: gaugeUrl,
+                    actualDistance: routeDistance
+                )
+                
+                localTripStatus = .completed
+                isNavigating = false
+                showTripSummary = true
+                
+                // Update vehicle efficiency
+                if let distance = routeDistance, distance > 0 {
+                     // 3. Fetch Refills for accurate calculation
+                     let refills = try? await FuelTrackingService.shared.fetchTripRefills(tripId: trip.id)
+                     
+                     let consumed = FuelCalculationService.shared.calculateSensorBasedConsumption(
+                        startPercentage: trip.startFuelLevel ?? 50,
+                        endPercentage: fuelLevel,
+                        tankCapacity: assignedVehicle?.tankCapacity ?? 60.0,
+                        refills: refills ?? []
+                     )
+                     
+                     if consumed > 0 {
+                          let efficiency = distance / consumed
+                          try? await FuelTrackingService.shared.updateVehicleEfficiency(
+                             vehicleId: trip.vehicleId,
+                             newEfficiency: efficiency
+                          )
+                     }
+                }
+                
+            } catch {
+                print("❌ Failed to complete trip: \(error)")
             }
         }
     }
@@ -328,6 +420,32 @@ struct TripMapView: View {
     
     var recommendedRoute: ScoredRoute? {
         scoredRoutes.first(where: { $0.isRecommended })
+    }
+    
+    
+    // MARK: - View Components
+    
+    private var mapView: some View {
+        UnifiedTripMap(
+            trip: trip,
+            provider: locationProvider,
+            scoredRoutes: scoredRoutes,
+            selectedRouteID: $selectedRouteID,
+            plannedPolyline: plannedRoutePolyline,
+            routePolyline: routePolyline,
+            isOffRoute: routeMonitor.isOffRoute
+        )
+        .edgesIgnoringSafeArea(.all)
+    }
+    
+    private var bottomCardView: some View {
+        Group {
+            if isCompleted {
+                completedBottomCard
+            } else {
+                activeBottomCard
+            }
+        }
     }
     
     // MARK: - Completed Trip Bottom Card
@@ -512,8 +630,8 @@ struct TripMapView: View {
                         return
                     }
                     if hasCompletedInspection {
-                        logOdometer = ""
-                        logFuel = 50.0 // Reset fuel to default for start log
+                        odometerReading = ""
+                        fuelLevel = 50.0 // Reset fuel to default for start log
                         showStartLog = true
                     } else {
                         showingInspectionSheet = true
@@ -535,8 +653,8 @@ struct TripMapView: View {
                     if let dist = routeDistance, dist > 0.5 { // Check if distance > 0.5km (500m)
                         showDistAlert = true
                     } else {
-                        logOdometer = ""
-                        logFuel = 50.0 // Reset fuel to default for end log
+                        odometerReading = ""
+                        fuelLevel = 50.0 // Reset fuel to default for end log
                         showEndLog = true
                     }
                 } label: {
@@ -544,11 +662,10 @@ struct TripMapView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background((routeDistance ?? 0) > 0.5 ? Color.gray : Color.red)
+                        .background((routeDistance ?? 0) > 5 ? Color.gray : Color.red)
                         .foregroundColor(.white)
                         .cornerRadius(12)
                 }
-                .disabled((routeDistance ?? 0) > 0.5) // UI Level Disable
             }
         }
         .padding()
@@ -574,184 +691,102 @@ struct TripMapView: View {
     }
     
     @State private var isProcessing = false
-
-    private func startDelivery() {
-        guard !isProcessing else { return }
-        
-        // Validate odometer reading - cannot be negative
-        let odometerValue = Double(logOdometer) ?? 0.0
-        guard odometerValue >= 0 else {
-            odometerErrorMessage = "Odometer reading cannot be negative"
+    
+    private func startTrip() {
+        print("🟢 [StartTrip] Tapped start trip for tripId=\(trip.id)")
+        if isProcessing { return }
+        if (localTripStatus ?? trip.status) == .ongoing {
+            print("ℹ️ [StartTrip] Trip already in progress, ignoring duplicate start.")
+            return
+        }
+        guard let startOdo = Double(odometerReading) else {
+            print("⚠️ [StartTrip] Invalid odometer input: \(odometerReading)")
+            odometerErrorMessage = "Please enter a valid odometer reading."
             showOdometerError = true
             return
         }
-        
-        // Validate fuel level - must be greater than 0 (not empty)
-        guard logFuel > 0 else {
+        if startOdo < startOdometerReading {
+            print("⚠️ [StartTrip] Odometer less than last recorded. startOdo=\(startOdo), last=\(startOdometerReading)")
+            odometerErrorMessage = "Odometer reading cannot be less than the last recorded value (\(Int(startOdometerReading)) km)."
+            showOdometerError = true
+            return
+        }
+        if fuelLevel <= 0 {
+            print("⚠️ [StartTrip] Fuel level is empty: \(fuelLevel)")
             showFuelError = true
+            return
+        }
+        guard let odoPhoto = odometerPhoto,
+              let gaugePhoto = fuelGaugePhoto else {
+            print("⚠️ [StartTrip] Missing photos. odoPhoto=\(odometerPhoto != nil), gaugePhoto=\(fuelGaugePhoto != nil)")
+            startTripErrorMessage = "Please capture both odometer and fuel gauge photos."
+            showStartTripError = true
             return
         }
         
         isProcessing = true
-        
         Task {
-            // 1. Update Trip Status & Logs
-            let updateData: [String: AnyEncodable] = [
-                "status": AnyEncodable(TripStatus.ongoing.rawValue),
-                "start_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
-                "start_odometer": AnyEncodable(Double(logOdometer) ?? 0.0),
-                "start_fuel_level": AnyEncodable(logFuel)
-            ]
-            
+            defer { Task { @MainActor in isProcessing = false } }
             do {
-                try await supabase.from("trips")
-                    .update(updateData)
-                    .eq("id", value: trip.id.uuidString).execute()
+                print("🟡 [StartTrip] Uploading photos to bucket=\(SupabaseConfig.tripPhotosBucket)")
+                // 1. Upload Photos
+                let time = Date().timeIntervalSince1970
+                let odoPath = "trips/\(trip.id)/start_odo_\(time).jpg"
+                let gaugePath = "trips/\(trip.id)/start_fuel_\(time).jpg"
+                print("🟡 [StartTrip] Upload paths odo=\(odoPath) gauge=\(gaugePath)")
                 
-                // Store start odometer for validation when ending trip
+                guard let odoData = odoPhoto.jpegData(compressionQuality: 0.7),
+                      let gaugeData = gaugePhoto.jpegData(compressionQuality: 0.7) else { return }
+                
+                let odoUrl = try await TripService.shared.uploadTripPhoto(data: odoData, path: odoPath)
+                let gaugeUrl = try await TripService.shared.uploadTripPhoto(data: gaugeData, path: gaugePath)
+                print("✅ [StartTrip] Uploaded photos. odoUrl=\(odoUrl), gaugeUrl=\(gaugeUrl)")
+                
+                // 2. Start Trip
+                print("🟡 [StartTrip] Updating trip status to In Progress")
+                try await TripService.shared.startTrip(
+                    tripId: trip.id,
+                    startOdometer: startOdo,
+                    startFuelLevel: fuelLevel,
+                    odometerPhotoUrl: odoUrl,
+                    gaugePhotoUrl: gaugeUrl,
+                    routeIndex: selectedStartRouteIndex
+                )
+                print("✅ [StartTrip] Trip started successfully")
+                
                 await MainActor.run {
-                    self.startOdometerReading = Double(logOdometer) ?? 0.0
+                    localTripStatus = .ongoing
+                    isNavigating = true
                 }
+                
+                // Switch to selected route if provided
+                if let index = selectedStartRouteIndex, index < scoredRoutes.count {
+                     let route = scoredRoutes[index]
+                     selectedRouteID = route.id
+                }
+                
+                // Calculate route from current location
+                let currentCoord: CLLocationCoordinate2D
+                if let loc = locationProvider.currentLocation {
+                    currentCoord = CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude)
+                } else {
+                    currentCoord = CLLocationCoordinate2D(latitude: 0, longitude: 0)
+                }
+                calculateDetailedRoutes(from: currentCoord)
+                
             } catch {
-                print("❌ Failed to update start trip: \(error)")
-            }
-            
-            // 2. Start Geofencing
-            if let startLat = trip.startLat, let startLong = trip.startLong,
-               let endLat = trip.endLat, let endLong = trip.endLong {
-                
-                let start = CLLocationCoordinate2D(latitude: startLat, longitude: startLong)
-                let end = CLLocationCoordinate2D(latitude: endLat, longitude: endLong)
-                
-                do {
-                    print("📍 Fetching route for geofencing...")
-                    print("   - Start: \(start.latitude), \(start.longitude)")
-                    print("   - End: \(end.latitude), \(end.longitude)")
-                    let mkRoute = try await RouteService.shared.fetchRoute(from: start, to: end)
-                    
-                    let geofenceRoute = try RouteService.shared.createGeofenceRoute(
-                        from: mkRoute,
-                        routeId: trip.id,
-                        start: start,
-                        end: end,
-                        corridorRadius: 100 // 100 meter corridor
-                    )
-                    
-                    await RouteMonitoringManager.shared.startMonitoring(
-                        route: geofenceRoute,
-                        driverName: self.driverName,
-                        vehicleInfo: self.vehicleInfo
-                    )
-                    
-                    await MainActor.run {
-                        // 3. Update local state instead of dismissing
-                        self.localTripStatus = .ongoing
-                        self.isProcessing = false
-                        
-                        // Recalculate route for navigation (from current location to DROP OFF)
-                        if let loc = self.locationProvider.currentLocation {
-                            self.calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
-                        }
-                        
-                        // Accessibility Announcement
-                        UIAccessibility.post(notification: .announcement, argument: "Trip started. Navigation is active.")
-                    }
-                    
-                } catch {
-                    print("❌ Failed to start route monitoring: \(error)")
-                    await MainActor.run { 
-                        isProcessing = false
-                    }
+                let message = error.localizedDescription.isEmpty ? "Unknown error" : error.localizedDescription
+                print("❌ [StartTrip] Failed: \(message)")
+                await MainActor.run {
+                    startTripErrorMessage = "Couldn't start the trip. \(message)"
+                    showStartTripError = true
                 }
-            } else {
-                 await MainActor.run { 
-                    self.localTripStatus = .ongoing
-                    self.isProcessing = false
-                    // Fallback calc
-                    if let loc = self.locationProvider.currentLocation {
-                        self.calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
-                    }
-                 }
             }
         }
     }
     
     @State private var showTripSummary = false
     @State private var tripSummaryMessage = ""
-    
-    // ... existing code ...
-    
-    private func completeTrip() {
-        // Validate odometer reading
-        let endOdometer = Double(logOdometer) ?? 0.0
-        
-        // First check: cannot be negative
-        guard endOdometer >= 0 else {
-            odometerErrorMessage = "Odometer reading cannot be negative"
-            showOdometerError = true
-            return
-        }
-        
-        // Ensure end odometer is greater than start odometer
-        guard endOdometer > startOdometerReading else {
-            odometerErrorMessage = "End odometer reading (\(String(format: "%.1f", endOdometer)) km) must be greater than start reading (\(String(format: "%.1f", startOdometerReading)) km)"
-            showOdometerError = true
-            return
-        }
-        
-        // Stop Geofencing
-        RouteMonitoringManager.shared.stopMonitoring()
-        
-        // Calculate Efficiency
-        let distance = endOdometer - startOdometerReading
-        let startFuel = trip.startFuelLevel ?? 50.0 // Default or fetched
-        let endFuel = logFuel
-        
-        // Fuel Consumed %
-        // Assuming no refuel for simplicity of this calculation as requested
-        let fuelConsumedPercent = max(0, startFuel - endFuel)
-        
-        var efficiencyMsg = "\n\nDistance: \(String(format: "%.1f", distance)) km"
-        
-        if let vehicle = assignedVehicle, let capacity = vehicle.tankCapacity {
-            let litersConsumed = (fuelConsumedPercent / 100.0) * capacity
-            efficiencyMsg += "\nFuel Consumed: \(String(format: "%.1f", litersConsumed)) L"
-            
-            if litersConsumed > 0 {
-                let kmPerLiter = distance / litersConsumed
-                efficiencyMsg += "\nEfficiency: \(String(format: "%.1f", kmPerLiter)) km/L"
-                
-                // Update AI Model (Mock update for now)
-                print("🧠 Updating AI with real-world efficiency: \(kmPerLiter) km/L")
-            }
-        } else {
-             efficiencyMsg += "\nFuel Consumed: \(String(format: "%.0f", fuelConsumedPercent))% (Tank capacity unknown)"
-        }
-        
-        Task {
-            let updateData: [String: AnyEncodable] = [
-                "status": AnyEncodable(TripStatus.completed.rawValue),
-                "end_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
-                "end_odometer": AnyEncodable(endOdometer),
-                "end_fuel_level": AnyEncodable(logFuel)
-            ]
-            
-            do {
-                try await supabase.from("trips")
-                    .update(updateData)
-                    .eq("id", value: trip.id.uuidString).execute()
-                
-                await MainActor.run {
-                    self.tripSummaryMessage = "Trip Completed Successfully! 🚀\(efficiencyMsg)"
-                    self.showTripSummary = true
-                    UIAccessibility.post(notification: .announcement, argument: "Trip completed successfully. Summary available.")
-                }
-            } catch {
-                print("❌ Failed to update end trip: \(error)")
-                await MainActor.run { isProcessing = false }
-            }
-        }
-    }
     
     private func checkDailyInspection() {
          Task {

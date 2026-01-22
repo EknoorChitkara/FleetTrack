@@ -71,6 +71,7 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var capacity: String?
     var tankCapacity: Double? // in Liters
     var fuelType: String?
+    var standardFuelEfficiency: Double? // km per liter (baseline)
     var registrationDate: Date?
     
     // Insurance (from DB schema)
@@ -105,6 +106,7 @@ struct Vehicle: Identifiable, Codable, Hashable {
         case capacity
         case tankCapacity = "tank_capacity"
         case fuelType = "fuel_type"
+        case standardFuelEfficiency = "standard_fuel_efficiency"
         case registrationDate = "registration_date"
         case insuranceStatus = "insurance_status"
         case insuranceExpiry = "insurance_expiry"
@@ -132,6 +134,7 @@ struct Vehicle: Identifiable, Codable, Hashable {
         capacity: String? = nil,
         tankCapacity: Double? = 60.0,
         fuelType: String? = "Diesel",
+        standardFuelEfficiency: Double? = nil,
         registrationDate: Date? = nil,
         insuranceStatus: String? = "Valid",
         insuranceExpiry: Date? = nil,
@@ -157,6 +160,7 @@ struct Vehicle: Identifiable, Codable, Hashable {
         self.capacity = capacity
         self.tankCapacity = tankCapacity
         self.fuelType = fuelType
+        self.standardFuelEfficiency = standardFuelEfficiency
         self.registrationDate = registrationDate
         self.insuranceStatus = insuranceStatus
         self.insuranceExpiry = insuranceExpiry
@@ -183,6 +187,12 @@ struct Vehicle: Identifiable, Codable, Hashable {
     var isServiceDue: Bool {
         guard let nextService = nextServiceDue else { return false }
         return nextService <= Date()
+    }
+    
+    /// Estimated range based on full tank and standard efficiency
+    var estimatedRange: Double? {
+        guard let capacity = tankCapacity, let efficiency = standardFuelEfficiency else { return nil }
+        return capacity * efficiency
     }
 }
 
