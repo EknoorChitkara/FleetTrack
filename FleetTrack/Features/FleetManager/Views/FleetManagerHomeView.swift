@@ -187,12 +187,12 @@ struct FleetManagerHomeView: View {
     var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Fleet Manager")
-                    .font(.system(size: 28, weight: .bold))
+//                Text("Fleet Manager")
+//                    .font(.system(size: 28, weight: .bold))
+//                    .foregroundColor(.white)
+                Text(" Welcome,Manager!")
                     .foregroundColor(.white)
-                Text("Management Dashboard")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .font(.system(size: 28, weight: .bold))
             }
             
             Spacer()

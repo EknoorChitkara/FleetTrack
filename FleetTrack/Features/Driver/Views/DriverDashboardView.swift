@@ -153,6 +153,7 @@ struct DriverDashboardView: View {
                     }
                     
                     // Stat Cards
+                    HStack(spacing: 16) {
                         DriverStatCard(
                             title: "Trips Completed",
                             value: "\(viewModel.completedTripsCount)",
@@ -166,6 +167,8 @@ struct DriverDashboardView: View {
                             unit: "km"
                         )
                         .accessibilityIdentifier("driver_stat_total_distance")
+                    }
+                    .padding(.horizontal)
                     // Performance Metrics (Animated Category Chart)
                     PerformanceMetricsChart(
                         onTimeRate: viewModel.driver?.onTimeDeliveryRate ?? 0,

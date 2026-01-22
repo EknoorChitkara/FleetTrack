@@ -20,6 +20,9 @@ class FleetManagerTripMapViewModel: ObservableObject {
     @Published var trip: Trip?
     @Published var isLoading = false
     
+    // Vehicle data
+    @Published var vehicle: Vehicle?
+    
     // Driver data
     @Published var driverName: String = "Loading..."
     @Published var driverPhone: String?
@@ -64,6 +67,7 @@ class FleetManagerTripMapViewModel: ObservableObject {
                 self.isLoading = false
                 self.loadRoute()
                 self.loadDriverData(driverId: response.driverId)
+                self.loadVehicleData()
             } catch {
                 self.errorMessage = "Failed to load trip: \(error.localizedDescription)"
                 self.isLoading = false
@@ -89,6 +93,23 @@ class FleetManagerTripMapViewModel: ObservableObject {
             } catch {
                 print("Failed to load driver data: \(error)")
                 self.driverName = "Unknown Driver"
+            }
+        }
+    }
+    
+    private func loadVehicleData() {
+        Task {
+            do {
+                let response: Vehicle = try await supabase
+                    .from("vehicles")
+                    .select()
+                    .eq("id", value: vehicleId)
+                    .single()
+                    .execute()
+                    .value
+                self.vehicle = response
+            } catch {
+                print("Failed to load vehicle: \(error)")
             }
         }
     }
