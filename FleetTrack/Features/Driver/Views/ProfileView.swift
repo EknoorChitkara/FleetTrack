@@ -36,6 +36,9 @@ struct ProfileView: View {
                                     .font(.system(size: 30))
                                     .foregroundColor(.gray)
                             }
+                            .accessibilityLabel("Close Profile")
+                            .accessibilityHint("Double tap to close profile view")
+                            .accessibilityIdentifier("profile_close_button")
                         }
                         .padding(.horizontal)
                         .padding(.top, 20)
@@ -74,6 +77,9 @@ struct ProfileView: View {
                                     .background(Color.appEmerald)
                                     .cornerRadius(20)
                             }
+                            .accessibilityLabel("Edit Profile")
+                            .accessibilityHint("Double tap to edit your personal details")
+                            .accessibilityIdentifier("profile_edit_button")
                         }
                         
                         // Settings Sections
@@ -131,6 +137,9 @@ struct ProfileView: View {
                         .disabled(isLoggingOut)
                         .padding(.horizontal)
                         .padding(.bottom, 40)
+                        .accessibilityLabel("Logout")
+                        .accessibilityHint("Double tap to sign out of your account")
+                        .accessibilityIdentifier("profile_logout_button")
                     }
                 }
             }

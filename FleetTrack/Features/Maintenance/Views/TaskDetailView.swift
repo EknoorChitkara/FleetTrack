@@ -97,6 +97,9 @@ struct TaskDetailView: View {
         .sheet(isPresented: $viewModel.showingAddPartSheet) {
             AddPartSheetForTask(viewModel: viewModel)
         }
+        .task {
+            await viewModel.loadAssignedDriver()
+        }
     }
     
     // MARK: - Task Info Card
@@ -106,6 +109,7 @@ struct TaskDetailView: View {
             Text("Task Information")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             VStack(spacing: AppTheme.spacing.sm) {
                 InfoRow(icon: "number", label: "Task ID", value: viewModel.task.id.uuidString.prefix(8).uppercased())
@@ -131,6 +135,8 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_info_card")
     }
     
     // MARK: - Status Section with Actions
@@ -140,6 +146,7 @@ struct TaskDetailView: View {
             Text("Status & Actions")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             // Current Status
             StatusBadge(status: viewModel.task.status, task: viewModel.task)
@@ -209,6 +216,8 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_status_section")
     }
     
     // MARK: - Vehicle Info Card
@@ -218,58 +227,84 @@ struct TaskDetailView: View {
             Text("Vehicle Information")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             InfoRow(icon: "car.fill", label: "Registration", value: viewModel.task.vehicleRegistrationNumber)
         }
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_vehicle_info")
     }
     
     // MARK: - Driver Contact Section
+    
     
     private var driverContactSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.spacing.md) {
             Text("Driver Contact")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
-            // Mock driver info - in real app, fetch from database using assignedDriverId
-            let driverName = "Rajesh Kumar"
-            let driverPhone = "+91 98765 43210"
-            
-            VStack(spacing: AppTheme.spacing.sm) {
-                InfoRow(icon: "person.fill", label: "Driver", value: driverName)
-                InfoRow(icon: "phone.fill", label: "Phone", value: driverPhone)
-                
-                // Call Button
-                Button(action: {
-                    if let url = URL(string: "tel://\(driverPhone.replacingOccurrences(of: " ", with: ""))") {
-                        UIApplication.shared.open(url)
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "phone.fill")
-                            .font(.system(size: 16))
+            if let driver = viewModel.assignedDriver {
+                // Real driver data
+                VStack(spacing: AppTheme.spacing.sm) {
+                    InfoRow(icon: "person.fill", label: "Driver", value: driver.fullName)
+                    
+                    if let phone = driver.phoneNumber, !phone.isEmpty {
+                        InfoRow(icon: "phone.fill", label: "Phone", value: phone)
                         
-                        Text("Call Driver")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
+                        // Call Button
+                        Button(action: {
+                            if let url = URL(string: "tel://\(phone.replacingOccurrences(of: " ", with: ""))") {
+                                UIApplication.shared.open(url)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "phone.fill")
+                                    .font(.system(size: 16))
+                                
+                                Text("Call Driver")
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                
+                                Spacer()
+                            }
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(AppTheme.accentPrimary)
+                            .cornerRadius(AppTheme.cornerRadius.medium)
+                        }
+                        .padding(.top, 4)
                     }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(AppTheme.accentPrimary)
-                    .cornerRadius(AppTheme.cornerRadius.medium)
+                    
+                    InfoRow(icon: "envelope.fill", label: "Email", value: driver.email)
                 }
-                .padding(.top, 4)
+            } else if viewModel.task.assignedDriverId != nil {
+                // Loading state
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: AppTheme.accentPrimary))
+                    Spacer()
+                }
+                .padding(.vertical, AppTheme.spacing.md)
+            } else {
+                // No driver assigned
+                Text("No driver assigned to this vehicle")
+                    .font(.subheadline)
+                    .foregroundColor(AppTheme.textSecondary)
+                    .padding(.vertical, AppTheme.spacing.sm)
             }
         }
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_driver_contact")
     }
     
     // MARK: - Parts & Costs Section
@@ -280,6 +315,7 @@ struct TaskDetailView: View {
                 Text("Parts & Costs")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -416,6 +452,7 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityIdentifier("maintenance_task_parts_section")
     }
     
     // MARK: - Repair Log Card
@@ -426,6 +463,7 @@ struct TaskDetailView: View {
                 Text("Repair Log")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -446,6 +484,7 @@ struct TaskDetailView: View {
                         .background(AppTheme.backgroundElevated)
                         .cornerRadius(6)
                     }
+                    .accessibilityLabel("Edit repair log")
                 }
             }
             
@@ -479,6 +518,7 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityIdentifier("maintenance_task_repair_log")
     }
     
     private func formattedDate(_ date: Date) -> String {

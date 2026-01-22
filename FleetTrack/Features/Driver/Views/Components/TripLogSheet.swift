@@ -50,6 +50,7 @@ struct TripLogSheet: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.white.opacity(0.2), lineWidth: 1)
                         )
+                        .accessibilityIdentifier("trip_log_odometer_field")
                 }
                 
                 // Fuel Section
@@ -66,6 +67,9 @@ struct TripLogSheet: View {
                     
                     Slider(value: $fuelLevel, in: 0...100, step: 1)
                         .accentColor(.appEmerald)
+                        .accessibilityLabel("Fuel Level")
+                        .accessibilityValue("\(Int(fuelLevel)) percent")
+                        .accessibilityIdentifier("trip_log_fuel_slider")
                     
                     HStack {
                         Text("Empty").font(.caption).foregroundColor(.gray)
@@ -93,6 +97,7 @@ struct TripLogSheet: View {
                 }
                 .disabled(odometer.isEmpty)
                 .opacity(odometer.isEmpty ? 0.6 : 1.0)
+                .accessibilityIdentifier("trip_log_submit_button")
             }
             .padding()
             .background(Color.appBackground.ignoresSafeArea())

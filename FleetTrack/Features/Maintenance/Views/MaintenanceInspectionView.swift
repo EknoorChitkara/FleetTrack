@@ -30,6 +30,8 @@ struct MaintenanceInspectionView: View {
                             .background(AppTheme.backgroundSecondary)
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("maintenance_inspection_back_button")
                     
                     Text("Daily Inspections")
                         .font(.title2)
@@ -122,7 +124,12 @@ struct MaintenanceInspectionRow: View {
         }
         .padding()
         .background(AppTheme.backgroundSecondary)
+        .background(AppTheme.backgroundSecondary)
         .cornerRadius(12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(inspection.status) Inspection for Vehicle \(inspection.vehicleId.uuidString.prefix(4)). \(inspection.inspectionDate.formatted(date: .abbreviated, time: .shortened)). \(inspection.notes ?? "")")
+        .accessibilityHint(inspection.status == "Failed" ? "High priority" : "")
+        .accessibilityIdentifier("maintenance_inspection_row_\(inspection.id.uuidString.prefix(8))")
     }
 }
 

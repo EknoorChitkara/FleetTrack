@@ -22,16 +22,6 @@
 		</dict>
 		<dict/>
 	</array>
-	
-	<!-- Location Permissions - Phase 1: Map Display -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>FleetTrack shows your location on the map to help you select trip start and destination points.</string>
-	
-	<!-- Location Permissions - Phase 5: Trip Tracking (Always) -->
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>FleetTrack monitors your trip progress and sends notifications when you reach checkpoints, even when the app is in the background. This helps ensure safe and efficient deliveries.</string>
-	
-	<!-- Background Modes -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

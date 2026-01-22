@@ -24,6 +24,7 @@ struct InventoryView: View {
                             .font(.title)
                             .fontWeight(.bold)
                             .foregroundColor(AppTheme.textPrimary)
+                            .accessibilityAddTraits(.isHeader)
                         
                         Text("Parts & supplies management")
                             .font(.subheadline)
@@ -42,6 +43,8 @@ struct InventoryView: View {
                 }
                 .padding(.horizontal, AppTheme.spacing.md)
                 .padding(.vertical, AppTheme.spacing.sm)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("maintenance_inventory_header")
                 
                 // Search Bar
                 HStack {
@@ -56,6 +59,9 @@ struct InventoryView: View {
                 .cornerRadius(AppTheme.cornerRadius.medium)
                 .padding(.horizontal, AppTheme.spacing.md)
                 .padding(.bottom, AppTheme.spacing.sm)
+                .accessibilityLabel("Search parts")
+                .accessibilityHint("Enter part name or number to search")
+                .accessibilityIdentifier("maintenance_inventory_search_bar")
                 
                 // Content
                 ScrollView {
@@ -102,6 +108,7 @@ struct InventoryView: View {
                 icon: "shippingbox.fill",
                 color: AppTheme.accentPrimary
             )
+            .accessibilityIdentifier("maintenance_inventory_stat_total")
             
             InventoryStatCard(
                 title: "Low Stock",
@@ -109,6 +116,7 @@ struct InventoryView: View {
                 icon: "exclamationmark.triangle.fill",
                 color: AppTheme.statusWarning
             )
+            .accessibilityIdentifier("maintenance_inventory_stat_low")
             
             InventoryStatCard(
                 title: "Out of Stock",
@@ -116,6 +124,7 @@ struct InventoryView: View {
                 icon: "xmark.circle.fill",
                 color: AppTheme.statusError
             )
+            .accessibilityIdentifier("maintenance_inventory_stat_out")
         }
     }
     
@@ -126,6 +135,7 @@ struct InventoryView: View {
             Text("Categories")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             VStack(spacing: AppTheme.spacing.sm) {
                 // Display all categories dynamically
@@ -148,13 +158,13 @@ struct InventoryView: View {
                 Text("Low Stock Alert")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
-                
-                Text("\(viewModel.lowStockParts.count) items")
-                    .font(.caption)
-                    .foregroundColor(AppTheme.statusWarning)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Low stock alert, \(viewModel.lowStockParts.count) items")
+            .accessibilityIdentifier("maintenance_inventory_low_stock_header")
             
             VStack(spacing: AppTheme.spacing.sm) {
                 ForEach(viewModel.lowStockParts.prefix(3)) { part in
@@ -175,6 +185,7 @@ struct InventoryView: View {
                 Text("Search Results")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -258,6 +269,7 @@ struct CategoryRowButton: View {
             .cornerRadius(AppTheme.cornerRadius.small)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("Category: \(displayName), \(count) items.")
+            .accessibilityIdentifier("maintenance_inventory_category_\(category.rawValue.lowercased())")
         }
     }
 }

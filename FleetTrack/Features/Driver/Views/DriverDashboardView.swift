@@ -60,6 +60,8 @@ struct DriverDashboardView: View {
         }
         .fullScreenCover(item: $tripToStart, onDismiss: {
             Task {
+                // Slight delay to ensure DB propagation and UI transition smoothness
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
                 await viewModel.loadDashboardData(user: localUser)
             }
         }) { trip in
@@ -75,7 +77,7 @@ struct DriverDashboardView: View {
             DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: viewModel.assignedVehicle))
         }
         .fullScreenCover(isPresented: $isShowingReportIssue) {
-            ReportIssueView()
+            ReportIssueView(vehicle: viewModel.assignedVehicle)
         }
     }
     
@@ -98,17 +100,17 @@ struct DriverDashboardView: View {
                         HapticManager.shared.triggerSelection()
                         isShowingProfile = true
                     } label: {
-                        Image(systemName: "person.circle.fill")
+                        Image(systemName: "person.crop.circle.fill")
                             .font(.system(size: 40))
-                            .foregroundColor(.white.opacity(0.8))
-                            .background(Circle().fill(Color.white.opacity(0.1)))
+                            .foregroundColor(.appEmerald)
                     }
                     .accessibilityLabel("Profile and Settings")
+                    .accessibilityIdentifier("driver_profile_button")
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
                 
-                if viewModel.isLoading {
+                if viewModel.isLoading && viewModel.driver == nil {
                     ProgressView()
                         .tint(.appEmerald)
                         .padding(.top, 100)
@@ -131,32 +133,26 @@ struct DriverDashboardView: View {
                     }
                     
                     // Stat Cards
-                    HStack(spacing: 16) {
                         DriverStatCard(
                             title: "Trips Completed",
                             value: "\(viewModel.completedTripsCount)",
                             unit: ""
                         )
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Trips Completed: \(viewModel.completedTripsCount)")
+                        .accessibilityIdentifier("driver_stat_completed_trips")
                         
                         DriverStatCard(
                             title: "Distance",
                             value: "\(Int(viewModel.totalDistance))",
                             unit: "km"
                         )
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Total Distance: \(Int(viewModel.totalDistance)) kilometers")
-                    }
-                    .padding(.horizontal)
-                    
+                        .accessibilityIdentifier("driver_stat_total_distance")
                     // Performance Metrics (Animated Category Chart)
                     PerformanceMetricsChart(
                         onTimeRate: viewModel.driver?.onTimeDeliveryRate ?? 0,
                         avgSpeed: viewModel.avgSpeed,
                         avgTripDist: viewModel.avgTripDistance
                     )
-                        .padding(.horizontal)
+                    .padding(.horizontal)
                     
                     // Assigned Vehicle
                     AssignedVehicleCard(vehicle: viewModel.assignedVehicle)
@@ -176,8 +172,9 @@ struct DriverDashboardView: View {
                                     print("Tapped action: \(action.title)")
                                 }
                             }
-                            .accessibilityLabel(action.title)
-                            .accessibilityHint(action.subtitle)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(action.title), \(action.subtitle)")
+                            .accessibilityHint("Double tap to \(action.title.lowercased())")
                         }
                     }
                     .padding(.horizontal)
@@ -198,6 +195,7 @@ struct DriverDashboardView: View {
                         } else {
                             ForEach(viewModel.recentTrips) { trip in
                                 RecentTripRow(trip: trip)
+                                    .accessibilityIdentifier("driver_recent_trip_\(trip.id.uuidString.prefix(8))")
                                 
                                 if trip.id != viewModel.recentTrips.last?.id {
                                     Divider().background(Color.white.opacity(0.1))
@@ -205,6 +203,7 @@ struct DriverDashboardView: View {
                             }
                         }
                     }
+                    .accessibilityIdentifier("driver_recent_trips_list")
                     .padding()
                     .background(Color.appCardBackground)
                     .cornerRadius(16)
@@ -221,7 +220,6 @@ struct DriverDashboardView: View {
             await viewModel.loadDashboardData(user: localUser)
         }
     }
-
 }
 
 // MARK: - Preview

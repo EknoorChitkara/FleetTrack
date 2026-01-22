@@ -83,6 +83,10 @@ struct ModernTextField: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(placeholder)\(isRequired && text.isEmpty ? ", Required" : "")")
+        .accessibilityValue(text.isEmpty ? "Empty" : text)
+        .accessibilityIdentifier("modern_textfield_\(placeholder.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 
@@ -127,6 +131,11 @@ struct ModernPicker<T: Hashable & RawRepresentable>: View where T.RawValue == St
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.white.opacity(0.05), lineWidth: 1)
             )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(title)
+            .accessibilityValue(selection.rawValue)
+            .accessibilityHint("Double tap to change \(title.lowercased())")
+            .accessibilityIdentifier("modern_picker_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
         }
     }
 }
@@ -179,6 +188,11 @@ struct ModernDriverPicker: View {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.white.opacity(0.05), lineWidth: 1)
             )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(placeholder)
+            .accessibilityValue(selection == nil ? "Unassigned" : (drivers.first(where: { $0.id == selection })?.displayName ?? "Unknown"))
+            .accessibilityHint("Double tap to choose a driver")
+            .accessibilityIdentifier("modern_driver_picker")
         }
     }
 }
@@ -224,6 +238,11 @@ struct ModernVehiclePicker: View {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.white.opacity(0.05), lineWidth: 1)
             )
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(placeholder)
+            .accessibilityValue(selection == nil ? "Not selected" : (vehicles.first(where: { $0.id == selection })?.registrationNumber ?? "Unknown"))
+            .accessibilityHint("Double tap to choose a vehicle")
+            .accessibilityIdentifier("modern_vehicle_picker")
         }
     }
 }
@@ -290,5 +309,10 @@ struct ModernDatePicker: View {
         }
         .frame(height: 60)
         .clipped() // Prevent invisible hit areas from bleeding out
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityValue(selection.formatted())
+        .accessibilityHint("Double tap to pick a date")
+        .accessibilityIdentifier("modern_date_picker_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }

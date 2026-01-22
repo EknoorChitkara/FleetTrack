@@ -66,6 +66,8 @@ struct PasswordResetView: View {
                 SecureField("New Password", text: $viewModel.newPassword)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.newPassword)
+                    .accessibilityLabel("New Password")
+                    .accessibilityIdentifier("pwdreset_new_password_field")
                     .onChange(of: viewModel.newPassword) { _ in
                         viewModel.validateNewPassword()
                     }
@@ -85,6 +87,8 @@ struct PasswordResetView: View {
                 SecureField("Confirm Password", text: $viewModel.confirmPassword)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.newPassword)
+                    .accessibilityLabel("Confirm New Password")
+                    .accessibilityIdentifier("pwdreset_confirm_password_field")
                     .onChange(of: viewModel.confirmPassword) { _ in
                         viewModel.validateConfirmPassword()
                     }
@@ -115,6 +119,8 @@ struct PasswordResetView: View {
             .background(Color.blue)
             .foregroundColor(.white)
             .cornerRadius(10)
+            .accessibilityLabel("Reset Password Button")
+            .accessibilityIdentifier("pwdreset_button")
             .disabled(viewModel.isLoading)
             
             Spacer()
@@ -158,6 +164,8 @@ struct PasswordStrengthIndicator: View {
                 .font(.caption)
                 .foregroundColor(strengthColor)
         }
+        .accessibilityLabel("Password strength: \(strengthText)")
+        .accessibilityIdentifier("pwdreset_strength_indicator")
     }
     
     private var strengthColor: Color {

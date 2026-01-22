@@ -8,6 +8,7 @@
 
 import CoreLocation
 import Combine
+import UIKit
 
 /// Location accuracy modes for different use cases
 enum LocationAccuracyMode {
@@ -178,6 +179,8 @@ extension LocationService: CLLocationManagerDelegate {
             let newStatus = manager.authorizationStatus
             authorizationStatus = newStatus
             print("📍 Location authorization changed: \(newStatus.description)")
+            
+            UIAccessibility.post(notification: .announcement, argument: "Location permission \(newStatus.description)")
             
             // If permission was just granted, start updates if needed
             if hasLocationPermission && isUpdatingLocation {

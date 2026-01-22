@@ -87,12 +87,13 @@ struct MaintenanceDashboardView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Maintenance Dashboard")
-                    .font(.title2)
+                Text("Maintenance")
+                    .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
-                Text("Welcome back, \(viewModel.currentUser.name)!")
+                Text("Management Dashboard")
                     .font(.subheadline)
                     .foregroundColor(AppTheme.textSecondary)
             }
@@ -113,9 +114,12 @@ struct MaintenanceDashboardView: View {
                         .foregroundColor(.black)
                 }
             }
-            .accessibilityLabel("Profile")
+            .accessibilityLabel("Maintenance Profile")
+            .accessibilityHint("Double tap to view profile details")
+            .accessibilityIdentifier("maintenance_profile_button")
         }
         .padding(.horizontal, AppTheme.spacing.md)
+        .accessibilityIdentifier("maintenance_dashboard_header")
     }
     
     // MARK: - Quick Actions
@@ -139,7 +143,11 @@ struct MaintenanceDashboardView: View {
                 .cornerRadius(10)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityElement(children: .combine)
             .accessibilityLabel("Perform Daily Inspections")
+            .accessibilityHint("Double tap to start inspection workflow")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("maintenance_action_inspections")
         }
     }
     
@@ -152,6 +160,7 @@ struct MaintenanceDashboardView: View {
                 Text("Recent Tasks")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -163,8 +172,11 @@ struct MaintenanceDashboardView: View {
                         .font(.subheadline)
                         .foregroundColor(AppTheme.accentPrimary)
                 }
+                .accessibilityLabel("View All Priority Tasks")
+                .accessibilityIdentifier("maintenance_view_all_tasks")
             }
             .padding(.horizontal, AppTheme.spacing.md)
+            .accessibilityIdentifier("maintenance_recent_tasks_header")
             
             // Task List
             VStack(spacing: AppTheme.spacing.sm) {
@@ -185,6 +197,7 @@ struct MaintenanceDashboardView: View {
                 Text("Recent History")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -195,8 +208,11 @@ struct MaintenanceDashboardView: View {
                         .font(.subheadline)
                         .foregroundColor(AppTheme.accentPrimary)
                 }
+                .accessibilityLabel("View Task History")
+                .accessibilityIdentifier("maintenance_view_all_history")
             }
             .padding(.horizontal, AppTheme.spacing.md)
+            .accessibilityIdentifier("maintenance_recent_history_header")
             
             // History List (show first 3)
             VStack(spacing: AppTheme.spacing.sm) {

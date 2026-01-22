@@ -82,7 +82,7 @@ struct DriverVehicleInspectionView: View {
             Alert(title: Text("Success"), message: Text(viewModel.confirmationMessage), dismissButton: .default(Text("OK")))
         }
         .fullScreenCover(isPresented: $isShowingReportIssue) {
-            ReportIssueView()
+            ReportIssueView(vehicle: viewModel.vehicle)
         }
     }
 }
@@ -110,6 +110,9 @@ struct InspectionTabBar: View {
                         )
                         .cornerRadius(12)
                 }
+                .accessibilityLabel("\(tab.rawValue) tab")
+                .accessibilityAddTraits(selectedTab == tab ? [.isSelected] : [])
+                .accessibilityIdentifier("inspection_tab_\(tab.rawValue.lowercased())")
             }
         }
         .background(Color.appCardBackground)
@@ -211,6 +214,7 @@ struct InspectionSummaryView: View {
                         .background(Color.appEmerald)
                         .cornerRadius(12)
                 }
+                .accessibilityIdentifier("inspection_start_button")
                 
                 Button {
                     isShowingReportIssue = true
@@ -223,6 +227,7 @@ struct InspectionSummaryView: View {
                         .background(Color.red)
                         .cornerRadius(12)
                 }
+                .accessibilityIdentifier("inspection_report_issue_button")
             }
             .padding()
             .background(Color.appCardBackground)
@@ -317,6 +322,7 @@ struct InspectionChecklistView: View {
                 .background(Color.red.opacity((allItemsChecked || viewModel.isSubmitted) ? 0.3 : 1.0))
                 .cornerRadius(12)
                 .disabled(allItemsChecked || viewModel.isSubmitted)
+                .accessibilityIdentifier("inspection_checklist_report_button")
             }
         }
     }
@@ -368,6 +374,11 @@ struct InspectionHistoryView: View {
                         .background(Color.appCardBackground)
                         .cornerRadius(16)
                     }
+                }
+            }
+            .onAppear {
+                Task {
+                    await viewModel.fetchHistory()
                 }
             }
         }

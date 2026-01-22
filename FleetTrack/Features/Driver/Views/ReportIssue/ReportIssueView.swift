@@ -95,6 +95,42 @@ class ReportIssueViewModel: ObservableObject {
                     .insert(maintenanceAlert)
                     .execute()
                 
+                // 3. Create Vehicle Inspection Record for History
+                if let vehicleId = vehicleId {
+                    let session = try await supabase.auth.session
+                    let drivers: [FMDriver] = try await supabase
+                        .from("drivers")
+                        .select()
+                        .eq("user_id", value: session.user.id)
+                        .execute()
+                        .value
+                    
+                    if let driver = drivers.first {
+                        let currentDate = Date()
+                        let inspectionRecord = VehicleInspection(
+                            id: UUID(),
+                            vehicleId: vehicleId,
+                            driverId: driver.id,
+                            inspectionDate: currentDate,
+                            checklistItems: [],
+                            itemsChecked: 0,
+                            totalItems: 0,
+                            allItemsPassed: false,
+                            notes: "Issue Reported: \(issueType.rawValue) (Severity: \(selectedSeverity.rawValue)) - \(description)",
+                            status: "Issue Reported",
+                            createdAt: currentDate,
+                            updatedAt: currentDate
+                        )
+                        
+                        try await supabase
+                            .from("vehicle_inspections")
+                            .insert(inspectionRecord)
+                            .execute()
+                        
+                        print("✅ Inspection record created for issue report")
+                    }
+                }
+                
                 await MainActor.run {
                     print("✅ Alert submitted successfully")
                     isSubmitting = false
@@ -114,8 +150,18 @@ class ReportIssueViewModel: ObservableObject {
 }
 
 struct ReportIssueView: View {
-    @StateObject private var viewModel = ReportIssueViewModel()
+    let vehicle: Vehicle?
+    @StateObject private var viewModel: ReportIssueViewModel
     @Environment(\.presentationMode) var presentationMode
+    
+    init(vehicle: Vehicle? = nil) {
+        self.vehicle = vehicle
+        _viewModel = StateObject(wrappedValue: {
+            let vm = ReportIssueViewModel()
+            vm.vehicleId = vehicle?.id
+            return vm
+        }())
+    }
     
     var body: some View {
         ZStack {
@@ -133,6 +179,8 @@ struct ReportIssueView: View {
                             .padding(12)
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
+                            .accessibilityLabel("Back to Dashboard")
+                            .accessibilityIdentifier("report_issue_back_button")
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -204,6 +252,8 @@ struct ReportIssueView: View {
                                 .frame(height: 120)
                                 .padding()
                                 .scrollContentBackground(.hidden)
+                                .accessibilityLabel("Issue Description")
+                                .accessibilityIdentifier("report_issue_description_field")
                                 .background(Color.appCardBackground)
                                 .cornerRadius(12)
                                 .foregroundColor(.white)
@@ -242,6 +292,7 @@ struct ReportIssueView: View {
                         .cornerRadius(12)
                 }
                 .padding()
+                .accessibilityIdentifier("report_issue_submit_button")
                 .background(Color.appBackground) // Fade/Solid bg behind button?
             }
         }
@@ -286,6 +337,9 @@ struct IssueTypeCard: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(isSelected ? Color.appEmerald : Color.clear, lineWidth: 2)
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(type.rawValue)")
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : [.isButton])
         }
     }
 }
@@ -321,6 +375,9 @@ struct SeverityRow: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(isSelected ? Color.appEmerald.opacity(0.5) : Color.clear, lineWidth: 1)
             )
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(severity.rawValue)
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : [.isButton])
         }
     }
 }

@@ -10,6 +10,7 @@
 
 import SwiftUI
 import MapKit
+import UIKit
 import CoreLocation
 import Combine
 import Supabase
@@ -18,7 +19,10 @@ struct TripMapView: View {
     let trip: Trip
     @Environment(\.dismiss) var dismiss
     @StateObject private var locationProvider = DeviceLocationProvider()
-    @State private var routePolyline: MKPolyline?
+    @State private var scoredRoutes: [ScoredRoute] = []
+    @State private var selectedRouteID: UUID? // Selection State
+    @State private var routePolyline: MKPolyline? // Legacy/Fallback support
+    @State private var plannedRoutePolyline: MKPolyline? // Static Planned Route
     
     @State private var showArriveAlert = false
     @State private var showCompleteAlert = false
@@ -26,6 +30,7 @@ struct TripMapView: View {
     @State private var showEndLog = false
     @State private var showingInspectionSheet = false
     @State private var hasCompletedInspection = false
+    @State private var assignedVehicle: Vehicle? = nil
     @State private var showOdometerError = false
     @State private var odometerErrorMessage = ""
     @State private var startOdometerReading: Double = 0.0
@@ -33,7 +38,7 @@ struct TripMapView: View {
     
     // Log variables
     @State private var logOdometer: String = ""
-    @State private var logFuel: Double = 0.5
+    @State private var logFuel: Double = 50.0 // 0-100%
     @State private var estimatedTime: String?
     @State private var routeDistance: Double?
     @State private var isNavigating = false
@@ -51,6 +56,15 @@ struct TripMapView: View {
     var isPickupPhase: Bool { (localTripStatus ?? trip.status) == .scheduled }
     var isDeliveryPhase: Bool { (localTripStatus ?? trip.status) == .ongoing }
     
+    // Check if trip is scheduled for today
+    var isScheduledForToday: Bool {
+        guard let startTime = trip.startTime else { return true } // If no startTime, allow starting
+        let calendar = Calendar.current
+        let tripDay = calendar.startOfDay(for: startTime)
+        let today = calendar.startOfDay(for: Date())
+        return tripDay <= today
+    }
+    
     init(trip: Trip, driverName: String = "Unknown Driver", vehicleInfo: String = "Unknown Vehicle") {
         self.trip = trip
         self.driverName = driverName
@@ -63,6 +77,9 @@ struct TripMapView: View {
             UnifiedTripMap(
                 trip: trip,
                 provider: locationProvider,
+                scoredRoutes: scoredRoutes,
+                selectedRouteID: $selectedRouteID,
+                plannedPolyline: plannedRoutePolyline,
                 routePolyline: routePolyline,
                 isOffRoute: routeMonitor.isOffRoute
             )
@@ -79,14 +96,12 @@ struct TripMapView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                statusBadge
-            }
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Close") {
                     dismiss()
                 }
                 .foregroundColor(.white)
+                .accessibilityIdentifier("trip_map_close_button")
             }
         }
         .sheet(isPresented: $showStartLog) {
@@ -111,8 +126,8 @@ struct TripMapView: View {
                 onCommit: { completeTrip() }
             )
         }
-        .sheet(isPresented: $showingInspectionSheet) {
-            DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: nil)) // We need to pass vehicle if possible, but VM handles basic checks
+        .fullScreenCover(isPresented: $showingInspectionSheet) {
+            DriverVehicleInspectionView(viewModel: VehicleInspectionViewModel(vehicle: assignedVehicle))
         }
         .alert("Invalid Odometer Reading", isPresented: $showOdometerError) {
             Button("OK", role: .cancel) { }
@@ -124,6 +139,13 @@ struct TripMapView: View {
         } message: {
             Text("Cannot start trip with empty fuel. Please refuel the vehicle before starting the trip.")
         }
+        .alert("Trip Summary", isPresented: $showTripSummary) {
+            Button("OK") {
+                dismiss() // Dismiss view after user acknowledges summary
+            }
+        } message: {
+            Text(tripSummaryMessage)
+        }
         .onAppear {
             if localTripStatus == nil {
                 localTripStatus = trip.status
@@ -131,9 +153,26 @@ struct TripMapView: View {
             if !isCompleted {
                 locationProvider.startTracking()
             }
-            // Initial route calculation
-            calculateRoute()
+            
+            // Initialize start odometer from trip if available (persistency)
+            if let startOdo = trip.startOdometer {
+                self.startOdometerReading = startOdo
+            }
+            
+            // 1. Calculate the Static Plan (Start -> End)
+            calculatePlannedRoute()
+            
+            // 2. Calculate the Active Routes (Current -> End)
+            // If location is not yet available, this might wait for onChange
+            if let loc = locationProvider.currentLocation {
+                calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+            } else {
+                // Try estimating from start if no location yet, but ideally wait
+                // calculateDetailedRoutes(from: ...) 
+            }
+            
             checkDailyInspection()
+            fetchVehicle()
         }
         .onDisappear {
             locationProvider.stopTracking()
@@ -141,26 +180,52 @@ struct TripMapView: View {
         .onChange(of: locationProvider.currentLocation) { newLoc in
             // Recalculate if needed (throttling logic can go here or in service)
              if let loc = newLoc, !isCompleted {
-                 calculateRoute(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+                 calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
              }
         }
     }
     
-    private func calculateRoute(from userLoc: CLLocationCoordinate2D? = nil) {
-        let start: CLLocationCoordinate2D
-        let end: CLLocationCoordinate2D
+    // Calculates the static "Official" path from Trip Start to Trip End
+    private func calculatePlannedRoute() {
+        guard let startLat = trip.startLat, let startLon = trip.startLong,
+              let endLat = trip.endLat, let endLon = trip.endLong else { return }
         
-        if let userLoc = userLoc {
-            start = userLoc
-        } else if let lat = trip.startLat, let lon = trip.startLong {
-            start = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        } else {
-            return
+        let start = CLLocationCoordinate2D(latitude: startLat, longitude: startLon)
+        let end = CLLocationCoordinate2D(latitude: endLat, longitude: endLon)
+        
+        Task {
+            do {
+                let result = try await RouteCalculationService.shared.calculateRoute(from: start, to: end)
+                await MainActor.run {
+                    self.plannedRoutePolyline = result.polyline
+                }
+            } catch {
+                print("⚠️ Failed to calculate planned route: \(error)")
+            }
         }
+    }
+    
+    // Calculates dynamic routes from User/Current Location to Destination
+    private func calculateDetailedRoutes(from userLoc: CLLocationCoordinate2D) {
+        var end: CLLocationCoordinate2D
         
         if isPickupPhase {
             guard let lat = trip.startLat, let lon = trip.startLong else { return }
-            end = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            let pickupLoc = CLLocationCoordinate2D(latitude: lat, longitude: lon)
+            
+            // Smart Switch: If user is ALREADY at/near pickup (< 300m), show route to Dropoff
+            // allowing them to preview the main trip.
+            let userLocation = CLLocation(latitude: userLoc.latitude, longitude: userLoc.longitude)
+            let pickupLocation = CLLocation(latitude: lat, longitude: lon)
+            let distanceInMeters = userLocation.distance(from: pickupLocation)
+            
+            if distanceInMeters < 300 {
+                print("📍 User is near pickup (\(Int(distanceInMeters))m). showing route to Dropoff.")
+                guard let dLat = trip.endLat, let dLon = trip.endLong else { return }
+                end = CLLocationCoordinate2D(latitude: dLat, longitude: dLon)
+            } else {
+                end = pickupLoc
+            }
         } else {
             // Delivery phase or completed (default to drops off)
             guard let lat = trip.endLat, let lon = trip.endLong else { return }
@@ -169,23 +234,48 @@ struct TripMapView: View {
         
         Task {
             do {
-                print("🗺️ calculating route: \(start.latitude),\(start.longitude) -> \(end.latitude),\(end.longitude)")
-                let result = try await RouteCalculationService.shared.calculateRoute(from: start, to: end)
+                print("🗺️ calculating dynamic routes: \(userLoc.latitude),\(userLoc.longitude) -> \(end.latitude),\(end.longitude)")
+                
+                // AI-Powered Route Selection
+                let scoredResults = try await RouteRecommendationEngine.shared.findBestRoutes(from: userLoc, to: end)
+                
                 await MainActor.run {
-                    self.routePolyline = result.polyline
-                    self.routeDistance = result.distanceInKilometers
-                    self.estimatedTime = result.formattedDuration
+                    self.updateRouteSelection(with: scoredResults)
                 }
             } catch {
-                print("⚠️ Route calculation failed: \(error)")
-                
-                // Fallback: If routing from User Location fails (e.g. Simulator in US, Trip in India),
-                // try routing from Trip Start to Trip End to at least show the strict path.
-                if userLoc != nil {
-                     print("🔄 Retrying with static trip route (ignoring current user location)...")
-                     calculateRoute(from: nil)
-                }
+                print("⚠️ Dynamic route calculation failed: \(error)")
+                // Note: We don't fallback to static route here because we have `plannedRoutePolyline` visible anyway.
             }
+        }
+    }
+    
+    private func updateRouteSelection(with routes: [ScoredRoute]) {
+        self.scoredRoutes = routes
+        // Auto-select recommended for display properties if needed
+        if let recommended = routes.first(where: { $0.isRecommended }) {
+            self.routePolyline = recommended.polyline
+            self.routeDistance = recommended.distance / 1000.0
+            self.estimatedTime = formatTime(seconds: recommended.expectedTravelTime)
+            
+            // Log for debugging
+            print("🏆 AI Recommended: \(recommended.routeType.rawValue) (Score: \(recommended.score))")
+            print("   - Fuel: \(recommended.fuelEstimate.liters)L")
+            print("   - Traffic Factor: \(recommended.fuelEstimate.trafficFactor)")
+        } else if let first = routes.first {
+             // Fallback
+             self.routePolyline = first.polyline
+             self.routeDistance = first.distance / 1000.0
+             self.estimatedTime = formatTime(seconds: first.expectedTravelTime)
+        }
+    }
+    
+    private func formatTime(seconds: TimeInterval) -> String {
+        let hours = Int(seconds) / 3600
+        let minutes = Int(seconds) / 60 % 60
+        if hours > 0 {
+            return String(format: "%dh %dm", hours, minutes)
+        } else {
+            return String(format: "%dm", minutes)
         }
     }
     
@@ -211,6 +301,8 @@ struct TripMapView: View {
         .padding(.vertical, 4)
         .background(statusColor)
         .cornerRadius(8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Trip Status: \(statusText)")
     }
     
     var statusText: String {
@@ -223,6 +315,18 @@ struct TripMapView: View {
         if isCompleted { return .green }
         if isPickupPhase { return .orange }
         return .blue
+    }
+    
+
+    
+    // Helper accessors
+    var selectedRoute: ScoredRoute? {
+        guard let id = selectedRouteID else { return nil }
+        return scoredRoutes.first(where: { $0.id == id })
+    }
+    
+    var recommendedRoute: ScoredRoute? {
+        scoredRoutes.first(where: { $0.isRecommended })
     }
     
     // MARK: - Completed Trip Bottom Card
@@ -303,6 +407,35 @@ struct TripMapView: View {
     
     private var activeBottomCard: some View {
         VStack(spacing: 12) {
+            
+            // AI Recommendation / Selection Banner
+            if let displayRoute = selectedRoute ?? recommendedRoute {
+                HStack {
+                    Image(systemName: displayRoute.isRecommended ? "sparkles" : "map.fill")
+                    VStack(alignment: .leading) {
+                        Text(displayRoute.isRecommended ? "AI Recommended: \(displayRoute.routeType.rawValue)" : "Selected: \(displayRoute.routeType.rawValue)")
+                            .fontWeight(.bold)
+                            .font(.subheadline)
+                        
+                        // Show comparative stats
+                        Text("~\(Int(displayRoute.fuelEstimate.liters))L Fuel • \(formatTime(seconds: displayRoute.expectedTravelTime))")
+                            .font(.caption)
+                            .opacity(0.9)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(Color.blue.opacity(0.9)) // Match Map Route Color
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 4)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Route Recommendation: \(displayRoute.isRecommended ? "AI Recommended" : "Selected"). Fuel Estimate: \(Int(displayRoute.fuelEstimate.liters)) liters. Travel time: \(formatTime(seconds: displayRoute.expectedTravelTime))")
+                .accessibilityIdentifier("trip_map_recommendation_banner")
+            }
+            
+            // Navigation status
             // Navigation status
             if isNavigating {
                 HStack {
@@ -352,6 +485,8 @@ struct TripMapView: View {
                     }
                 }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(isPickupPhase ? "Pickup" : "Dropoff") at \(isPickupPhase ? (trip.startAddress ?? "Pickup") : (trip.endAddress ?? "Dropoff")). Distance: \(routeDistance != nil ? String(format: "%.1f km away", routeDistance!) : "unknown distance")")
             
             // Route Overview
             HStack(spacing: 6) {
@@ -371,26 +506,32 @@ struct TripMapView: View {
             // Action Buttons
             if isPickupPhase {
                 Button(action: {
+                    if !isScheduledForToday {
+                        // Trip not scheduled for today - do nothing
+                        return
+                    }
                     if hasCompletedInspection {
                         logOdometer = ""
-                        logFuel = 0.5 // Reset fuel to default for start log
+                        logFuel = 50.0 // Reset fuel to default for start log
                         showStartLog = true
                     } else {
                         showingInspectionSheet = true
                     }
                 }) {
-                    Text(hasCompletedInspection ? "Start Trip" : "Pending Inspection")
+                    Text(!isScheduledForToday ? "Scheduled for Later" : (hasCompletedInspection ? "Start Trip" : "Pending Inspection"))
                         .font(.headline)
-                        .foregroundColor(.white) // Changed to white for better contrast
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
-                        .background(hasCompletedInspection ? Color.green : Color.orange) // Assuming Color.appEmerald is Color.green
+                        .background(!isScheduledForToday ? Color.gray : (hasCompletedInspection ? Color.green : Color.orange))
                         .cornerRadius(12)
                 }
+                .disabled(!isScheduledForToday)
+                .accessibilityIdentifier("trip_map_action_button")
             } else if isDeliveryPhase {
                 Button { 
                     logOdometer = ""
-                    logFuel = 0.5 // Reset fuel to default for end log
+                    logFuel = 50.0 // Reset fuel to default for end log
                     showEndLog = true 
                 } label: {
                     Label("End Trip", systemImage: "stop.circle.fill")
@@ -425,6 +566,14 @@ struct TripMapView: View {
     private func startDelivery() {
         guard !isProcessing else { return }
         
+        // Validate odometer reading - cannot be negative
+        let odometerValue = Double(logOdometer) ?? 0.0
+        guard odometerValue >= 0 else {
+            odometerErrorMessage = "Odometer reading cannot be negative"
+            showOdometerError = true
+            return
+        }
+        
         // Validate fuel level - must be greater than 0 (not empty)
         guard logFuel > 0 else {
             showFuelError = true
@@ -436,7 +585,7 @@ struct TripMapView: View {
         Task {
             // 1. Update Trip Status & Logs
             let updateData: [String: AnyEncodable] = [
-                "status": AnyEncodable("In Progress"),
+                "status": AnyEncodable(TripStatus.ongoing.rawValue),
                 "start_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
                 "start_odometer": AnyEncodable(Double(logOdometer) ?? 0.0),
                 "start_fuel_level": AnyEncodable(logFuel)
@@ -488,7 +637,12 @@ struct TripMapView: View {
                         self.isProcessing = false
                         
                         // Recalculate route for navigation (from current location to DROP OFF)
-                        self.calculateRoute()
+                        if let loc = self.locationProvider.currentLocation {
+                            self.calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+                        }
+                        
+                        // Accessibility Announcement
+                        UIAccessibility.post(notification: .announcement, argument: "Trip started. Navigation is active.")
                     }
                     
                 } catch {
@@ -501,15 +655,30 @@ struct TripMapView: View {
                  await MainActor.run { 
                     self.localTripStatus = .ongoing
                     self.isProcessing = false
-                    self.calculateRoute()
+                    // Fallback calc
+                    if let loc = self.locationProvider.currentLocation {
+                        self.calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
+                    }
                  }
             }
         }
     }
     
+    @State private var showTripSummary = false
+    @State private var tripSummaryMessage = ""
+    
+    // ... existing code ...
+    
     private func completeTrip() {
         // Validate odometer reading
         let endOdometer = Double(logOdometer) ?? 0.0
+        
+        // First check: cannot be negative
+        guard endOdometer >= 0 else {
+            odometerErrorMessage = "Odometer reading cannot be negative"
+            showOdometerError = true
+            return
+        }
         
         // Ensure end odometer is greater than start odometer
         guard endOdometer > startOdometerReading else {
@@ -521,9 +690,35 @@ struct TripMapView: View {
         // Stop Geofencing
         RouteMonitoringManager.shared.stopMonitoring()
         
+        // Calculate Efficiency
+        let distance = endOdometer - startOdometerReading
+        let startFuel = trip.startFuelLevel ?? 50.0 // Default or fetched
+        let endFuel = logFuel
+        
+        // Fuel Consumed %
+        // Assuming no refuel for simplicity of this calculation as requested
+        let fuelConsumedPercent = max(0, startFuel - endFuel)
+        
+        var efficiencyMsg = "\n\nDistance: \(String(format: "%.1f", distance)) km"
+        
+        if let vehicle = assignedVehicle, let capacity = vehicle.tankCapacity {
+            let litersConsumed = (fuelConsumedPercent / 100.0) * capacity
+            efficiencyMsg += "\nFuel Consumed: \(String(format: "%.1f", litersConsumed)) L"
+            
+            if litersConsumed > 0 {
+                let kmPerLiter = distance / litersConsumed
+                efficiencyMsg += "\nEfficiency: \(String(format: "%.1f", kmPerLiter)) km/L"
+                
+                // Update AI Model (Mock update for now)
+                print("🧠 Updating AI with real-world efficiency: \(kmPerLiter) km/L")
+            }
+        } else {
+             efficiencyMsg += "\nFuel Consumed: \(String(format: "%.0f", fuelConsumedPercent))% (Tank capacity unknown)"
+        }
+        
         Task {
             let updateData: [String: AnyEncodable] = [
-                "status": AnyEncodable("Completed"),
+                "status": AnyEncodable(TripStatus.completed.rawValue),
                 "end_time": AnyEncodable(ISO8601DateFormatter().string(from: Date())),
                 "end_odometer": AnyEncodable(endOdometer),
                 "end_fuel_level": AnyEncodable(logFuel)
@@ -533,7 +728,12 @@ struct TripMapView: View {
                 try await supabase.from("trips")
                     .update(updateData)
                     .eq("id", value: trip.id.uuidString).execute()
-                await MainActor.run { dismiss() }
+                
+                await MainActor.run {
+                    self.tripSummaryMessage = "Trip Completed Successfully! 🚀\(efficiencyMsg)"
+                    self.showTripSummary = true
+                    UIAccessibility.post(notification: .announcement, argument: "Trip completed successfully. Summary available.")
+                }
             } catch {
                 print("❌ Failed to update end trip: \(error)")
                 await MainActor.run { isProcessing = false }
@@ -562,6 +762,25 @@ struct TripMapView: View {
                  print("⚠️ Failed to check inspection status: \(error)")
                  // Allow trip if check fails to prevent blocking
                  await MainActor.run { hasCompletedInspection = true } 
+             }
+         }
+     }
+     
+     private func fetchVehicle() {
+         Task {
+             do {
+                 let vehicles: [Vehicle] = try await supabase
+                     .from("vehicles")
+                     .select()
+                     .eq("id", value: trip.vehicleId.uuidString)
+                     .execute()
+                     .value
+                 
+                 await MainActor.run {
+                     assignedVehicle = vehicles.first
+                 }
+             } catch {
+                 print("⚠️ Failed to fetch vehicle: \(error)")
              }
          }
      }

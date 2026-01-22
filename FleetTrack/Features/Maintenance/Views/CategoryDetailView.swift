@@ -76,6 +76,7 @@ struct CategoryDetailView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             Text("Add parts to this category using the + button")
                 .font(.subheadline)
@@ -169,6 +170,9 @@ struct PartRow: View {
             }
         }
         .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Part: \(part.name). Stock: \(part.quantityInStock). Price: \(part.formattedPrice). Status: \(part.stockStatus).")
+        .accessibilityIdentifier("maintenance_inventory_part_\(part.id.uuidString.prefix(8))")
     }
     
     private var stockStatusColor: Color {
