@@ -143,8 +143,6 @@ struct AddDriverView: View {
                         }
                     }
                 
-                licenseSection
-                
                 phoneSection
                 
                 emailSection
@@ -157,39 +155,7 @@ struct AddDriverView: View {
         }
     }
     
-    private var licenseSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ModernTextField(icon: "creditcard.fill", placeholder: "License No. (XX-0000000000000)", text: $formData.licenseNumber, isRequired: true)
-                .onChange(of: formData.licenseNumber) { newValue in
-                    let raw = newValue.replacingOccurrences(of: "-", with: "")
-                        .filter { $0.isLetter || $0.isNumber }
-                        .uppercased()
-                    
-                    let trimmed = String(raw.prefix(15))
-                    
-                    if trimmed.count > 2 {
-                        let prefix = trimmed.prefix(2)
-                        let suffix = trimmed.dropFirst(2)
-                        let formatted = "\(prefix)-\(suffix)"
-                        
-                        if formatted != newValue {
-                            formData.licenseNumber = formatted
-                        }
-                    } else {
-                        if trimmed != newValue {
-                            formData.licenseNumber = trimmed
-                        }
-                    }
-                }
-            
-            if !formData.licenseNumber.isEmpty && !NSPredicate(format:"SELF MATCHES %@", "^[A-Z]{2}-\\d{13}$").evaluate(with: formData.licenseNumber) {
-                Text("License must be 2 letters followed by hyphen and 13 digits")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.leading)
-            }
-        }
-    }
+
     
     private var phoneSection: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -300,10 +266,7 @@ struct AddDriverView: View {
     private var isFormValid: Bool {
         guard !formData.fullName.isEmpty else { return false }
         
-        // License: MH1420110062821 (2 letters + 13 digits) -> Converted to MH-1420110062821
-        let licenseRegEx = "^[A-Z]{2}-\\d{13}$"
-        let licensePred = NSPredicate(format:"SELF MATCHES %@", licenseRegEx)
-        guard licensePred.evaluate(with: formData.licenseNumber) else { return false }
+
         
         // Phone: Validate length based on country limit
         guard !localPhoneNumber.isEmpty && localPhoneNumber.count == selectedCountry.limit else { return false }

@@ -13,84 +13,84 @@ public struct AppTheme {
     // MARK: - Base Neutrals (Foundation)
 
     /// Primary app background: pure black for true dark mode
-    public static let backgroundPrimary = Color(hex: "#000000")
+    public static let backgroundPrimary = Color(hexCode: "#000000")
 
     /// Secondary surfaces (cards, sheets, modals): #1A1A1C to #1E1E20
-    public static let backgroundSecondary = Color(hex: "#1A1A1C")
+    public static let backgroundSecondary = Color(hexCode: "#1A1A1C")
 
     /// Elevated or highlighted surfaces (1-3% lighter than secondary)
-    public static let backgroundElevated = Color(hex: "#1E1E20")
+    public static let backgroundElevated = Color(hexCode: "#1E1E20")
 
     // MARK: - Text Color Hierarchy
 
     /// Primary text (titles, IDs, key labels): #FFFFFF
-    public static let textPrimary = Color(hex: "#FFFFFF")
+    public static let textPrimary = Color(hexCode: "#FFFFFF")
 
     /// Secondary text (descriptions, labels): #B0B0B3
-    public static let textSecondary = Color(hex: "#B0B0B3")
+    public static let textSecondary = Color(hexCode: "#B0B0B3")
 
     /// Tertiary text (metadata, timestamps, hints): #7D7D80
-    public static let textTertiary = Color(hex: "#7D7D80")
+    public static let textTertiary = Color(hexCode: "#7D7D80")
 
     /// Disabled text: #555558
-    public static let textDisabled = Color(hex: "#555558")
+    public static let textDisabled = Color(hexCode: "#555558")
 
     /// Inverse text (for use on accent colored surfaces): #000000
-    public static let textInverse = Color(hex: "#000000")
+    public static let textInverse = Color(hexCode: "#000000")
 
     // MARK: - Primary Accent Color (Neon Green)
 
     /// Base neon green accent: #00E676
     /// Reserved strictly for: Active states, Selected items, Primary CTAs, Active/running statuses
-    public static let accentPrimary = Color(hex: "#00E676")
+    public static let accentPrimary = Color(hexCode: "#00E676")
 
     /// Hover / emphasis neon green: #1AFF7C
-    public static let accentHover = Color(hex: "#1AFF7C")
+    public static let accentHover = Color(hexCode: "#1AFF7C")
 
     // MARK: - Status Color System
 
     /// Active / Success text color
-    public static let statusActiveText = Color(hex: "#00E676")
+    public static let statusActiveText = Color(hexCode: "#00E676")
 
     /// Active / Success background (dark green-tinted charcoal, low saturation)
-    public static let statusActiveBackground = Color(hex: "#0A1F14")
+    public static let statusActiveBackground = Color(hexCode: "#0A1F14")
 
     /// Maintenance / Warning amber/orange: #FFB020 (muted, not bright)
-    public static let statusWarning = Color(hex: "#FFB020")
+    public static let statusWarning = Color(hexCode: "#FFB020")
 
     /// Warning background (subtle)
-    public static let statusWarningBackground = Color(hex: "#1F1A0A")
+    public static let statusWarningBackground = Color(hexCode: "#1F1A0A")
 
     /// Idle / Inactive neutral gray: #6B6B6E
-    public static let statusIdle = Color(hex: "#6B6B6E")
+    public static let statusIdle = Color(hexCode: "#6B6B6E")
 
     /// Idle background (subtle)
-    public static let statusIdleBackground = Color(hex: "#16161A")
+    public static let statusIdleBackground = Color(hexCode: "#16161A")
 
     /// Error / Critical muted red: #D64545
-    public static let statusError = Color(hex: "#D64545")
+    public static let statusError = Color(hexCode: "#D64545")
 
     /// Error background (subtle)
-    public static let statusErrorBackground = Color(hex: "#1F0A0A")
+    public static let statusErrorBackground = Color(hexCode: "#1F0A0A")
 
     // MARK: - Dividers & Borders
 
     /// Primary divider/border color: #262629
-    public static let dividerPrimary = Color(hex: "#262629")
+    public static let dividerPrimary = Color(hexCode: "#262629")
 
     /// Secondary divider/border color: #2A2A2D
-    public static let dividerSecondary = Color(hex: "#2A2A2D")
+    public static let dividerSecondary = Color(hexCode: "#2A2A2D")
 
     // MARK: - Icon Colors
 
     /// Default icons: #B0B0B3
-    public static let iconDefault = Color(hex: "#B0B0B3")
+    public static let iconDefault = Color(hexCode: "#B0B0B3")
 
     /// Active icons: Neon green
-    public static let iconActive = Color(hex: "#00E676")
+    public static let iconActive = Color(hexCode: "#00E676")
 
     /// Disabled icons: #555558
-    public static let iconDisabled = Color(hex: "#555558")
+    public static let iconDisabled = Color(hexCode: "#555558")
 
     // MARK: - Spacing & Layout
 
@@ -120,7 +120,7 @@ public struct AppTheme {
 // MARK: - Color Extension for Hex Support
 
 extension Color {
-    init(hex: String) {
+    init(hexCode hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)

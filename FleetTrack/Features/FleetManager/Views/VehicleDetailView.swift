@@ -10,7 +10,6 @@ import SwiftUI
 struct VehicleDetailView: View {
     let vehicle: FMVehicle
     @Environment(\.presentationMode) var presentationMode
-    @State private var showInspection = false
     @State private var showServiceSelection = false
     @State private var showHistory = false
     @State private var selectedServices: Set<String> = []
@@ -70,10 +69,6 @@ struct VehicleDetailView: View {
                                 .foregroundColor(.white)
                             
                             HStack(spacing: 16) {
-                                QuickActionBtn(title: "Inspection", icon: "doc.text.fill", color: .blue) {
-                                    showInspection = true
-                                }
-                                
                                 Menu {
                                     // Show unassign option only if vehicle has an assigned driver
                                     if currentVehicle.assignedDriverId != nil {
@@ -147,11 +142,17 @@ struct VehicleDetailView: View {
                             VStack(spacing: 0) {
                                 InfoRow(icon: "car.fill", label: "Model", value: currentVehicle.model)
                                 Divider().background(Color.gray.opacity(0.2))
+                                InfoRow(icon: "building.2.fill", label: "Manufacturer", value: currentVehicle.manufacturer)
+                                Divider().background(Color.gray.opacity(0.2))
                                 InfoRow(icon: "number", label: "License Plate", value: currentVehicle.registrationNumber)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(currentVehicle.mileage))
+                                InfoRow(icon: "fuelpump.fill", label: "Fuel Type", value: currentVehicle.fuelType.rawValue)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "shield.fill", label: "Insurance", value: currentVehicle.insuranceStatus ?? "Pending")
+                                InfoRow(icon: "scalemass.fill", label: "Capacity", value: currentVehicle.capacity)
+                                Divider().background(Color.gray.opacity(0.2))
+                                InfoRow(icon: "calendar", label: "Registration Date", value: currentVehicle.registrationDate.formatted(date: .abbreviated, time: .omitted))
+                                Divider().background(Color.gray.opacity(0.2))
+                                InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(currentVehicle.mileage))
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
@@ -212,9 +213,6 @@ struct VehicleDetailView: View {
             }
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showInspection) {
-            VehicleInspectionView(vehicle: currentVehicle)
-        }
         .sheet(isPresented: $showServiceSelection) {
             ServiceSelectionView(vehicle: currentVehicle, selectedServices: $selectedServices, description: $serviceDescription) {
                 fleetVM.markForService(vehicleId: currentVehicle.id, serviceTypes: Array(selectedServices), description: serviceDescription)
@@ -252,7 +250,7 @@ struct VehicleDetailView: View {
     private func statusColor(_ status: VehicleStatus) -> Color {
         switch status {
         case .active: return .green
-        case .inactive: return .red
+        //case .inactive: return .red
         case .inMaintenance: return .yellow
         case .retired: return .gray
         }

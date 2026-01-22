@@ -92,6 +92,13 @@ struct DriverDashboardView: View {
         .fullScreenCover(isPresented: $isShowingReportIssue) {
             ReportIssueView(vehicle: viewModel.assignedVehicle)
         }
+        .fullScreenCover(isPresented: $viewModel.needsOnboarding, onDismiss: {
+            Task {
+                await viewModel.loadDashboardData(user: localUser)
+            }
+        }) {
+            DriverOnboardingView(user: localUser)
+        }
     }
     
     // Extracted dashboard content
