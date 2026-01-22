@@ -58,5 +58,6 @@ protocol AuthServiceProtocol {
     
     // MARK: - Two Factor (Legacy/Adapter)
     // These might be no-ops or specific to the implementation
-    func verifyTwoFactorCode(userID: UUID, code: String) async throws -> Bool
+    /// Update user profile
+    func updateUserProfile(id: UUID, name: String, email: String, phoneNumber: String?) async throws -> User
 }
