@@ -13,6 +13,7 @@ class TaskDetailViewModel: ObservableObject {
 
     @Published var task: MaintenanceTask
     @Published var assignedDriver: Driver?
+    @Published var assignedVehicle: Vehicle?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showingCompletionSheet: Bool = false
@@ -184,6 +185,9 @@ class TaskDetailViewModel: ObservableObject {
                 return
             }
             
+            // Save vehicle to published property
+            assignedVehicle = vehicle
+            
             // Step 2: Get the assigned driver ID from the vehicle
             guard let driverId = vehicle.assignedDriverId else {
                 print("ℹ️ No driver assigned to vehicle: \(task.vehicleRegistrationNumber)")
@@ -267,5 +271,58 @@ class TaskDetailViewModel: ObservableObject {
 
         // Show success message
         errorMessage = nil
+    }
+    
+    // MARK: - Direct Reschedule & Cancel Actions
+    
+    func rescheduleTask(newDate: Date, reason: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Update task due date
+            try await MaintenanceService.shared.rescheduleTask(taskId: task.id, newDate: newDate, reason: reason)
+            
+            // Update local task
+            task.dueDate = newDate
+            TasksViewModel.shared.updateTask(task)
+            
+            print("✅ Task rescheduled successfully")
+            print("  New Date: \(newDate)")
+            print("  Reason: \(reason)")
+            print("  Alert sent to fleet manager")
+        } catch {
+            errorMessage = "Failed to reschedule task: \(error.localizedDescription)"
+            print("❌ Error rescheduling task: \(error)")
+        }
+        
+        isLoading = false
+        showingRescheduleSheet = false
+    }
+
+    func cancelTask(reason: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Cancel task and lock it
+            try await MaintenanceService.shared.cancelTask(taskId: task.id, reason: reason)
+            
+            // Update local task
+            task.status = "Cancelled"
+            task.isLocked = true
+            TasksViewModel.shared.updateTask(task)
+            
+            print("✅ Task cancelled successfully")
+            print("  Reason: \(reason)")
+            print("  Task locked")
+            print("  Alert sent to fleet manager")
+        } catch {
+            errorMessage = "Failed to cancel task: \(error.localizedDescription)"
+            print("❌ Error cancelling task: \(error)")
+        }
+        
+        isLoading = false
+        showingCancelSheet = false
     }
 }
