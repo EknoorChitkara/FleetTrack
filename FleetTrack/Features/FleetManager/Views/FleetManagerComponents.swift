@@ -23,17 +23,19 @@ struct TripRow: View {
             .padding(.leading, 4)
             
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 4) {
-                    Text(trip.startAddress ?? "Start")
-                        .font(.system(size: 14, weight: .bold))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 10))
-                        .foregroundColor(.gray)
-                    Text(trip.endAddress ?? "End")
-                        .font(.system(size: 14, weight: .bold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(trip.startAddress ?? "Start Location")
+                        .font(.system(size: 13, weight: .bold))
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.down")
+                            .font(.system(size: 10))
+                            .foregroundColor(.appEmerald)
+                        Text(trip.endAddress ?? "Destination")
+                            .font(.system(size: 13, weight: .bold))
+                    }
                 }
                 .foregroundColor(.white)
-                .lineLimit(1)
                 
                 HStack(spacing: 8) {
                     Label(trip.purpose ?? "Shipment", systemImage: "shippingbox.fill")
@@ -41,8 +43,6 @@ struct TripRow: View {
                         .foregroundColor(.gray)
                     
                     if let startTime = trip.startTime {
-                        Text("•")
-                            .foregroundColor(.gray.opacity(0.5))
                         Text(startTime.formatted(date: .abbreviated, time: .omitted))
                             .font(.system(size: 12))
                             .foregroundColor(.gray)
@@ -153,16 +153,6 @@ struct VehicleCard: View {
                 }
                 
                 Spacer()
-                
-                Button(action: {
-                    fleetVM.deleteVehicle(byId: vehicle.id)
-                }) {
-                    Image(systemName: "trash")
-                        .foregroundColor(.red)
-                        .padding(8)
-                        .background(Color.red.opacity(0.1))
-                        .clipShape(Circle())
-                }
             }
             
             HStack(spacing: 12) {
@@ -205,16 +195,13 @@ struct VehicleCard: View {
         .cornerRadius(16)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Vehicle \(vehicle.registrationNumber), \(vehicle.model). Status: \(vehicle.status.rawValue). Assigned to: \(vehicle.assignedDriverName ?? "Unassigned").")
-        .accessibilityAction(named: "Delete Vehicle") {
-            fleetVM.deleteVehicle(byId: vehicle.id)
-        }
         .accessibilityIdentifier("fleet_vehicle_card_\(vehicle.registrationNumber)")
     }
     
     private func statusColor(_ status: VehicleStatus) -> Color {
         switch status {
         case .active: return .green
-        case .inactive: return .red
+        //case .inactive: return .red
         case .inMaintenance: return .yellow
         case .retired: return .gray
         }

@@ -30,7 +30,7 @@ struct MapPinSelectionView: View {
         self.searchType = searchType
         
         // Set pin color based on type
-        self.pinColor = searchType == .pickup ? .green : Color(hex: "F9D854")
+        self.pinColor = searchType == .pickup ? .green : Color(hexCode: "F9D854")
         
         // Initialize map region
         if let location = selectedLocation.wrappedValue {
@@ -169,7 +169,7 @@ struct MapPinSelectionView: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(isGeocodingLocation ? Color.gray.opacity(0.3) : Color(hex: "F9D854"))
+                        .fill(isGeocodingLocation ? Color.gray.opacity(0.3) : Color(hexCode: "F9D854"))
                 )
             }
             .disabled(isGeocodingLocation)

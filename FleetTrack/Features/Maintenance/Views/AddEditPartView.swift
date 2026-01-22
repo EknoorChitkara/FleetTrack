@@ -31,6 +31,8 @@ struct AddEditPartView: View {
     @State private var newCategoryName = ""
     @State private var showingScanner = false
     @State private var scannedData: ScannedPartData? = nil
+    @State private var showingSuccessMessage = false
+    @State private var successMessage = ""
     
     var isEditMode: Bool {
         partToEdit != nil
@@ -267,6 +269,13 @@ struct AddEditPartView: View {
             } message: {
                 Text(validationMessage)
             }
+            .alert("Success", isPresented: $showingSuccessMessage) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text(successMessage)
+            }
             .alert("Add Category", isPresented: $showingAddCategory) {
                 TextField("Category Name", text: $newCategoryName)
                 Button("Cancel", role: .cancel) { }
@@ -401,11 +410,13 @@ struct AddEditPartView: View {
         
         if isEditMode {
             viewModel.updatePart(part)
+            successMessage = "Part '\(part.name)' updated successfully!"
         } else {
             viewModel.addPart(part)
+            successMessage = "Part '\(part.name)' added successfully!"
         }
         
-        dismiss()
+        showingSuccessMessage = true
     }
 }
 

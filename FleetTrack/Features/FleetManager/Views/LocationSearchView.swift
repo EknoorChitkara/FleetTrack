@@ -202,7 +202,7 @@ struct LocationSearchView: View {
                     .textCase(.uppercase)
                 
                 ForEach(viewModel.searchResults) { result in
-                    let pinColor = searchType == .pickup ? Color.green : Color(hex: "F9D854")
+                    let pinColor = searchType == .pickup ? Color.green : Color(hexCode: "F9D854")
                     locationRow(result: result, icon: "mappin.circle.fill", iconColor: pinColor)
                 }
             }

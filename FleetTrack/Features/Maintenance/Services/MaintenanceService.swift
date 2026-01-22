@@ -728,4 +728,104 @@ public class MaintenanceService {
 
         print("✅ Alert \(alertId) deleted")
     }
+    
+    // MARK: - Task Reschedule & Cancel (Direct Action)
+    
+    /// Reschedule a task (direct action)
+    public func rescheduleTask(taskId: UUID, newDate: Date, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let dueDate: Date
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case dueDate = "due_date"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate(dueDate: newDate)
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        // Create manager alert
+        try await createManagerAlert(
+            title: "Task Rescheduled",
+            message: "Task has been rescheduled to \(formattedDate(newDate)). Reason: \(reason)",
+            taskId: taskId
+        )
+        
+        print("✅ Task \(taskId) rescheduled to \(newDate)")
+    }
+    
+    /// Cancel a task (direct action)
+    public func cancelTask(taskId: UUID, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let status: String = "Cancelled"
+            let isLocked: Bool = true
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case status
+                case isLocked = "is_locked"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate()
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        // Create manager alert
+        try await createManagerAlert(
+            title: "Task Cancelled",
+            message: "Task has been cancelled. Reason: \(reason)",
+            taskId: taskId
+        )
+        
+        print("✅ Task \(taskId) cancelled")
+    }
+    
+    /// Create a manager alert
+    private func createManagerAlert(title: String, message: String, taskId: UUID) async throws {
+        struct AlertInsert: Encodable {
+            let title: String
+            let message: String
+            let taskId: UUID
+            let type: String = "info"
+            let createdAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case title
+                case message
+                case taskId = "task_id"
+                case type
+                case createdAt = "created_at"
+            }
+        }
+        
+        let alert = AlertInsert(title: title, message: message, taskId: taskId)
+        
+        try await client
+            .from("maintenance_alerts")
+            .insert(alert)
+            .execute()
+        
+        print("✅ Manager alert created: \(title)")
+    }
+    
+    /// Format date for display
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
 }

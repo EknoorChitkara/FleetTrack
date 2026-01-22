@@ -185,6 +185,31 @@ class AuthViewModel: ObservableObject {
         loginSuccessful = true
     }
     
+    /// Update profile
+    func updateProfile(name: String, email: String, phone: String) async -> Bool {
+        guard let userId = sessionManager.currentUser?.id else { return false }
+        
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let updatedUser = try await authService.updateUserProfile(
+                id: userId,
+                name: name,
+                email: email,
+                phoneNumber: phone.isEmpty ? nil : phone
+            )
+            
+            sessionManager.updateCurrentUserLocally(updatedUser)
+            isLoading = false
+            return true
+        } catch {
+            isLoading = false
+            handleError(error)
+            return false
+        }
+    }
+    
     /// Logout
     func logout() async {
         isLoading = true
