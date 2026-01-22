@@ -67,6 +67,12 @@ class SessionManager: ObservableObject {
         self.isAuthenticated = true
     }
     
+    /// Update current user locally
+    @MainActor
+    func updateCurrentUserLocally(_ user: User) {
+        self.currentUser = user
+    }
+    
     /// Clear session locally
     func clearSession() {
         self.currentUser = nil

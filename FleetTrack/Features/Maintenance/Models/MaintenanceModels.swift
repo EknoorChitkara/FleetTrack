@@ -72,7 +72,7 @@ public enum TaskStatus: String, Codable, CaseIterable, Hashable {
         case .paused:
             return .gray
         case .completed:
-            return Color(hex: "2D7D46")
+            return Color(hexCode: "2D7D46")
         case .failed:
             return .red
         case .cancelled:

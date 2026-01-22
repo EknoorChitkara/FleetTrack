@@ -26,6 +26,7 @@ final class DriverDashboardViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var dashboardActions: [DashboardAction] = []
+    @Published var needsOnboarding = false
     
     // MARK: - Dependencies
     
@@ -42,9 +43,15 @@ final class DriverDashboardViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            // 1. Fetch Driver Profile
             let driverProfile = try await driverService.getDriverProfile(userId: user.id)
             self.driver = driverProfile
+            
+            // Trigger onboarding if record exists but is incomplete
+            if driverProfile.driverLicenseNumber == nil || driverProfile.driverLicenseNumber == "Not Set" || driverProfile.driverLicenseNumber?.isEmpty == true {
+                self.needsOnboarding = true
+            } else {
+                self.needsOnboarding = false
+            }
             
             // 2. Fetch Assigned Vehicle (Query by Driver ID from Database)
             do {
@@ -106,7 +113,8 @@ final class DriverDashboardViewModel: ObservableObject {
             
             // Check for PGRST116: No rows found (Driver record missing)
             if "\(error)".contains("PGRST116") {
-                print("ℹ️ Driver profile not found. Displaying empty dashboard.")
+                print("ℹ️ Driver profile not found. Triggering onboarding.")
+                self.needsOnboarding = true
                 // Initialize an empty driver object so the UI can show 0/nil values
                 self.driver = Driver(
                     userId: user.id,
@@ -125,9 +133,7 @@ final class DriverDashboardViewModel: ObservableObject {
                 self.totalDistance = 0.0
                 self.avgSpeed = 0.0
                 self.avgTripDistance = 0.0
-                self.avgSpeed = 0.0
-                self.avgTripDistance = 0.0
-                self.dashboardActions = DashboardAction.allActions // Still show actions even if profile fails? Maybe safer to show them so user can report issue.
+                self.dashboardActions = DashboardAction.allActions
                 self.errorMessage = nil // Clear error to show empty UI
             } else {
                 self.errorMessage = "Failed to load dashboard data. Please try again."
