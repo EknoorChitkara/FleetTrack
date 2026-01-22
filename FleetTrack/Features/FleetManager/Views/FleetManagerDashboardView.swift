@@ -132,6 +132,7 @@ struct TabBarItem: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(title) tab")
             .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : [.isButton])
+            .accessibilityIdentifier("fleet_tab_\(title.lowercased())")
         }
         //    },
     }

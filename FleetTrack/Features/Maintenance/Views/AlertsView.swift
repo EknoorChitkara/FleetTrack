@@ -58,6 +58,8 @@ struct AlertsView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal, AppTheme.spacing.md)
                 .padding(.bottom, AppTheme.spacing.sm)
+                .accessibilityLabel("Filter alerts")
+                .accessibilityIdentifier("maintenance_alerts_filter")
 
                 // Alerts List
                 // Alerts List
@@ -256,6 +258,10 @@ struct InventoryAlertCard: View {
             .cornerRadius(AppTheme.cornerRadius.medium)
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(alertType) Alert: \(part.name). Stock: \(part.quantityInStock). Category: \(part.category.rawValue).")
+        .accessibilityHint("Double tap to update stock")
+        .accessibilityIdentifier("maintenance_inventory_alert_\(part.id.uuidString.prefix(8))")
     }
 }
 
@@ -318,6 +324,9 @@ struct MaintenanceAlertCard: View {
                 .stroke(AppTheme.statusError.opacity(0.3), lineWidth: 1)
         )
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Maintenance Alert: \(alert.title). Type: \(alert.type.rawValue). Date: \(alert.date.formatted(date: .abbreviated, time: .shortened)).")
+        .accessibilityIdentifier("maintenance_system_alert_\(alert.id.uuidString.prefix(8))")
     }
 }
 

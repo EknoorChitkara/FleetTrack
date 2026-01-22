@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct AddVehicleView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -40,6 +41,8 @@ struct AddVehicleView: View {
                             .font(.system(size: 24))
                             .foregroundColor(.gray)
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("add_vehicle_cancel_button")
                     Spacer()
                     Text("Add Vehicle")
                         .font(.headline)
@@ -49,6 +52,7 @@ struct AddVehicleView: View {
                         if fleetVM.isVehicleRegistered(formData.registrationNumber) {
                             withAnimation(.spring()) {
                                 showDuplicateAlert = true
+                                UIAccessibility.post(notification: .announcement, argument: "Error: Vehicle with this registration already exists")
                             }
                             // Auto-hide alert after 3 seconds
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -65,6 +69,9 @@ struct AddVehicleView: View {
                             .foregroundColor(!isFormValid ? .gray : .appEmerald)
                     }
                     .disabled(!isFormValid)
+                    .accessibilityLabel("Save")
+                    .accessibilityHint(isFormValid ? "Double tap to save vehicle" : "Form incomplete")
+                    .accessibilityIdentifier("add_vehicle_save_button")
                     .alert("Confirm Save", isPresented: $showSaveConfirmation) {
                         Button("Cancel", role: .cancel) { }
                         Button("Save") {
@@ -89,6 +96,7 @@ struct AddVehicleView: View {
                             VStack(spacing: 8) {
                                 ModernTextField(icon: "number.square.fill", placeholder: "Registration No. (e.g., XX-00-XX0000)", text: $formData.registrationNumber, isRequired: true, autocapitalization: .allCharacters)
                                     .focused($focusedField, equals: .registration)
+                                    .accessibilityHint("Format required: Two letters, two numbers, one or two letters, four numbers. Example: MH-14-AB1234")
                                     .onChange(of: formData.registrationNumber) { newValue in
                                         let filtered = newValue.uppercased().filter { $0.isLetter || $0.isNumber }
                                         var result = ""

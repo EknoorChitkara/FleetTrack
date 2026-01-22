@@ -38,9 +38,10 @@ struct FleetManagerEditProfileView: View {
                             .font(.system(size: 20))
                             .padding(10)
                             .background(Color(white: 0.2))
-                            .clipShape(Circle())
                             .foregroundColor(.white)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("edit_profile_back_button")
                     
                     Spacer()
                     
@@ -72,6 +73,8 @@ struct FleetManagerEditProfileView: View {
                             .background(Color(white: 0.15))
                             .cornerRadius(8)
                             .foregroundColor(.white)
+                            .accessibilityLabel("Full Name")
+                            .accessibilityIdentifier("edit_profile_name_field")
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
@@ -84,6 +87,8 @@ struct FleetManagerEditProfileView: View {
                             .background(Color(white: 0.15).opacity(0.5))
                             .cornerRadius(8)
                             .foregroundColor(.gray)
+                            .accessibilityLabel("Role: \(user.role.rawValue)")
+                            .accessibilityIdentifier("edit_profile_role_read_only")
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
@@ -95,6 +100,8 @@ struct FleetManagerEditProfileView: View {
                             .background(Color(white: 0.15))
                             .cornerRadius(8)
                             .foregroundColor(.white)
+                            .accessibilityLabel("Email Address")
+                            .accessibilityIdentifier("edit_profile_email_field")
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
@@ -106,6 +113,8 @@ struct FleetManagerEditProfileView: View {
                             .background(Color(white: 0.15))
                             .cornerRadius(8)
                             .foregroundColor(.white)
+                            .accessibilityLabel("Phone Number")
+                            .accessibilityIdentifier("edit_profile_phone_field")
                     }
                 }
                 .padding(.horizontal)
@@ -125,6 +134,9 @@ struct FleetManagerEditProfileView: View {
                         .background(Color.appEmerald)
                         .cornerRadius(12)
                 }
+                .accessibilityLabel("Save Changes")
+                .accessibilityHint("Double tap to save your profile changes")
+                .accessibilityIdentifier("edit_profile_save_button")
                 .padding(.horizontal)
                 .padding(.bottom, 40)
             }

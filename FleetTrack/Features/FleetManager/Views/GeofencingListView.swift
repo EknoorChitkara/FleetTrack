@@ -38,6 +38,9 @@ struct GeofencingListView: View {
                             .font(.system(size: 30))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Add Geofence")
+                    .accessibilityHint("Double tap to create a new circular geofence")
+                    .accessibilityIdentifier("geofence_add_button")
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
@@ -79,6 +82,7 @@ struct GeofencingListView: View {
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 100)
+                        .accessibilityIdentifier("geofences_list")
                     }
                 }
             }
@@ -209,6 +213,13 @@ struct GeofenceCard: View {
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
         .opacity(geofence.isActive ? 1.0 : 0.6)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Geofence: \(geofence.name). Status: \(geofence.isActive ? "Active" : "Paused"). Radius: \(Int(geofence.radiusMeters)) meters. Location: \(coordinateString).")
+        .accessibilityHint("Double tap for options, or swipe for quick actions")
+        .accessibilityIdentifier("geofence_card_\(geofence.id.uuidString.prefix(8))")
+        .accessibilityAction(named: "Edit") { onEdit() }
+        .accessibilityAction(named: geofence.isActive ? "Pause" : "Resume") { onToggleStatus() }
+        .accessibilityAction(named: "Delete") { onDelete() }
         .contextMenu {
             Button(action: onToggleStatus) {
                 Label(geofence.isActive ? "Pause" : "Resume", systemImage: geofence.isActive ? "pause.circle" : "play.circle")

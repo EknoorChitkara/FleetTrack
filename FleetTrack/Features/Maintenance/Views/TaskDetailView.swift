@@ -117,6 +117,7 @@ struct TaskDetailView: View {
             Text("Task Information")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             VStack(spacing: AppTheme.spacing.sm) {
                 InfoRow(icon: "number", label: "Task ID", value: viewModel.task.id.uuidString.prefix(8).uppercased())
@@ -142,6 +143,8 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_info_card")
     }
     
     // MARK: - Status Section with Actions
@@ -151,6 +154,7 @@ struct TaskDetailView: View {
             Text("Status & Actions")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             // Current Status
             StatusBadge(status: viewModel.task.status, task: viewModel.task)
@@ -211,6 +215,8 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_status_section")
     }
     
     // MARK: - Vehicle Info Card
@@ -220,6 +226,7 @@ struct TaskDetailView: View {
             Text("Vehicle Information")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             VStack(spacing: AppTheme.spacing.sm) {
                 // Show vehicle name if available
@@ -233,6 +240,8 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_vehicle_info")
     }
     
     // MARK: - Driver Contact Section
@@ -243,6 +252,7 @@ struct TaskDetailView: View {
             Text("Driver Contact")
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             
             if let driver = viewModel.assignedDriver {
                 // Real driver data
@@ -333,6 +343,8 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("maintenance_task_driver_contact")
     }
     
     // MARK: - Parts & Costs Section
@@ -343,6 +355,7 @@ struct TaskDetailView: View {
                 Text("Parts & Costs")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -488,6 +501,7 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityIdentifier("maintenance_task_parts_section")
     }
     
     // MARK: - Repair Log Card
@@ -498,6 +512,7 @@ struct TaskDetailView: View {
                 Text("Repair Log")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -518,6 +533,7 @@ struct TaskDetailView: View {
                         .background(AppTheme.backgroundElevated)
                         .cornerRadius(6)
                     }
+                    .accessibilityLabel("Edit repair log")
                 }
             }
             
@@ -551,6 +567,7 @@ struct TaskDetailView: View {
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityIdentifier("maintenance_task_repair_log")
     }
     
     private func formattedDate(_ date: Date) -> String {

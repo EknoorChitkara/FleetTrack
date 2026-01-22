@@ -52,6 +52,7 @@ struct ResetPasswordView: View {
                         Text(titleText)
                             .font(.system(size: 30, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
+                            .accessibilityAddTraits(.isHeader)
                         
                         if isInvite {
                             Text("Welcome! Please set your password to get started.")
@@ -81,6 +82,8 @@ struct ResetPasswordView: View {
                                 .cornerRadius(12)
                                 .foregroundColor(.white)
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appSecondaryText.opacity(0.3), lineWidth: 1))
+                                .accessibilityLabel("New Password")
+                                .accessibilityIdentifier("reset_new_password_field")
                             
                             SecureField("", text: $confirmPassword, prompt: Text("Confirm Password").foregroundColor(.appSecondaryText))
                                 .padding()
@@ -88,6 +91,8 @@ struct ResetPasswordView: View {
                                 .cornerRadius(12)
                                 .foregroundColor(.white)
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.appSecondaryText.opacity(0.3), lineWidth: 1))
+                                .accessibilityLabel("Confirm New Password")
+                                .accessibilityIdentifier("reset_confirm_password_field")
                         }
                         .padding(.horizontal)
                         

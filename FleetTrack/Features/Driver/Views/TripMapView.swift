@@ -10,6 +10,7 @@
 
 import SwiftUI
 import MapKit
+import UIKit
 import CoreLocation
 import Combine
 import Supabase
@@ -100,6 +101,7 @@ struct TripMapView: View {
                     dismiss()
                 }
                 .foregroundColor(.white)
+                .accessibilityIdentifier("trip_map_close_button")
             }
         }
         .sheet(isPresented: $showStartLog) {
@@ -299,6 +301,8 @@ struct TripMapView: View {
         .padding(.vertical, 4)
         .background(statusColor)
         .cornerRadius(8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Trip Status: \(statusText)")
     }
     
     var statusText: String {
@@ -426,6 +430,9 @@ struct TripMapView: View {
                 .foregroundColor(.white)
                 .cornerRadius(12)
                 .shadow(color: Color.blue.opacity(0.3), radius: 5, x: 0, y: 4)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Route Recommendation: \(displayRoute.isRecommended ? "AI Recommended" : "Selected"). Fuel Estimate: \(Int(displayRoute.fuelEstimate.liters)) liters. Travel time: \(formatTime(seconds: displayRoute.expectedTravelTime))")
+                .accessibilityIdentifier("trip_map_recommendation_banner")
             }
             
             // Navigation status
@@ -478,6 +485,8 @@ struct TripMapView: View {
                     }
                 }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(isPickupPhase ? "Pickup" : "Dropoff") at \(isPickupPhase ? (trip.startAddress ?? "Pickup") : (trip.endAddress ?? "Dropoff")). Distance: \(routeDistance != nil ? String(format: "%.1f km away", routeDistance!) : "unknown distance")")
             
             // Route Overview
             HStack(spacing: 6) {
@@ -518,6 +527,7 @@ struct TripMapView: View {
                         .cornerRadius(12)
                 }
                 .disabled(!isScheduledForToday)
+                .accessibilityIdentifier("trip_map_action_button")
             } else if isDeliveryPhase {
                 Button { 
                     logOdometer = ""
@@ -630,6 +640,9 @@ struct TripMapView: View {
                         if let loc = self.locationProvider.currentLocation {
                             self.calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
                         }
+                        
+                        // Accessibility Announcement
+                        UIAccessibility.post(notification: .announcement, argument: "Trip started. Navigation is active.")
                     }
                     
                 } catch {
@@ -719,6 +732,7 @@ struct TripMapView: View {
                 await MainActor.run {
                     self.tripSummaryMessage = "Trip Completed Successfully! 🚀\(efficiencyMsg)"
                     self.showTripSummary = true
+                    UIAccessibility.post(notification: .announcement, argument: "Trip completed successfully. Summary available.")
                 }
             } catch {
                 print("❌ Failed to update end trip: \(error)")

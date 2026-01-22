@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import UIKit
 
 /// A pure map component that renders a trip route and vehicle location
 /// Supports both Driver (local GPS) and Fleet Manager (remote tracking) use cases
@@ -56,6 +57,7 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
     
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
+        mapView.accessibilityLabel = "Trip Route Map"
         mapView.delegate = context.coordinator
         mapView.showsCompass = true
         mapView.showsScale = true
@@ -308,6 +310,7 @@ struct UnifiedTripMap<Provider: TripLocationProvider>: UIViewRepresentable {
                 withAnimation {
                     self.parent.selectedRouteID = id
                 }
+                UIAccessibility.post(notification: .announcement, argument: "Route \(id.uuidString.prefix(4)) selected")
             }
         }
         

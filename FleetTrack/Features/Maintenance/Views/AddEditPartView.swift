@@ -48,9 +48,10 @@ struct AddEditPartView: View {
                     .ignoresSafeArea()
                 
                 Form {
-                    Section(header: Text("Basic Information")) {
+                    Section(header: Text("Basic Information").accessibilityAddTraits(.isHeader)) {
                         TextField("Part Name", text: $name)
                             .foregroundColor(AppTheme.textPrimary)
+<<<<<<< HEAD
                             .onChange(of: name) { newValue in
                                 // Allow only letters, spaces, and hyphens, max 50 characters
                                 let filtered = newValue.filter { $0.isLetter || $0.isWhitespace || $0 == "-" }
@@ -87,6 +88,16 @@ struct AddEditPartView: View {
                                     .cornerRadius(8)
                             }
                         }
+=======
+                            .accessibilityLabel("Part Name")
+                            .accessibilityIdentifier("maintenance_part_name_input")
+                        
+                        TextField("Part Number", text: $partNumber)
+                            .foregroundColor(AppTheme.textPrimary)
+                            .autocapitalization(.allCharacters)
+                            .accessibilityLabel("Part Number")
+                            .accessibilityIdentifier("maintenance_part_number_input")
+>>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
                         
                         Picker("Category", selection: $category) {
                             ForEach(viewModel.allCategories) { cat in
@@ -99,6 +110,8 @@ struct AddEditPartView: View {
                         }
                         .pickerStyle(.menu)
                         .foregroundColor(AppTheme.textPrimary)
+                        .accessibilityLabel("Category")
+                        .accessibilityIdentifier("maintenance_part_category_picker")
                         
                         // Create New Category Button
                         Button(action: {
@@ -118,14 +131,18 @@ struct AddEditPartView: View {
                             .cornerRadius(8)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Create New Category")
+                        .accessibilityIdentifier("maintenance_part_new_category_button")
                         
                         TextField("Description (Optional)", text: $description, axis: .vertical)
                             .foregroundColor(AppTheme.textPrimary)
                             .lineLimit(3...6)
+                            .accessibilityLabel("Description")
+                            .accessibilityIdentifier("maintenance_part_description_input")
                     }
                     .listRowBackground(AppTheme.backgroundSecondary)
                     
-                    Section(header: Text("Stock Information")) {
+                    Section(header: Text("Stock Information").accessibilityAddTraits(.isHeader)) {
                         HStack {
                             Text("Quantity in Stock")
                             Spacer()
@@ -166,7 +183,7 @@ struct AddEditPartView: View {
                     }
                     .listRowBackground(AppTheme.backgroundSecondary)
                     
-                    Section(header: Text("Pricing")) {
+                    Section(header: Text("Pricing").accessibilityAddTraits(.isHeader)) {
                         HStack {
                             Text("Unit Price (₹)")
                             Spacer()
@@ -210,7 +227,7 @@ struct AddEditPartView: View {
                     }
                     .listRowBackground(AppTheme.backgroundSecondary)
                     
-                    Section(header: Text("Supplier Information (Optional)")) {
+                    Section(header: Text("Supplier Information (Optional)").accessibilityAddTraits(.isHeader)) {
                         TextField("Supplier Name", text: $supplierName)
                             .foregroundColor(AppTheme.textPrimary)
                             .onChange(of: supplierName) { newValue in
@@ -242,17 +259,31 @@ struct AddEditPartView: View {
             }
             .navigationTitle(isEditMode ? "Edit Part" : "Add Part")
             .navigationBarTitleDisplayMode(.inline)
+            .accessibilityIdentifier("maintenance_add_edit_part_view")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
+<<<<<<< HEAD
+=======
+                    .foregroundColor(AppTheme.textSecondary)
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("maintenance_part_cancel_button")
+>>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(isEditMode ? "Update" : "Save") {
                         savePart()
                     }
+<<<<<<< HEAD
+=======
+                    .foregroundColor(AppTheme.accentPrimary)
+                    .fontWeight(.semibold)
+                    .accessibilityLabel("Save part")
+                    .accessibilityIdentifier("maintenance_part_save_button")
+>>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
                 }
             }
             .alert("Validation Error", isPresented: $showingValidationError) {
