@@ -10,55 +10,93 @@ struct TripRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Status Indicator Strip
-            Rectangle()
-                .fill(statusColor(trip.status))
-                .frame(width: 4)
-                .cornerRadius(2)
-                .padding(.vertical, 12)
+            // Status Icon with background
+            ZStack {
+                Circle()
+                    .fill(statusColor(trip.status).opacity(0.1))
+                    .frame(width: 48, height: 48)
+                
+                Image(systemName: statusIcon(trip.status))
+                    .foregroundColor(statusColor(trip.status))
+                    .font(.system(size: 20))
+            }
+            .padding(.leading, 4)
             
-            Circle()
-                .fill(statusColor(trip.status).opacity(0.1))
-                .frame(width: 40, height: 40)
-                .overlay(Image(systemName: "map.fill").foregroundColor(statusColor(trip.status)))
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(trip.startAddress ?? "Start") → \(trip.endAddress ?? "End")")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                Text(trip.purpose ?? "Trip")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Text(trip.startAddress ?? "Start")
+                        .font(.system(size: 14, weight: .bold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(.gray)
+                    Text(trip.endAddress ?? "End")
+                        .font(.system(size: 14, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .lineLimit(1)
+                
+                HStack(spacing: 8) {
+                    Label(trip.purpose ?? "Shipment", systemImage: "shippingbox.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                    
+                    if let startTime = trip.startTime {
+                        Text("•")
+                            .foregroundColor(.gray.opacity(0.5))
+                        Text(startTime.formatted(date: .abbreviated, time: .omitted))
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
+                }
             }
             
             Spacer()
             
             VStack(alignment: .trailing, spacing: 4) {
                 Text(trip.formattedDistance)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.appEmerald)
-                if let startTime = trip.startTime {
-                    Text(startTime, style: .date)
-                        .font(.system(size: 10))
-                        .foregroundColor(.gray)
-                }
+                
+                Text(trip.status.capitalized)
+                    .font(.system(size: 10, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(statusColor(trip.status).opacity(0.1))
+                    .foregroundColor(statusColor(trip.status))
+                    .cornerRadius(4)
             }
         }
-        .padding(.trailing) // Remove default padding from left/strip side
-        .background(Color.appCardBackground)
-        .cornerRadius(12)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.appCardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                )
+        )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Trip from \(trip.startAddress ?? "Start") to \(trip.endAddress ?? "End"). Purpose: \(trip.purpose ?? "Trip"). Distance: \(trip.formattedDistance).")
+        .accessibilityLabel("Trip from \(trip.startAddress ?? "Start") to \(trip.endAddress ?? "End"). Purpose: \(trip.purpose ?? "Trip"). Status: \(trip.status). Distance: \(trip.formattedDistance).")
         .accessibilityIdentifier("fleet_trip_row_\(trip.id.uuidString.prefix(8))")
     }
     
     private func statusColor(_ status: String) -> Color {
         switch status.lowercased() {
         case "completed": return .green
-        case "ongoing": return .orange
+        case "ongoing", "in progress": return .orange
         case "scheduled": return .blue
         case "cancelled": return .red
         default: return .gray
+        }
+    }
+    
+    private func statusIcon(_ status: String) -> String {
+        switch status.lowercased() {
+        case "completed": return "checkmark.circle.fill"
+        case "ongoing", "in progress": return "map.fill"
+        case "scheduled": return "calendar"
+        case "cancelled": return "xmark.circle.fill"
+        default: return "questionmark.circle"
         }
     }
 }
@@ -106,7 +144,7 @@ struct VehicleCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(vehicle.registrationNumber + (vehicle.status == .retired ? " –" : ""))
+                    Text(vehicle.registrationNumber)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                     Text(vehicle.model)

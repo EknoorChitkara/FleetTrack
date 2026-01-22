@@ -51,7 +51,7 @@ struct AddEditPartView: View {
                     Section(header: Text("Basic Information").accessibilityAddTraits(.isHeader)) {
                         TextField("Part Name", text: $name)
                             .foregroundColor(AppTheme.textPrimary)
-<<<<<<< HEAD
+
                             .onChange(of: name) { newValue in
                                 // Allow only letters, spaces, and hyphens, max 50 characters
                                 let filtered = newValue.filter { $0.isLetter || $0.isWhitespace || $0 == "-" }
@@ -88,7 +88,7 @@ struct AddEditPartView: View {
                                     .cornerRadius(8)
                             }
                         }
-=======
+
                             .accessibilityLabel("Part Name")
                             .accessibilityIdentifier("maintenance_part_name_input")
                         
@@ -97,7 +97,7 @@ struct AddEditPartView: View {
                             .autocapitalization(.allCharacters)
                             .accessibilityLabel("Part Number")
                             .accessibilityIdentifier("maintenance_part_number_input")
->>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
+
                         
                         Picker("Category", selection: $category) {
                             ForEach(viewModel.allCategories) { cat in
@@ -265,25 +265,21 @@ struct AddEditPartView: View {
                     Button("Cancel") {
                         dismiss()
                     }
-<<<<<<< HEAD
-=======
                     .foregroundColor(AppTheme.textSecondary)
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("maintenance_part_cancel_button")
->>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
+
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(isEditMode ? "Update" : "Save") {
                         savePart()
                     }
-<<<<<<< HEAD
-=======
                     .foregroundColor(AppTheme.accentPrimary)
                     .fontWeight(.semibold)
                     .accessibilityLabel("Save part")
                     .accessibilityIdentifier("maintenance_part_save_button")
->>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
+
                 }
             }
             .alert("Validation Error", isPresented: $showingValidationError) {

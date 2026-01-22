@@ -67,17 +67,17 @@ struct FleetManagerVehiclesView: View {
                             let clean = newValue.replacingOccurrences(of: "-", with: "").uppercased()
                             var formatted = ""
                             
-                            // Example Pattern: MH12AB1234 -> MH-12-AB-1234
-                            // Simple logic: Insert hyphen after 2nd and 4th characters if length permits
-                            // This is a basic generic formatter that helps readability
                             for (index, char) in clean.enumerated() {
-                                if index == 2 || index == 4 {
-                                    formatted += "-"
+                                if index > 0 {
+                                    let prevIdx = clean.index(clean.startIndex, offsetBy: index - 1)
+                                    let prevChar = clean[prevIdx]
+                                    if (prevChar.isLetter && char.isNumber) || (prevChar.isNumber && char.isLetter) {
+                                        formatted.append("-")
+                                    }
                                 }
                                 formatted.append(char)
                             }
                             
-                            // Handle deletion logic (prevent getting stuck) by allowing direct set if deleting
                             if newValue.count < searchText.count {
                                 searchText = newValue.uppercased()
                             } else {

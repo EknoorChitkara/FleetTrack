@@ -11,7 +11,7 @@ import MapKit
 import Combine
 
 @MainActor
-class PlanTripViewModel: ObservableObject {
+class PlanTripViewModel: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     // Form Data
     @Published var vehicleId: UUID?
     @Published var driverId: UUID?
@@ -30,6 +30,19 @@ class PlanTripViewModel: ObservableObject {
         span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
     )
     
+    // Suggestions
+    @Published var pickupSuggestions: [MKLocalSearchCompletion] = []
+    @Published var dropoffSuggestions: [MKLocalSearchCompletion] = []
+    @Published var showPickupSuggestions = false
+    @Published var showDropoffSuggestions = false
+    
+    private let completer = MKLocalSearchCompleter()
+    private var currentSearchType: SearchType?
+    
+    enum SearchType {
+        case pickup, dropoff
+    }
+    
     // UI State
     @Published var isGeocodingStart = false
     @Published var isGeocodingEnd = false
@@ -42,28 +55,75 @@ class PlanTripViewModel: ObservableObject {
     // Debounce addresses
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.region = mapRegion
         setupAddressObservers()
     }
     
     private func setupAddressObservers() {
-        // Debounce start address changes
+        // Observers for live search suggestions
         $startAddress
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] address in
-                guard let self = self, !address.isEmpty else { return }
-                Task { await self.geocodeStartAddress(address) }
+                guard let self = self else { return }
+                if !address.isEmpty && self.currentSearchType != .pickup {
+                    self.currentSearchType = .pickup
+                    self.completer.queryFragment = address
+                } else if address.isEmpty {
+                    self.pickupSuggestions = []
+                    self.showPickupSuggestions = false
+                }
             }
             .store(in: &cancellables)
-        
-        // Debounce end address changes
+            
         $endAddress
-            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .sink { [weak self] address in
-                guard let self = self, !address.isEmpty else { return }
-                Task { await self.geocodeEndAddress(address) }
+                guard let self = self else { return }
+                if !address.isEmpty && self.currentSearchType != .dropoff {
+                    self.currentSearchType = .dropoff
+                    self.completer.queryFragment = address
+                } else if address.isEmpty {
+                    self.dropoffSuggestions = []
+                    self.showDropoffSuggestions = false
+                }
             }
             .store(in: &cancellables)
+    }
+    
+    // MARK: - MKLocalSearchCompleterDelegate
+    
+    nonisolated func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        Task { @MainActor in
+            if self.currentSearchType == .pickup {
+                self.pickupSuggestions = completer.results
+                self.showPickupSuggestions = !completer.results.isEmpty
+            } else if self.currentSearchType == .dropoff {
+                self.dropoffSuggestions = completer.results
+                self.showDropoffSuggestions = !completer.results.isEmpty
+            }
+        }
+    }
+    
+    nonisolated func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        print("Completer error: \(error.localizedDescription)")
+    }
+    
+    // Selecting a suggestion
+    func selectPickupSuggestion(_ suggestion: MKLocalSearchCompletion) {
+        startAddress = suggestion.title
+        showPickupSuggestions = false
+        currentSearchType = nil // Reset so further typing triggers completer
+        Task { await geocodeStartAddress(suggestion.title) }
+    }
+    
+    func selectDropoffSuggestion(_ suggestion: MKLocalSearchCompletion) {
+        endAddress = suggestion.title
+        showDropoffSuggestions = false
+        currentSearchType = nil
+        Task { await geocodeEndAddress(suggestion.title) }
     }
     
     private func geocodeStartAddress(_ address: String) async {

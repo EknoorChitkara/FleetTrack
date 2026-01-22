@@ -8,10 +8,11 @@ import SwiftUI
 struct AllTripsView: View {
     @EnvironmentObject var fleetVM: FleetViewModel
     @State private var selectedSegment = 0
+    @State private var showPlanTrip = false
     
     var currentTrips: [FMTrip] {
         fleetVM.trips.filter { trip in
-            trip.status.lowercased() == "scheduled" || trip.status.lowercased() == "in progress"
+            trip.status.lowercased() == "scheduled" || trip.status.lowercased() == "ongoing" || trip.status.lowercased() == "in progress"
         }
     }
     
@@ -29,68 +30,64 @@ struct AllTripsView: View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
             
-            VStack(spacing: 24) {
+            VStack(spacing: 0) {
                 // Header
-                HStack(spacing: 8) {
-                    Text("Trips")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Text("\(fleetVM.trips.count)")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(8)
-                        .background(Color.appEmerald)
-                        .clipShape(Circle())
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Trips")
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Text("\(fleetVM.trips.count) Total Shipments")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
                     
                     Spacer()
                     
                     Button(action: {
-                        // Action for button
+                        showPlanTrip = true
                     }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Export")
-                                .font(.system(size: 14, weight: .semibold))
-                        }
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.appEmerald)
-                        .cornerRadius(8)
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Plan New Trip")
+                    .accessibilityIdentifier("all_trips_add_button")
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Trips, total \(fleetVM.trips.count)")
-                .accessibilityIdentifier("all_trips_header")
+                .padding(.bottom, 24)
                 
                 // Segment Control
-                HStack(spacing: 12) {
-                    TripSegmentButton(title: "Current (\(currentTrips.count))", isSelected: selectedSegment == 0) {
-                        selectedSegment = 0
+                HStack(spacing: 0) {
+                    TripSegmentButton(title: "Active", count: currentTrips.count, isSelected: selectedSegment == 0) {
+                        withAnimation(.spring()) {
+                            selectedSegment = 0
+                        }
                     }
                     
-                    TripSegmentButton(title: "Past (\(pastTrips.count))", isSelected: selectedSegment == 1) {
-                        selectedSegment = 1
+                    TripSegmentButton(title: "History", count: pastTrips.count, isSelected: selectedSegment == 1) {
+                        withAnimation(.spring()) {
+                            selectedSegment = 1
+                        }
                     }
                 }
+                .padding(4)
+                .background(Color.white.opacity(0.05))
+                .cornerRadius(12)
                 .padding(.horizontal)
-                .accessibilityElement(children: .contain)
-                .accessibilityLabel("Trip filter")
-                .accessibilityIdentifier("all_trips_filter_segments")
+                .padding(.bottom, 20)
                 
                 // Content
                 if displayedTrips.isEmpty {
                     Spacer()
                     VStack(spacing: 16) {
-                        Image(systemName: selectedSegment == 0 ? "map" : "clock")
+                        Image(systemName: selectedSegment == 0 ? "map.fill" : "clock.fill")
                             .font(.system(size: 60))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.gray.opacity(0.3))
                         
-                        Text(selectedSegment == 0 ? "No current trips" : "No past trips")
+                        Text(selectedSegment == 0 ? "No active trips" : "No trip history")
                             .font(.headline)
                             .foregroundColor(.gray)
                     }
@@ -106,33 +103,41 @@ struct AllTripsView: View {
                             }
                         }
                         .padding(.horizontal)
-                        .padding(.bottom, 100) // Space for tab bar
-                        .accessibilityIdentifier("all_trips_list")
+                        .padding(.top, 4)
+                        .padding(.bottom, 100)
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showPlanTrip) {
+            PlanTripView().environmentObject(fleetVM)
         }
     }
 }
 
 struct TripSegmentButton: View {
     let title: String
+    let count: Int
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.system(size: 16, weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(isSelected ? Color.appEmerald : Color(white: 0.2))
-                .foregroundColor(isSelected ? .black : .white)
-                .cornerRadius(8)
+            HStack(spacing: 6) {
+                Text(title)
+                    .fontWeight(isSelected ? .bold : .medium)
+                Text("(\(count))")
+                    .font(.caption)
+                    .opacity(0.7)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(isSelected ? Color.appEmerald : Color.clear)
+            .foregroundColor(isSelected ? .black : .gray)
+            .cornerRadius(8)
         }
-        .accessibilityLabel(title)
+        .accessibilityLabel("\(title), \(count) trips")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .accessibilityHint(isSelected ? "Currently showing these trips" : "Double tap to show these trips")
-        .accessibilityIdentifier("trip_segment_\(title.lowercased().prefix(4))")
+        .accessibilityIdentifier("trip_segment_\(title.lowercased())")
     }
 }

@@ -47,16 +47,9 @@ struct VehicleDetailView: View {
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
-                        HStack(spacing: 6) {
-                            Text(currentVehicle.model)
-                            Circle().frame(width: 4, height: 4)
-                            HStack(spacing: 4) {
-                                Circle().frame(width: 8, height: 8).foregroundColor(statusColor(currentVehicle.status))
-                                Text(currentVehicle.status.rawValue)
-                            }
-                        }
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        Text(currentVehicle.model)
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
                     .padding(.leading, 8)
                     .accessibilityElement(children: .combine)
