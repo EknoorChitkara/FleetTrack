@@ -48,10 +48,14 @@ class CircularGeofenceManager: NSObject, ObservableObject {
                 // Stop old ones first to ensure clean state
                 stopAllMonitoring()
                 
-                // Monitor new ones (capped at 20)
-                for zone in zones.prefix(MAX_MONITORED_REGIONS) {
+                // Monitor only active geofences (capped at 20)
+                let activeZones = zones.filter { $0.isActive }
+                for zone in activeZones.prefix(MAX_MONITORED_REGIONS) {
                     startMonitoring(geofence: zone)
                 }
+                
+                // Store all geofences (both active and inactive) for UI display
+                activeGeofences = zones
             }
             
         } catch {
@@ -70,10 +74,88 @@ class CircularGeofenceManager: NSObject, ObservableObject {
         
         print("☁️ Saved new geofence to Supabase: \(geofence.name)")
         
-        // 2. Start monitoring immediately
+        // 2. Start monitoring immediately if active
         await MainActor.run {
-            startMonitoring(geofence: geofence)
+            if geofence.isActive {
+                startMonitoring(geofence: geofence)
+            }
+            // Add to local array regardless of active status
+            if !activeGeofences.contains(where: { $0.id == geofence.id }) {
+                activeGeofences.append(geofence)
+            }
         }
+    }
+    
+    func updateGeofence(_ geofence: CircularGeofence) async throws {
+        // 1. Update in Supabase
+        try await supabase.database
+            .from("geofences")
+            .update(geofence)
+            .eq("id", value: geofence.id.uuidString)
+            .execute()
+        
+        print("☁️ Updated geofence in Supabase: \(geofence.name)")
+        
+        // 2. Restart monitoring with new parameters if active
+        await MainActor.run {
+            stopMonitoring(geofenceId: geofence.id)
+            if geofence.isActive {
+                startMonitoring(geofence: geofence)
+            }
+            // Update in local array and trigger UI update
+            if let index = activeGeofences.firstIndex(where: { $0.id == geofence.id }) {
+                print("📝 Updating geofence at index \(index): \(geofence.name) - isActive: \(geofence.isActive)")
+                activeGeofences[index] = geofence
+                // Force UI update
+                objectWillChange.send()
+            }
+            print("📊 Total geofences in array: \(activeGeofences.count)")
+        }
+    }
+    
+    func deleteGeofence(_ geofenceId: UUID) async throws {
+        // 1. Stop monitoring first
+        await MainActor.run {
+            stopMonitoring(geofenceId: geofenceId)
+        }
+        
+        // 2. Delete from Supabase
+        try await supabase.database
+            .from("geofences")
+            .delete()
+            .eq("id", value: geofenceId.uuidString)
+            .execute()
+        
+        print("☁️ Deleted geofence from Supabase: \(geofenceId)")
+        
+        // 3. Remove from local array
+        await MainActor.run {
+            activeGeofences.removeAll { $0.id == geofenceId }
+        }
+    }
+    
+    func toggleGeofenceStatus(_ geofenceId: UUID) async throws {
+        guard let geofence = activeGeofences.first(where: { $0.id == geofenceId }) else {
+            print("❌ Geofence not found: \(geofenceId)")
+            return
+        }
+        
+        // Create updated geofence with toggled status
+        let updatedGeofence = CircularGeofence(
+            id: geofence.id,
+            name: geofence.name,
+            latitude: geofence.latitude,
+            longitude: geofence.longitude,
+            radiusMeters: geofence.radiusMeters,
+            notifyOnEntry: geofence.notifyOnEntry,
+            notifyOnExit: geofence.notifyOnExit,
+            isActive: !geofence.isActive
+        )
+        
+        // Update in database and monitoring
+        try await updateGeofence(updatedGeofence)
+        
+        print("✅ Toggled geofence status: \(geofence.name) is now \(updatedGeofence.isActive ? "active" : "paused")")
     }
     
     func startMonitoring(geofence: CircularGeofence) {
@@ -104,7 +186,8 @@ class CircularGeofenceManager: NSObject, ObservableObject {
         // Register
         locationManager.startMonitoring(for: region)
         
-        // Track locally
+        // Track locally if not already present
+        // (Geofences stay in array even when paused, so check before adding)
         if !activeGeofences.contains(where: { $0.id == geofence.id }) {
             activeGeofences.append(geofence)
         }
@@ -120,14 +203,17 @@ class CircularGeofenceManager: NSObject, ObservableObject {
             print("🛑 Stopped monitoring geofence: \(geofenceId)")
         }
         
-        activeGeofences.removeAll { $0.id == geofenceId }
+        // Note: We don't remove from activeGeofences array here
+        // That array is used for UI display of ALL geofences (active + paused)
+        // Only delete operations should remove from the array
     }
     
     func stopAllMonitoring() {
         for region in locationManager.monitoredRegions {
             locationManager.stopMonitoring(for: region)
         }
-        activeGeofences.removeAll()
+        // Note: activeGeofences array is NOT cleared here
+        // It's used for UI display and should only be cleared when fetching fresh data
         print("🛑 Stopped all circular geofencing.")
     }
     

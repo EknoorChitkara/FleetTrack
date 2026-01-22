@@ -41,12 +41,15 @@ struct MaintenanceEditProfileView: View {
                                 .clipShape(Circle())
                                 .foregroundColor(AppTheme.textPrimary)
                         }
+                        .accessibilityLabel("Back")
+                        .accessibilityIdentifier("maintenance_edit_profile_back_button")
                         
                         Spacer()
                         
-                        Text("Edit Profile")
-                            .font(.headline)
-                            .foregroundColor(AppTheme.textPrimary)
+                            Text("Edit Profile")
+                                .font(.headline)
+                                .foregroundColor(AppTheme.textPrimary)
+                                .accessibilityAddTraits(.isHeader)
                         
                         Spacer()
                         
@@ -62,6 +65,7 @@ struct MaintenanceEditProfileView: View {
                         Text("Personal Information")
                             .font(.headline)
                             .foregroundColor(AppTheme.textSecondary)
+                            .accessibilityAddTraits(.isHeader)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Full Name")
@@ -72,6 +76,8 @@ struct MaintenanceEditProfileView: View {
                                 .background(AppTheme.backgroundSecondary)
                                 .cornerRadius(8)
                                 .foregroundColor(AppTheme.textPrimary)
+                                .accessibilityLabel("Full Name")
+                                .accessibilityIdentifier("maintenance_profile_name_input")
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
@@ -95,6 +101,8 @@ struct MaintenanceEditProfileView: View {
                                 .background(AppTheme.backgroundSecondary)
                                 .cornerRadius(8)
                                 .foregroundColor(AppTheme.textPrimary)
+                                .accessibilityLabel("Email")
+                                .accessibilityIdentifier("maintenance_profile_email_input")
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
@@ -127,6 +135,8 @@ struct MaintenanceEditProfileView: View {
                     }
                     .padding(.horizontal)
                     .padding(.bottom, 40)
+                    .accessibilityLabel("Save Changes")
+                    .accessibilityIdentifier("maintenance_profile_save_button")
                 }
             }
             .navigationBarHidden(true)

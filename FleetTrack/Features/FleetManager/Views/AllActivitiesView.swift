@@ -26,6 +26,8 @@ struct AllActivitiesView: View {
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("all_activities_back_button")
                     
                     Text("Activity History")
                         .font(.title2)
@@ -55,6 +57,7 @@ struct AllActivitiesView: View {
                             }
                         }
                         .padding()
+                        .accessibilityIdentifier("all_activities_list")
                     }
                 }
             }

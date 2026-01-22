@@ -27,10 +27,10 @@ struct FleetManagerChangePasswordView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 20))
                             .padding(10)
-                            .background(Color(white: 0.2))
-                            .clipShape(Circle())
                             .foregroundColor(.white)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("change_password_back_button")
                     
                     Spacer()
                     
@@ -67,6 +67,9 @@ struct FleetManagerChangePasswordView: View {
                         .background(Color.appEmerald) // Green button
                         .cornerRadius(12)
                 }
+                .accessibilityLabel("Change Password")
+                .accessibilityHint("Double tap to update your password")
+                .accessibilityIdentifier("change_password_submit_button")
                 .padding(.horizontal)
                 
                 Spacer()
@@ -92,6 +95,8 @@ struct AuthTextField: View {
                 .background(Color(white: 0.15))
                 .cornerRadius(8)
                 .foregroundColor(.white)
+                .accessibilityLabel(title)
+                .accessibilityIdentifier("change_password_field_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
         }
     }
 }

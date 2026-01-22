@@ -24,9 +24,10 @@ struct FleetManagerAboutView: View {
                             .font(.system(size: 20))
                             .padding(10)
                             .background(Color(white: 0.2))
-                            .clipShape(Circle())
                             .foregroundColor(.white)
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("about_view_back_button")
                     
                     Spacer()
                     
@@ -62,6 +63,9 @@ struct FleetManagerAboutView: View {
                         .foregroundColor(.gray)
                         .padding(.top, 10)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Fleet Dashboard, Version 1.0.0. Copyright 2026 Fleet Dashboard Inc. All rights reserved.")
+                .accessibilityIdentifier("about_app_info")
                 
                 Spacer()
                 Spacer() // Pushes content up a bit like the screenshot

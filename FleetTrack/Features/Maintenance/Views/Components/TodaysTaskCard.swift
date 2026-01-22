@@ -71,6 +71,9 @@ struct TaskCountBox: View {
         .padding(AppTheme.spacing.lg)
         .background(backgroundColor)
         .cornerRadius(AppTheme.cornerRadius.medium)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title) Tasks: \(count)")
+        .accessibilityIdentifier("maintenance_task_count_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
     
     private var iconForTitle: String {

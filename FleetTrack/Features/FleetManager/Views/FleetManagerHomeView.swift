@@ -31,8 +31,8 @@ struct FleetManagerHomeView: View {
                     StatCard(title: "In Maintenance", value: "\(fleetVM.vehicles.filter { $0.status == .inMaintenance }.count)", icon: "wrench.fill", color: .orange)
                     StatCard(title: "Ongoing Trips", value: "\(fleetVM.trips.count)", icon: "location.fill", color: .blue)
                 }
-
                 .padding(.horizontal)
+                .accessibilityIdentifier("fleet_stats_grid")
                 
                 // Quick Actions (2x2 Grid)
                 VStack(alignment: .leading, spacing: 16) {
@@ -56,6 +56,7 @@ struct FleetManagerHomeView: View {
                     }
                 }
                 .padding(.horizontal)
+                .accessibilityIdentifier("fleet_quick_actions_grid")
                 
                 // Quick Links
                 VStack(alignment: .leading, spacing: 16) {
@@ -99,6 +100,9 @@ struct FleetManagerHomeView: View {
                         )
                     }
                     .padding(.horizontal)
+                    .accessibilityLabel("View Geofencing")
+                    .accessibilityHint("Manage map-based virtual boundaries")
+                    .accessibilityIdentifier("fleet_link_geofencing")
                     
                     // Analytics Link
                     NavigationLink(destination: FleetManagerAnalyticsView()) {
@@ -133,6 +137,9 @@ struct FleetManagerHomeView: View {
                         )
                     }
                     .padding(.horizontal)
+                    .accessibilityLabel("View Analytics")
+                    .accessibilityHint("Deep dive into fleet performance and costs")
+                    .accessibilityIdentifier("fleet_link_analytics")
                 }
                 
                 
@@ -162,6 +169,7 @@ struct FleetManagerHomeView: View {
                             }
                         }
                         .padding(.horizontal)
+                        .accessibilityIdentifier("fleet_recent_activities_list")
                     }
                 }
                 
@@ -170,7 +178,9 @@ struct FleetManagerHomeView: View {
         }
         .background(Color.appBackground.ignoresSafeArea())
         .sheet(isPresented: $showGeofencing) {
-            GeofencingView()
+            NavigationView {
+                GeofencingListView()
+            }
         }
     }
     
@@ -196,6 +206,7 @@ struct FleetManagerHomeView: View {
                     .foregroundColor(.appEmerald)
             }
             .accessibilityLabel("Profile")
+            .accessibilityIdentifier("fleet_home_profile_button")
         }
         .padding(.horizontal)
     }
