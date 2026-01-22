@@ -127,6 +127,12 @@ struct TripMapView: View {
                     calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
                 }
             }
+            .task {
+                // Voice Narration Trigger
+                // Wait slightly for routes to calculate if possible, but don't block too long
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                InAppVoiceManager.shared.speak(voiceSummary())
+            }
     }
     
     private var contentView: some View {
@@ -177,7 +183,6 @@ struct TripMapView: View {
                 startTrip()
             }
         )
-        .interactiveDismissDisabled()
     }
     
     private var endTripSheet: some View {
@@ -208,14 +213,6 @@ struct TripMapView: View {
         if let startOdo = trip.startOdometer {
             self.startOdometerReading = startOdo
         }
-<<<<<<< HEAD
-        .task {
-            // Voice Narration Trigger
-            // Wait slightly for routes to calculate if possible, but don't block too long
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-            InAppVoiceManager.shared.speak(voiceSummary())
-        }
-=======
         
         calculatePlannedRoute()
         
@@ -225,7 +222,6 @@ struct TripMapView: View {
         
         checkDailyInspection()
         fetchVehicle()
->>>>>>> c0aa37f8061a50926f8f393d04472e18bd6d5893
     }
     
     // Calculates the static "Official" path from Trip Start to Trip End

@@ -148,8 +148,8 @@ class LocationSearchService: NSObject, ObservableObject {
                 return nil
             }
             
-            let coordinate = item.placemark.coordinate
-            let fullAddress = formatAddress(from: item.placemark)
+            let coordinate = item.location.coordinate
+            let fullAddress = item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "Unknown Address"
             
             return LocationSearchResult(
                 title: completion.title,
@@ -190,7 +190,7 @@ class LocationSearchService: NSObject, ObservableObject {
                 return nil
             }
             
-            let address = formatAddress(from: item.placemark)
+            let address = item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "Unknown Address"
             
             return (coordinate: location.coordinate, address: address)
         } catch {
@@ -238,26 +238,6 @@ class LocationSearchService: NSObject, ObservableObject {
     }
     
     // MARK: - Helpers
-    
-    private func formatAddress(from placemark: CLPlacemark) -> String {
-        
-        var components: [String] = []
-        
-        if let name = placemark.name {
-            components.append(name)
-        }
-        if let thoroughfare = placemark.thoroughfare {
-            components.append(thoroughfare)
-        }
-        if let locality = placemark.locality {
-            components.append(locality)
-        }
-        if let administrativeArea = placemark.administrativeArea {
-            components.append(administrativeArea)
-        }
-        
-        return components.joined(separator: ", ")
-    }
     
     private func distance(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
         let fromLocation = CLLocation(latitude: from.latitude, longitude: from.longitude)

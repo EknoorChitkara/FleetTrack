@@ -109,14 +109,17 @@ struct AllTripsView: View {
                 }
             }
         }
-<<<<<<< HEAD
+
         .onAppear {
              DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                  InAppVoiceManager.shared.speak(voiceSummary())
              }
         }
-        .onChange(of: selectedSegment) { _ in
+        .onChange(of: selectedSegment) { oldValue, newValue in
             InAppVoiceManager.shared.speak(voiceSummary())
+        }
+        .sheet(isPresented: $showPlanTrip) {
+            PlanTripView().environmentObject(fleetVM)
         }
     }
 }
@@ -141,11 +144,6 @@ extension AllTripsView: InAppVoiceReadable {
         }
         
         return summary
-=======
-        .sheet(isPresented: $showPlanTrip) {
-            PlanTripView().environmentObject(fleetVM)
-        }
->>>>>>> c0aa37f8061a50926f8f393d04472e18bd6d5893
     }
 }
 

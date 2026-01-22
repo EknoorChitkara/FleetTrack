@@ -114,7 +114,7 @@ struct AddEditGeofenceView: View {
                                                 Text(item.name ?? "Unknown")
                                                     .foregroundColor(.white)
                                                     .font(.system(size: 16, weight: .semibold))
-                                                Text(item.placemark.title ?? "")
+                                                Text(item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "")
                                                     .font(.caption)
                                                     .foregroundColor(.gray)
                                             }
@@ -221,7 +221,7 @@ struct AddEditGeofenceView: View {
     }
     
     private func selectLocation(_ item: MKMapItem) {
-        self.centerCoordinate = item.placemark.coordinate
+        self.centerCoordinate = item.location.coordinate
         self.showResultsList = false
         self.searchText = "" // Clear search or keep it? Clearing to show map
         

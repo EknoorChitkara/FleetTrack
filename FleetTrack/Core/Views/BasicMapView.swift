@@ -15,11 +15,9 @@ struct BasicMapView: View {
     var body: some View {
         ZStack {
             // Map
-            Map(
-                coordinateRegion: $mapVM.region,
-                showsUserLocation: true,
-                userTrackingMode: .constant(.none)
-            )
+            Map(position: $mapVM.position) {
+                UserAnnotation()
+            }
             .ignoresSafeArea()
             .accessibilityLabel("Map showing current location")
             

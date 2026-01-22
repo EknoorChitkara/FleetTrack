@@ -63,7 +63,7 @@ class AdminCreationViewModel: ObservableObject {
         
         do {
             // Create admin account (Firebase sends password reset email automatically)
-            let (user, token) = try await authService.createAdminAccount(email: email)
+            let (user, _) = try await authService.createAdminAccount(email: email)
             
             // Update state
             createdUser = user

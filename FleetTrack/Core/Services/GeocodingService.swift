@@ -31,7 +31,7 @@ class GeocodingService {
             throw LocationError.geocodingFailed("No results found for '\(address)'")
         }
         
-        return item.placemark.coordinate
+        return item.location.coordinate
     }
     
     // MARK: - Reverse Geocoding (Coordinates → Address)
@@ -47,7 +47,7 @@ class GeocodingService {
             throw LocationError.geocodingFailed("No address found for coordinates")
         }
         
-        return formatAddress(from: item.placemark)
+        return item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "Unknown Address"
     }
     
     /// Get detailed placemark information
@@ -89,33 +89,4 @@ class GeocodingService {
     
     // MARK: - Helper Methods
     
-    private func formatAddress(from placemark: CLPlacemark) -> String {
-        
-        var components: [String] = []
-        
-        // Street address
-        if let subThoroughfare = placemark.subThoroughfare {
-            components.append(subThoroughfare)
-        }
-        if let thoroughfare = placemark.thoroughfare {
-            components.append(thoroughfare)
-        }
-        
-        // City
-        if let locality = placemark.locality {
-            components.append(locality)
-        }
-        
-        // State
-        if let administrativeArea = placemark.administrativeArea {
-            components.append(administrativeArea)
-        }
-        
-        // Country
-        if let country = placemark.country {
-            components.append(country)
-        }
-        
-        return components.joined(separator: ", ")
-    }
 }

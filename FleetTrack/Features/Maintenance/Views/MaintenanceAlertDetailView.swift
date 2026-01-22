@@ -281,7 +281,7 @@ struct MaintenanceAlertDetailView: View {
     private func statusColor(for status: String) -> Color {
         switch status {
         case "Completed":
-            return Color(hex: "2D7D46")
+            return Color(hexCode: "2D7D46")
         case "In Progress":
             return .blue
         case "Pending":

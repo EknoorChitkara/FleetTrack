@@ -212,7 +212,7 @@ struct MapPinSelectionView: View {
                 let response = try await search.start()
                 
                 if let item = response.mapItems.first {
-                    let address = formatAddress(from: item.placemark)
+                    let address = item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "Unknown location"
                     await MainActor.run {
                         displayAddress = address
                         isGeocodingLocation = false
@@ -227,25 +227,6 @@ struct MapPinSelectionView: View {
         }
     }
     
-    private func formatAddress(from placemark: CLPlacemark) -> String {
-        
-        var components: [String] = []
-        
-        if let name = placemark.name {
-            components.append(name)
-        }
-        if let thoroughfare = placemark.thoroughfare {
-            components.append(thoroughfare)
-        }
-        if let locality = placemark.locality {
-            components.append(locality)
-        }
-        if let administrativeArea = placemark.administrativeArea {
-            components.append(administrativeArea)
-        }
-        
-        return components.isEmpty ? "Unknown location" : components.joined(separator: ", ")
-    }
     
     private func confirmLocation() {
         selectedLocation = mapRegion.center
