@@ -91,6 +91,14 @@ struct TaskDetailView: View {
         .sheet(isPresented: $viewModel.showingCancelSheet) {
             CancelTaskSheet(viewModel: viewModel)
         }
+        .alert("Complete Task?", isPresented: $viewModel.showingCompletionConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Complete") {
+                viewModel.showingCompletionSheet = true
+            }
+        } message: {
+            Text("Are you sure you want to mark this task as completed? You will need to provide repair details and labor hours.")
+        }
         .sheet(isPresented: $viewModel.showingEditRepairLogSheet) {
             EditRepairLogSheet(viewModel: viewModel)
         }
@@ -174,7 +182,7 @@ struct TaskDetailView: View {
                             icon: "checkmark.circle.fill",
                             color: AppTheme.statusActiveText
                         ) {
-                            viewModel.showingCompletionSheet = true
+                            viewModel.showingCompletionConfirmation = true
                         }
                     }
                     
@@ -196,19 +204,10 @@ struct TaskDetailView: View {
                         Task { await viewModel.resumeTask() }
                     }
                 }
-                
-                if viewModel.task.status == "Completed" || viewModel.task.status == "Failed" {
-                    HStack(spacing: 8) {
-                        Image(systemName: "lock.fill")
-                            .font(.caption)
-                        Text("Task is locked and cannot be modified")
-                            .font(.caption)
-                    }
-                    .foregroundColor(AppTheme.textTertiary)
-                    .padding(.vertical, 8)
-                }
             }
+            .frame(minHeight: 50)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.medium)
@@ -222,7 +221,14 @@ struct TaskDetailView: View {
                 .font(.headline)
                 .foregroundColor(AppTheme.textPrimary)
             
-            InfoRow(icon: "car.fill", label: "Registration", value: viewModel.task.vehicleRegistrationNumber)
+            VStack(spacing: AppTheme.spacing.sm) {
+                // Show vehicle name if available
+                if let vehicle = viewModel.assignedVehicle {
+                    InfoRow(icon: "car.fill", label: "Vehicle", value: "\(vehicle.manufacturer) \(vehicle.model)")
+                }
+                
+                InfoRow(icon: "number", label: "Registration", value: viewModel.task.vehicleRegistrationNumber)
+            }
         }
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)
@@ -283,11 +289,45 @@ struct TaskDetailView: View {
                 }
                 .padding(.vertical, AppTheme.spacing.md)
             } else {
-                // No driver assigned
-                Text("No driver assigned to this vehicle")
-                    .font(.subheadline)
-                    .foregroundColor(AppTheme.textSecondary)
-                    .padding(.vertical, AppTheme.spacing.sm)
+                // No driver assigned - show placeholder rows for consistency
+                VStack(spacing: AppTheme.spacing.sm) {
+                    HStack {
+                        Image(systemName: "person.fill")
+                            .foregroundColor(AppTheme.iconDefault)
+                            .frame(width: 24)
+                        Text("Driver")
+                            .foregroundColor(AppTheme.textSecondary)
+                            .frame(width: 100, alignment: .leading)
+                        Spacer()
+                        Text("Not assigned")
+                            .foregroundColor(AppTheme.textTertiary)
+                            .italic()
+                    }
+                    
+                    HStack {
+                        Image(systemName: "phone.fill")
+                            .foregroundColor(AppTheme.iconDefault)
+                            .frame(width: 24)
+                        Text("Phone")
+                            .foregroundColor(AppTheme.textSecondary)
+                            .frame(width: 100, alignment: .leading)
+                        Spacer()
+                        Text("—")
+                            .foregroundColor(AppTheme.textTertiary)
+                    }
+                    
+                    HStack {
+                        Image(systemName: "envelope.fill")
+                            .foregroundColor(AppTheme.iconDefault)
+                            .frame(width: 24)
+                        Text("Email")
+                            .foregroundColor(AppTheme.textSecondary)
+                            .frame(width: 100, alignment: .leading)
+                        Spacer()
+                        Text("—")
+                            .foregroundColor(AppTheme.textTertiary)
+                    }
+                }
             }
         }
         .padding(AppTheme.spacing.md)
@@ -385,7 +425,7 @@ struct TaskDetailView: View {
                     }
                 }
                 
-                // Cost Summary
+                // Parts Total (only if parts exist)
                 VStack(spacing: 8) {
                     Divider()
                         .background(AppTheme.dividerPrimary)
@@ -402,35 +442,44 @@ struct TaskDetailView: View {
                             .font(.headline)
                             .foregroundColor(AppTheme.accentPrimary)
                     }
-                    
-                    if let laborHours = viewModel.task.laborHours {
-                        HStack {
-                            Text("Labor Cost (\(String(format: "%.1f", laborHours)) hrs @ ₹500/hr)")
-                                .font(.caption)
-                                .foregroundColor(AppTheme.textSecondary)
-                            
-                            Spacer()
-                            
-                            Text("₹\(Int(laborHours * 500))")
-                                .font(.subheadline)
-                                .foregroundColor(AppTheme.textSecondary)
-                        }
-                        
+                }
+                .padding(.top, 8)
+            }
+            
+            // Labor Cost and Grand Total (always show if labor hours exist)
+            if let laborHours = viewModel.task.laborHours, laborHours > 0 {
+                VStack(spacing: 8) {
+                    if !viewModel.task.partsUsed.isEmpty {
                         Divider()
                             .background(AppTheme.dividerPrimary)
+                    }
+                    
+                    HStack {
+                        Text("Labor Cost (\(String(format: "%.1f", laborHours)) hrs @ ₹300/hr)")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
                         
-                        HStack {
-                            Text("Grand Total")
-                                .font(.headline)
-                                .foregroundColor(AppTheme.textPrimary)
-                            
-                            Spacer()
-                            
-                            Text("₹\(Int(viewModel.task.totalCost))")
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(AppTheme.accentPrimary)
-                        }
+                        Spacer()
+                        
+                        Text("₹\(Int(laborHours * 300))")
+                            .font(.subheadline)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    
+                    Divider()
+                        .background(AppTheme.dividerPrimary)
+                    
+                    HStack {
+                        Text("Grand Total")
+                            .font(.headline)
+                            .foregroundColor(AppTheme.textPrimary)
+                        
+                        Spacer()
+                        
+                        Text("₹\(Int(viewModel.task.totalCost))")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(AppTheme.accentPrimary)
                     }
                 }
                 .padding(.top, 8)
