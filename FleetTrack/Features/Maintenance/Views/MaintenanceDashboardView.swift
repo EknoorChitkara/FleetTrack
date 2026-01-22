@@ -12,11 +12,13 @@ struct MaintenanceDashboardView: View {
     @ObservedObject var viewModel: MaintenanceDashboardViewModel
     @Binding var selectedTab: Int
     
+    
     var body: some View {
-        ZStack {
-            // Background
-            AppTheme.backgroundPrimary
-                .ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                // Background
+                AppTheme.backgroundPrimary
+                    .ignoresSafeArea()
             
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.spacing.lg) {
@@ -81,12 +83,23 @@ struct MaintenanceDashboardView: View {
         }
         .sheet(isPresented: $showingTaskHistory) {
             TaskHistoryView()
+                .presentationDragIndicator(.visible)
+                .interactiveDismissDisabled(false)
+                .onDisappear {
+                    // Ensure we stay on Dashboard tab when sheet dismisses
+                    if selectedTab != 0 {
+                        withAnimation(.none) {
+                            selectedTab = 0
+                        }
+                    }
+                }
         }
         .sheet(isPresented: $showProfile) {
             MaintenanceProfileView(user: user)
         }
         .sheet(isPresented: $showingInspections) {
             MaintenanceInspectionView()
+        }
         }
     }
     
@@ -193,7 +206,10 @@ struct MaintenanceDashboardView: View {
             // Task List
             VStack(spacing: AppTheme.spacing.sm) {
                 ForEach(viewModel.highPriorityMaintenanceTasks) { task in
-                    PriorityTaskRow(task: task)
+                    NavigationLink(destination: TaskDetailView(task: task)) {
+                        PriorityTaskRow(task: task)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, AppTheme.spacing.md)
@@ -229,7 +245,10 @@ struct MaintenanceDashboardView: View {
             // History List (show first 3)
             VStack(spacing: AppTheme.spacing.sm) {
                 ForEach(Array(viewModel.completedTasks.prefix(3))) { task in
-                    CompletedTaskRow(task: task)
+                    NavigationLink(destination: TaskDetailView(task: task)) {
+                        CompletedTaskRow(task: task)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, AppTheme.spacing.md)

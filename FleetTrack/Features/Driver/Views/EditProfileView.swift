@@ -165,6 +165,7 @@ struct EditProfileView: View {
             await MainActor.run {
                 self.user = updatedUser
                 self.driver = updatedDriver
+                SessionManager.shared.updateCurrentUserLocally(updatedUser)
                 self.isLoading = false
                 self.isPresented = false
             }

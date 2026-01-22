@@ -68,7 +68,10 @@ struct AlertsView: View {
                         // 1. Maintenance/Emergency Alerts
                         if selectedFilter == .all && !alerts.isEmpty {
                             ForEach(alerts) { alert in
-                                MaintenanceAlertCard(alert: alert)
+                                NavigationLink(destination: MaintenanceAlertDetailView(alert: alert)) {
+                                    MaintenanceAlertCard(alert: alert)
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                         

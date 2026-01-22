@@ -37,4 +37,9 @@ enum SupabaseConfig {
     
     /// Table name for user profiles in Supabase
     static let usersTable = "users"
+
+    // MARK: - Storage Buckets
+
+    /// Bucket for trip photos (odometer/fuel gauge)
+    static let tripPhotosBucket = "hello"
 }

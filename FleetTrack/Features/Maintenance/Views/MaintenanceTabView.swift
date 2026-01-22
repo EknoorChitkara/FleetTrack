@@ -101,7 +101,7 @@ struct MaintenanceTabView: View {
                 .fill(.ultraThinMaterial)
                 .overlay(
                     Capsule()
-                        .fill(Color(hex: "#2A2A2A").opacity(0.6))
+                        .fill(Color(hexCode: "#2A2A2A").opacity(0.6))
                 )
         )
         .shadow(color: .black.opacity(0.4), radius: 15, y: 8)
@@ -141,7 +141,7 @@ struct MaintenanceTabBarItem: View {
             .frame(height: 52)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color(hex: "#2A2A2C") : Color.clear)
+                    .fill(isSelected ? Color(hexCode: "#2A2A2C") : Color.clear)
             )
             .contentShape(Rectangle())
         }

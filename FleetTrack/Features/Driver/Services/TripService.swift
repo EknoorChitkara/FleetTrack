@@ -88,28 +88,58 @@ class TripService {
     
     // MARK: - Update Trip Status
     
-    /// Start a trip (change status from Scheduled to Ongoing)
-    func startTrip(tripId: UUID) async throws {
+    /// Start a trip with required fuel/odometer data
+    func startTrip(
+        tripId: UUID,
+        startOdometer: Double? = nil,
+        startFuelLevel: Double? = nil,
+        odometerPhotoUrl: String? = nil,
+        gaugePhotoUrl: String? = nil,
+        routeIndex: Int? = nil
+    ) async throws {
+        var updateData: [String: AnyJSON] = [
+            "status": .string(TripStatus.ongoing.rawValue),
+            "start_time": .string(ISO8601DateFormatter().string(from: Date())),
+            "updated_at": .string(ISO8601DateFormatter().string(from: Date()))
+        ]
+        
+        if let odo = startOdometer { updateData["start_odometer"] = .double(odo) }
+        if let fuel = startFuelLevel { updateData["start_fuel_level"] = .double(fuel) }
+        if let odoUrl = odometerPhotoUrl { updateData["start_odometer_photo_url"] = .string(odoUrl) }
+        if let fuelUrl = gaugePhotoUrl { updateData["start_fuel_gauge_photo_url"] = .string(fuelUrl) }
+        
+        if let index = routeIndex {
+            updateData["actual_route_index"] = .integer(index)
+        }
+        
         try await supabase
             .from("trips")
-            .update([
-                "status": TripStatus.ongoing.rawValue,
-                "start_time": ISO8601DateFormatter().string(from: Date()),
-                "updated_at": ISO8601DateFormatter().string(from: Date())
-            ])
+            .update(updateData)
             .eq("id", value: tripId)
             .execute()
         
         print("✅ Trip \(tripId) started")
     }
     
-    /// Complete a trip
-    func completeTrip(tripId: UUID, actualDistance: Double? = nil) async throws {
+    /// Complete a trip with required fuel/odometer data
+    func completeTrip(
+        tripId: UUID,
+        endOdometer: Double? = nil,
+        endFuelLevel: Double? = nil,
+        odometerPhotoUrl: String? = nil,
+        gaugePhotoUrl: String? = nil,
+        actualDistance: Double? = nil
+    ) async throws {
         var updateData: [String: AnyJSON] = [
             "status": .string(TripStatus.completed.rawValue),
             "end_time": .string(ISO8601DateFormatter().string(from: Date())),
             "updated_at": .string(ISO8601DateFormatter().string(from: Date()))
         ]
+        
+        if let odo = endOdometer { updateData["end_odometer"] = .double(odo) }
+        if let fuel = endFuelLevel { updateData["end_fuel_level"] = .double(fuel) }
+        if let odoUrl = odometerPhotoUrl { updateData["end_odometer_photo_url"] = .string(odoUrl) }
+        if let fuelUrl = gaugePhotoUrl { updateData["end_fuel_gauge_photo_url"] = .string(fuelUrl) }
         
         if let distance = actualDistance {
             updateData["distance"] = .double(distance)
@@ -142,6 +172,26 @@ class TripService {
             .execute()
         
         print("✅ Trip \(tripId) cancelled")
+    }
+    
+    // MARK: - Photo Uploads
+    
+    /// Upload a photo to Supabase Storage
+    /// - Returns: Public URL of the uploaded image
+    func uploadTripPhoto(data: Data, path: String) async throws -> String {
+        let bucketName = SupabaseConfig.tripPhotosBucket
+        let fileOptions = FileOptions(cacheControl: "3600", contentType: "image/jpeg")
+        
+        // 1. Upload data
+        try await supabase.storage
+            .from(bucketName)
+            .upload(path, data: data, options: fileOptions)
+            
+        // 2. Get Public URL
+        return try supabase.storage
+            .from(bucketName)
+            .getPublicURL(path: path)
+            .absoluteString
     }
 }
 

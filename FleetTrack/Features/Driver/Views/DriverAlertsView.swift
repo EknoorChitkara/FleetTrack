@@ -12,7 +12,7 @@ struct DriverAlertsView: View {
     
     var body: some View {
         ZStack {
-            Color(hex: "111111").ignoresSafeArea() // Deep black/grey background
+            Color(hexCode: "111111").ignoresSafeArea() // Deep black/grey background
             
             VStack(spacing: 0) {
                 // Header
@@ -92,7 +92,7 @@ struct TabButton: View {
                 .frame(height: 44)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(isSelected ? Color(hex: "2E8B57") : Color(hex: "2C2C2E")) // Green or Dark Grey
+                        .fill(isSelected ? Color(hexCode: "2E8B57") : Color(hexCode: "2C2C2E")) // Green or Dark Grey
                 )
         }
     }
@@ -120,7 +120,7 @@ struct AlertCell: View {
             // Icon based on type
             ZStack {
                 Circle()
-                    .fill(Color(hex: "2C2C2E"))
+                    .fill(Color(hexCode: "2C2C2E"))
                     .frame(width: 44, height: 44)
                 
                 Image(systemName: alert.type == .emergency ? "exclamationmark.triangle.fill" : "wrench.and.screwdriver.fill")
@@ -149,7 +149,7 @@ struct AlertCell: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(hex: "1C1C1E")) // Slightly lighter card bg
+                .fill(Color(hexCode: "1C1C1E")) // Slightly lighter card bg
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabelString)
