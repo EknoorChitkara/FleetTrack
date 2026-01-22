@@ -237,7 +237,7 @@ struct PlanTripView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Circle()
-                        .fill(Color(hex: "F9D854"))
+                        .fill(Color(hexCode: "F9D854"))
                         .frame(width: 12, height: 12)
                     
                     TextField("Dropoff Location", text: $viewModel.endAddress)
@@ -581,7 +581,7 @@ struct PlanTripView: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(viewModel.isFormValid ? Color(hex: "F9D854") : Color.gray.opacity(0.3))
+                    .fill(viewModel.isFormValid ? Color(hexCode: "F9D854") : Color.gray.opacity(0.3))
             )
         }
         .disabled(!viewModel.isFormValid)
