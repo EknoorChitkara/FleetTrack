@@ -215,34 +215,46 @@ struct LocationSearchView: View {
         Button(action: {
             viewModel.selectResult(result)
         }) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(iconColor)
-                    .frame(width: 32)
+            HStack(spacing: 16) {
+                // Dropdown-style icon container
+                ZStack {
+                    Circle()
+                        .fill(Color.appCardBackground.opacity(0.8))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(iconColor)
+                }
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(result.title)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundColor(.white)
                         .lineLimit(1)
                     
                     Text(result.subtitle)
-                        .font(.system(size: 14))
-                        .foregroundColor(.appSecondaryText)
-                        .lineLimit(2)
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
                 }
                 
                 Spacer()
                 
-                Image(systemName: "chevron.right")
+                Image(systemName: "arrow.up.left")
                     .font(.system(size: 12))
-                    .foregroundColor(.appSecondaryText)
+                    .foregroundColor(.gray.opacity(0.5))
             }
-            .padding()
-            .background(Color.appCardBackground)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.appCardBackground.opacity(0.5)) // Slightly different bg
             .background(.ultraThinMaterial)
-            .cornerRadius(12)
+            .cornerRadius(0) // Rectangular list style preferred for dropdowns
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.gray.opacity(0.1)),
+                alignment: .bottom
+            )
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(result.title), \(result.subtitle)")
