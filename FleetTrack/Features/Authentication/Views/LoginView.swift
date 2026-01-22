@@ -34,7 +34,7 @@ struct LoginView: View {
                     .font(.system(size: 80))
                     .foregroundColor(.appEmerald)
                     .shadow(color: .appEmerald.opacity(0.3), radius: 10)
-                    .accessibilityLabel("FleetTrack Logo")
+                    .accessibilityLabel("FleetTrack Logo    hemant bhumika gungun dhruv ")
 
                 VStack(spacing: 8) {
                     Text("FleetTrack")

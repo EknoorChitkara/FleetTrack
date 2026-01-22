@@ -136,11 +136,25 @@ class OfflineSyncManager: ObservableObject {
         switch action.actionType {
         case "start":
             if let payload = try? JSONDecoder().decode(TripStartPayload.self, from: action.payload) {
-                try await tripService.startTrip(tripId: payload.tripId)
+                try await tripService.startTrip(
+                    tripId: payload.tripId,
+                    startOdometer: payload.startOdometer,
+                    startFuelLevel: payload.startFuelLevel,
+                    odometerPhotoUrl: payload.odometerPhotoUrl,
+                    gaugePhotoUrl: payload.gaugePhotoUrl,
+                    routeIndex: payload.routeIndex
+                )
             }
         case "complete":
             if let payload = try? JSONDecoder().decode(TripCompletePayload.self, from: action.payload) {
-                try await tripService.completeTrip(tripId: payload.tripId)
+                try await tripService.completeTrip(
+                    tripId: payload.tripId,
+                    endOdometer: payload.endOdometer,
+                    endFuelLevel: payload.endFuelLevel,
+                    odometerPhotoUrl: payload.odometerPhotoUrl,
+                    gaugePhotoUrl: payload.gaugePhotoUrl,
+                    actualDistance: payload.actualDistance
+                )
             }
         case "location_update":
             // Location updates are batched differently, skip for now

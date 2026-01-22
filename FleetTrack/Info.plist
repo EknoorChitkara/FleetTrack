@@ -26,5 +26,7 @@
 	<array>
 		<string>location</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>FleetTrack uses the camera to capture photos for inspections, reports, and trip documentation.</string>
 </dict>
 </plist>

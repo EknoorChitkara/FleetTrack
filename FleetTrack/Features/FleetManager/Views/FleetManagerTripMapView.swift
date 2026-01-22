@@ -273,7 +273,7 @@ struct RetractableDetailSheet: View {
             // Package Illustration
             Image(systemName: "shippingbox.fill")
                 .font(.system(size: 60))
-                .foregroundColor(Color(hex: "CD9C6B"))
+                .foregroundColor(Color(hexCode: "CD9C6B"))
                 .opacity(0.8)
         }
         .accessibilityElement(children: .combine)
@@ -301,7 +301,7 @@ struct RetractableDetailSheet: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "F9D854"))
+                    .fill(Color(hexCode: "F9D854"))
             )
         }
         .padding(.top, 8)

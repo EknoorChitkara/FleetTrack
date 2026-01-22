@@ -31,6 +31,12 @@ struct DriverDashboardView: View {
                     DriverTripsView()
                 case 2:
                     DriverAlertsView()
+                case 3:
+                    if let driver = viewModel.driver {
+                        ProfileView(user: $localUser, driver: .constant(driver))
+                    } else {
+                        ProgressView().tint(.appEmerald).padding(.top, 100)
+                    }
                 default:
                     dashboardContent
                 }
@@ -47,6 +53,13 @@ struct DriverDashboardView: View {
             if newValue == 0 {
                 Task {
                     await viewModel.loadDashboardData(user: localUser)
+                }
+            } else if newValue == 3 {
+                // Profile View Tab
+                if viewModel.driver == nil {
+                    Task {
+                        await viewModel.loadDashboardData(user: localUser)
+                    }
                 }
             }
         }
@@ -78,6 +91,13 @@ struct DriverDashboardView: View {
         }
         .fullScreenCover(isPresented: $isShowingReportIssue) {
             ReportIssueView(vehicle: viewModel.assignedVehicle)
+        }
+        .fullScreenCover(isPresented: $viewModel.needsOnboarding, onDismiss: {
+            Task {
+                await viewModel.loadDashboardData(user: localUser)
+            }
+        }) {
+            DriverOnboardingView(user: localUser)
         }
     }
     
@@ -133,6 +153,7 @@ struct DriverDashboardView: View {
                     }
                     
                     // Stat Cards
+                    HStack(spacing: 16) {
                         DriverStatCard(
                             title: "Trips Completed",
                             value: "\(viewModel.completedTripsCount)",
@@ -146,6 +167,8 @@ struct DriverDashboardView: View {
                             unit: "km"
                         )
                         .accessibilityIdentifier("driver_stat_total_distance")
+                    }
+                    .padding(.horizontal)
                     // Performance Metrics (Animated Category Chart)
                     PerformanceMetricsChart(
                         onTimeRate: viewModel.driver?.onTimeDeliveryRate ?? 0,

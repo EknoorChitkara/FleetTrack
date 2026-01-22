@@ -114,6 +114,34 @@ class SupabaseAuthService: AuthServiceProtocol {
         
         return user
     }
+    
+    func updateUserProfile(id: UUID, name: String, email: String, phoneNumber: String?) async throws -> User {
+        struct UserUpdate: Encodable {
+            let name: String
+            let email: String
+            let phone_number: String?
+            let updated_at: String
+        }
+        
+        let dateFormatter = ISO8601DateFormatter()
+        let updates = UserUpdate(
+            name: name,
+            email: email,
+            phone_number: phoneNumber,
+            updated_at: dateFormatter.string(from: Date())
+        )
+        
+        let updatedUser: User = try await client
+            .from("users")
+            .update(updates)
+            .eq("id", value: id)
+            .select()
+            .single()
+            .execute()
+            .value
+            
+        return updatedUser
+    }
 }
 
 enum SupabaseError: Error {

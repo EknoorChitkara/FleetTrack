@@ -60,6 +60,15 @@ struct Trip: Identifiable, Codable, Hashable {
     var createdAt: Date
     var updatedAt: Date
     
+    // Fuel Tracking & Photos
+    var startFuelGaugePhotoUrl: String?
+    var endFuelGaugePhotoUrl: String?
+    var startOdometerPhotoUrl: String?
+    var endOdometerPhotoUrl: String?
+    
+    // Route Selection
+    var actualRouteIndex: Int? // Index of route selected by driver
+    
     enum CodingKeys: String, CodingKey {
         case id
         case vehicleId = "vehicle_id"
@@ -83,6 +92,11 @@ struct Trip: Identifiable, Codable, Hashable {
         case endFuelLevel = "end_fuel_level"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case startFuelGaugePhotoUrl = "start_fuel_gauge_photo_url"
+        case endFuelGaugePhotoUrl = "end_fuel_gauge_photo_url"
+        case startOdometerPhotoUrl = "start_odometer_photo_url"
+        case endOdometerPhotoUrl = "end_odometer_photo_url"
+        case actualRouteIndex = "actual_route_index"
     }
     
     init(
@@ -106,6 +120,11 @@ struct Trip: Identifiable, Codable, Hashable {
         endOdometer: Double? = nil,
         startFuelLevel: Double? = nil,
         endFuelLevel: Double? = nil,
+        startFuelGaugePhotoUrl: String? = nil,
+        endFuelGaugePhotoUrl: String? = nil,
+        startOdometerPhotoUrl: String? = nil,
+        endOdometerPhotoUrl: String? = nil,
+        actualRouteIndex: Int? = nil,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -129,6 +148,11 @@ struct Trip: Identifiable, Codable, Hashable {
         self.endOdometer = endOdometer
         self.startFuelLevel = startFuelLevel
         self.endFuelLevel = endFuelLevel
+        self.startFuelGaugePhotoUrl = startFuelGaugePhotoUrl
+        self.endFuelGaugePhotoUrl = endFuelGaugePhotoUrl
+        self.startOdometerPhotoUrl = startOdometerPhotoUrl
+        self.endOdometerPhotoUrl = endOdometerPhotoUrl
+        self.actualRouteIndex = actualRouteIndex
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

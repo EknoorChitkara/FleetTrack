@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MaintenanceEditProfileView: View {
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var authVM = AuthViewModel()
     let user: User
     
     // State for form fields
@@ -46,10 +47,10 @@ struct MaintenanceEditProfileView: View {
                         
                         Spacer()
                         
-                            Text("Edit Profile")
-                                .font(.headline)
-                                .foregroundColor(AppTheme.textPrimary)
-                                .accessibilityAddTraits(.isHeader)
+                        Text("Edit Profile")
+                            .font(.headline)
+                            .foregroundColor(AppTheme.textPrimary)
+                            .accessibilityAddTraits(.isHeader)
                         
                         Spacer()
                         
@@ -122,17 +123,26 @@ struct MaintenanceEditProfileView: View {
                     
                     // Save Button
                     Button(action: {
-                        // Save Logic - would call a service normally
-                        presentationMode.wrappedValue.dismiss()
+                        Task {
+                            let success = await authVM.updateProfile(name: fullName, email: email, phone: phone)
+                            if success {
+                                presentationMode.wrappedValue.dismiss()
+                            }
+                        }
                     }) {
-                        Text("Save Changes")
-                            .fontWeight(.semibold)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(AppTheme.accentPrimary)
-                            .cornerRadius(12)
+                        if authVM.isLoading {
+                            ProgressView().tint(.black)
+                        } else {
+                            Text("Save Changes")
+                                .fontWeight(.semibold)
+                                .foregroundColor(.black)
+                        }
                     }
+                    .disabled(authVM.isLoading)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(AppTheme.accentPrimary)
+                    .cornerRadius(12)
                     .padding(.horizontal)
                     .padding(.bottom, 40)
                     .accessibilityLabel("Save Changes")
@@ -140,6 +150,13 @@ struct MaintenanceEditProfileView: View {
                 }
             }
             .navigationBarHidden(true)
+            .alert("Error", isPresented: $authVM.showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                if let msg = authVM.errorMessage {
+                    Text(msg)
+                }
+            }
         }
     }
 }
