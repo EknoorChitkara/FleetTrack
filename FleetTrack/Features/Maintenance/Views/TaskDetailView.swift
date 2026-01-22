@@ -229,7 +229,14 @@ struct TaskDetailView: View {
                 .foregroundColor(AppTheme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
             
-            InfoRow(icon: "car.fill", label: "Registration", value: viewModel.task.vehicleRegistrationNumber)
+            VStack(spacing: AppTheme.spacing.sm) {
+                // Show vehicle name if available
+                if let vehicle = viewModel.assignedVehicle {
+                    InfoRow(icon: "car.fill", label: "Vehicle", value: "\(vehicle.manufacturer) \(vehicle.model)")
+                }
+                
+                InfoRow(icon: "number", label: "Registration", value: viewModel.task.vehicleRegistrationNumber)
+            }
         }
         .padding(AppTheme.spacing.md)
         .background(AppTheme.backgroundSecondary)

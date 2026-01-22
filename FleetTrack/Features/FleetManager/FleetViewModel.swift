@@ -27,7 +27,7 @@ class FleetViewModel: ObservableObject {
             async let fetchedMaintenance = FleetManagerService.shared.fetchMaintenanceStaff()
             async let fetchedTrips = FleetManagerService.shared.fetchTrips()
             
-            self.vehicles = try await fetchedVehicles
+            self.vehicles = (try await fetchedVehicles).sorted(by: { $0.createdAt > $1.createdAt })
             self.drivers = try await fetchedDrivers
             self.maintenanceStaff = try await fetchedMaintenance
             self.trips = try await fetchedTrips
@@ -62,7 +62,7 @@ class FleetViewModel: ObservableObject {
             tankCapacity: Double(data.tankCapacity)
         )
         
-        vehicles.append(newVehicle)
+        vehicles.insert(newVehicle, at: 0) // New vehicle on top
         
         // 2. Optimistically update driver status
         if let driverId = data.assignedDriverId, 

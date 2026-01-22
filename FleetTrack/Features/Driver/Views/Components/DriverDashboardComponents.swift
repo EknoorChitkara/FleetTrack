@@ -331,7 +331,7 @@ struct PerformanceMetricsChart: View {
                     value: "\(Int(onTimeRate))%",
                     subValue: nil,
                     progress: onTimeRate / 100.0,
-                    color: Color(hex: "#0b7333") // Bright Mint Green
+                    color: Color(hexCode: "#0b7333") // Bright Mint Green
                 )
                 
                 Spacer()
@@ -342,7 +342,7 @@ struct PerformanceMetricsChart: View {
                     value: String(format: "%.1f", avgSpeed),
                     subValue: "km/h",
                     progress: min(avgSpeed / 100.0, 1.0), // Normalizing assuming 100km/h is max for progress bar
-                    color: Color(hex: "00B8D9") // Bright Cyan
+                    color: Color(hexCode: "00B8D9") // Bright Cyan
                 )
                 
                 Spacer()
@@ -353,7 +353,7 @@ struct PerformanceMetricsChart: View {
                     value: "\(Int(avgTripDist))",
                     subValue: "km",
                     progress: min(avgTripDist / 500.0, 1.0), // Normalizing assuming 500km is 'full'
-                    color: Color(hex: "FFAB00") // Amber/Orange
+                    color: Color(hexCode: "FFAB00") // Amber/Orange
                 )
             }
             .padding(.horizontal, 8)

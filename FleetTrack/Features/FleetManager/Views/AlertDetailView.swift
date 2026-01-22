@@ -12,6 +12,7 @@ struct AlertDetailView: View {
     let alert: GeofenceAlert
     @Environment(\.dismiss) var dismiss
     @State private var fetchedTrip: Trip?
+    @State private var driverPhone: String?
     
     var body: some View {
         NavigationView {
@@ -51,7 +52,7 @@ struct AlertDetailView: View {
         
         Task {
             do {
-                let trip: Trip = try await SupabaseClientManager.shared.client.database
+                let trip: Trip = try await SupabaseClientManager.shared.client
                     .from("trips")
                     .select()
                     .eq("id", value: tripId.uuidString)
@@ -59,11 +60,25 @@ struct AlertDetailView: View {
                     .execute()
                     .value
                 
+                // Fetch Driver Phone
+                struct DriverPhone: Decodable {
+                    let phone_number: String?
+                }
+                
+                let driver: DriverPhone = try await SupabaseClientManager.shared.client
+                    .from("drivers")
+                    .select("phone_number")
+                    .eq("id", value: trip.driverId.uuidString)
+                    .single()
+                    .execute()
+                    .value
+                
                 await MainActor.run {
                     self.fetchedTrip = trip
+                    self.driverPhone = driver.phone_number
                 }
             } catch {
-                print("Failed to fetch trip for alert: \(error)")
+                print("Failed to fetch details for alert: \(error)")
             }
         }
     }
@@ -122,8 +137,11 @@ struct AlertDetailView: View {
     private var actionsSection: some View {
         VStack(spacing: 16) {
             Button(action: {
-                if let url = URL(string: "tel://1234567890") { // Placeholder
-                    UIApplication.shared.open(url)
+                if let phone = driverPhone {
+                    let cleanedPhone = phone.replacingOccurrences(of: " ", with: "")
+                    if let url = URL(string: "tel://\(cleanedPhone)") {
+                        UIApplication.shared.open(url)
+                    }
                 }
             }) {
                 HStack {
@@ -134,9 +152,10 @@ struct AlertDetailView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
+                .background(driverPhone != nil ? Color.blue : Color.gray)
                 .cornerRadius(12)
             }
+            .disabled(driverPhone == nil)
             .accessibilityLabel("Call Driver")
             .accessibilityHint("Starts a phone call to the driver")
             .accessibilityIdentifier("alert_detail_call_button")

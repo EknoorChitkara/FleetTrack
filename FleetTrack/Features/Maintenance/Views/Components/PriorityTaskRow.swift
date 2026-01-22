@@ -9,24 +9,34 @@ import SwiftUI
 
 struct PriorityTaskRow: View {
     let task: MaintenanceTask
+    @State private var vehicleName: String?
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
-            // Header: Task ID and Priority Badge
+            // Header: Vehicle Info and Priority Badge
             HStack {
-                Text(task.id.uuidString.prefix(12).uppercased())
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppTheme.textPrimary)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "car.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(AppTheme.iconDefault)
+                        
+                        Text(task.vehicleRegistrationNumber)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(AppTheme.textPrimary)
+                    }
+                    
+                    if let name = vehicleName {
+                        Text(name)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                }
                 
                 Spacer()
                 
                 PriorityBadge(priority: task.priority)
             }
-            
-            // Vehicle Number
-            Text(task.vehicleRegistrationNumber)
-                .font(.caption)
-                .foregroundColor(AppTheme.textSecondary)
             
             // Task Description (Component name)
             Text(task.component.rawValue)
@@ -51,6 +61,21 @@ struct PriorityTaskRow: View {
         .accessibilityLabel("Task: \(task.component.rawValue) for vehicle \(task.vehicleRegistrationNumber). Priority: \(task.priority.rawValue). Due \(formattedDate(task.dueDate)).")
         .accessibilityHint("Double tap to view details")
         .accessibilityIdentifier("maintenance_priority_task_\(task.id.uuidString.prefix(8))")
+        .task {
+            await loadVehicleName()
+        }
+    }
+    
+    private func loadVehicleName() async {
+        guard let vehicleId = task.assignedVehicleId else { return }
+        
+        do {
+            if let vehicle = try await MaintenanceService.shared.fetchVehicle(byId: vehicleId) {
+                vehicleName = "\(vehicle.manufacturer) \(vehicle.model)"
+            }
+        } catch {
+            print("❌ Error loading vehicle name: \(error)")
+        }
     }
     
     private func formattedDate(_ date: Date) -> String {
