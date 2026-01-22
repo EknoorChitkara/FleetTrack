@@ -19,6 +19,11 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
     public var date: Date
     public var isRead: Bool
     public var type: AlertType
+    
+    // Emergency alert fields (optional)
+    public var vehicleId: UUID?
+    public var vehicleRegistration: String?
+    public var driverId: UUID?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -27,6 +32,9 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
         case date
         case isRead = "is_read"
         case type
+        case vehicleId = "vehicle_id"
+        case vehicleRegistration = "vehicle_registration"
+        case driverId = "driver_id"
     }
 
     public init(
@@ -35,7 +43,10 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
         message: String,
         date: Date = Date(),
         isRead: Bool = false,
-        type: AlertType
+        type: AlertType,
+        vehicleId: UUID? = nil,
+        vehicleRegistration: String? = nil,
+        driverId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -43,5 +54,8 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
         self.date = date
         self.isRead = isRead
         self.type = type
+        self.vehicleId = vehicleId
+        self.vehicleRegistration = vehicleRegistration
+        self.driverId = driverId
     }
 }

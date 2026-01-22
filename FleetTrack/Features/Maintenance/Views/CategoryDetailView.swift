@@ -115,10 +115,6 @@ struct PartRow: View {
                     Text(part.name)
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
-                    
-                    Text(part.partNumber)
-                        .font(.caption)
-                        .foregroundColor(AppTheme.textSecondary)
                 }
                 
                 Spacer()
