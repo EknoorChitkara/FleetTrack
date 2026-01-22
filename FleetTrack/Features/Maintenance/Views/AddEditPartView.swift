@@ -29,8 +29,6 @@ struct AddEditPartView: View {
     @State private var validationMessage = ""
     @State private var showingAddCategory = false
     @State private var newCategoryName = ""
-    @State private var showingScanner = false
-    @State private var scannedData: ScannedPartData? = nil
     
     var isEditMode: Bool {
         partToEdit != nil
@@ -51,44 +49,6 @@ struct AddEditPartView: View {
                     Section(header: Text("Basic Information").accessibilityAddTraits(.isHeader)) {
                         TextField("Part Name", text: $name)
                             .foregroundColor(AppTheme.textPrimary)
-<<<<<<< HEAD
-                            .onChange(of: name) { newValue in
-                                // Allow only letters, spaces, and hyphens, max 50 characters
-                                let filtered = newValue.filter { $0.isLetter || $0.isWhitespace || $0 == "-" }
-                                if filtered.count > 50 {
-                                    name = String(filtered.prefix(50))
-                                } else if filtered != newValue {
-                                    name = filtered
-                                }
-                            }
-                        
-                        
-                        HStack {
-                            TextField("Part Number", text: $partNumber)
-                                .foregroundColor(AppTheme.textPrimary)
-                                .autocapitalization(.allCharacters)
-                                .onChange(of: partNumber) { newValue in
-                                    // Allow only uppercase letters and numbers, max 20 characters
-                                    let filtered = newValue.uppercased().filter { $0.isLetter || $0.isNumber }
-                                    if filtered.count > 20 {
-                                        partNumber = String(filtered.prefix(20))
-                                    } else if filtered != newValue {
-                                        partNumber = filtered
-                                    }
-                                }
-                            
-                            Button(action: {
-                                showingScanner = true
-                            }) {
-                                Image(systemName: "qrcode.viewfinder")
-                                    .font(.title2)
-                                    .foregroundColor(AppTheme.accentPrimary)
-                                    .padding(8)
-                                    .background(AppTheme.backgroundElevated)
-                                    .cornerRadius(8)
-                            }
-                        }
-=======
                             .accessibilityLabel("Part Name")
                             .accessibilityIdentifier("maintenance_part_name_input")
                         
@@ -97,7 +57,6 @@ struct AddEditPartView: View {
                             .autocapitalization(.allCharacters)
                             .accessibilityLabel("Part Number")
                             .accessibilityIdentifier("maintenance_part_number_input")
->>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
                         
                         Picker("Category", selection: $category) {
                             ForEach(viewModel.allCategories) { cat in
@@ -150,15 +109,6 @@ struct AddEditPartView: View {
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .foregroundColor(AppTheme.textPrimary)
-                                .onChange(of: quantityInStock) { newValue in
-                                    // Allow only numbers, max 5 digits
-                                    let filtered = newValue.filter { $0.isNumber }
-                                    if filtered.count > 5 {
-                                        quantityInStock = String(filtered.prefix(5))
-                                    } else if filtered != newValue {
-                                        quantityInStock = filtered
-                                    }
-                                }
                                 .frame(width: 100)
                         }
                         
@@ -169,15 +119,6 @@ struct AddEditPartView: View {
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                                 .foregroundColor(AppTheme.textPrimary)
-                                .onChange(of: minimumStockLevel) { newValue in
-                                    // Allow only numbers, max 2 digits
-                                    let filtered = newValue.filter { $0.isNumber }
-                                    if filtered.count > 2 {
-                                        minimumStockLevel = String(filtered.prefix(2))
-                                    } else if filtered != newValue {
-                                        minimumStockLevel = filtered
-                                    }
-                                }
                                 .frame(width: 100)
                         }
                     }
@@ -191,37 +132,6 @@ struct AddEditPartView: View {
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.trailing)
                                 .foregroundColor(AppTheme.textPrimary)
-                                .onChange(of: unitPrice) { newValue in
-                                    // Allow only numbers and one decimal point, max 8 digits total
-                                    let filtered = newValue.filter { $0.isNumber || $0 == "." }
-                                    // Remove decimal to count digits
-                                    let digitsOnly = filtered.filter { $0.isNumber }
-                                    
-                                    if digitsOnly.count > 8 {
-                                        // Limit to 8 digits
-                                        let parts = filtered.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
-                                        if parts.count == 2 {
-                                            let intPart = String(parts[0].filter { $0.isNumber }.prefix(8))
-                                            let decPart = String(parts[1].filter { $0.isNumber })
-                                            let totalDigits = intPart.count + decPart.count
-                                            if totalDigits > 8 {
-                                                unitPrice = intPart + "." + String(decPart.prefix(8 - intPart.count))
-                                            } else {
-                                                unitPrice = intPart + "." + decPart
-                                            }
-                                        } else {
-                                            unitPrice = String(digitsOnly.prefix(8))
-                                        }
-                                    } else {
-                                        // Ensure only one decimal point
-                                        let decimalCount = filtered.filter { $0 == "." }.count
-                                        if decimalCount <= 1 && filtered != newValue {
-                                            unitPrice = filtered
-                                        } else if decimalCount > 1 {
-                                            unitPrice = String(filtered.prefix(while: { $0 != "." })) + "." + filtered.drop(while: { $0 != "." }).dropFirst().filter { $0 != "." }
-                                        }
-                                    }
-                                }
                                 .frame(width: 120)
                         }
                     }
@@ -230,34 +140,16 @@ struct AddEditPartView: View {
                     Section(header: Text("Supplier Information (Optional)").accessibilityAddTraits(.isHeader)) {
                         TextField("Supplier Name", text: $supplierName)
                             .foregroundColor(AppTheme.textPrimary)
-                            .onChange(of: supplierName) { newValue in
-                                // Allow only letters, spaces, hyphens, and ampersand
-                                let filtered = newValue.filter { $0.isLetter || $0.isWhitespace || $0 == "-" || $0 == "&" }
-                                if filtered != newValue {
-                                    supplierName = filtered
-                                }
-                            }
                         
                         TextField("Supplier Contact", text: $supplierContact)
                             .foregroundColor(AppTheme.textPrimary)
                             .keyboardType(.phonePad)
-                            .onChange(of: supplierContact) { newValue in
-                                // Allow only numbers, +, -, (, ), and spaces for phone format
-                                let filtered = newValue.filter { $0.isNumber || $0 == "+" || $0 == "-" || $0 == "(" || $0 == ")" || $0.isWhitespace }
-                                // Limit to 15 characters (international phone number max)
-                                if filtered.count > 15 {
-                                    supplierContact = String(filtered.prefix(15))
-                                } else if filtered != newValue {
-                                    supplierContact = filtered
-                                }
-                            }
                     }
                     .listRowBackground(AppTheme.backgroundSecondary)
                 }
                 .scrollContentBackground(.hidden)
-                .textInputAutocapitalization(.never)
             }
-            .navigationTitle(isEditMode ? "Edit Part" : "Add Part")
+            .navigationTitle(isEditMode ? "Edit Part" : "Add New Part")
             .navigationBarTitleDisplayMode(.inline)
             .accessibilityIdentifier("maintenance_add_edit_part_view")
             .toolbar {
@@ -265,25 +157,19 @@ struct AddEditPartView: View {
                     Button("Cancel") {
                         dismiss()
                     }
-<<<<<<< HEAD
-=======
                     .foregroundColor(AppTheme.textSecondary)
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("maintenance_part_cancel_button")
->>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(isEditMode ? "Update" : "Save") {
+                    Button("Save") {
                         savePart()
                     }
-<<<<<<< HEAD
-=======
                     .foregroundColor(AppTheme.accentPrimary)
                     .fontWeight(.semibold)
                     .accessibilityLabel("Save part")
                     .accessibilityIdentifier("maintenance_part_save_button")
->>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
                 }
             }
             .alert("Validation Error", isPresented: $showingValidationError) {
@@ -291,9 +177,11 @@ struct AddEditPartView: View {
             } message: {
                 Text(validationMessage)
             }
-            .alert("Add Category", isPresented: $showingAddCategory) {
+            .alert("Add New Category", isPresented: $showingAddCategory) {
                 TextField("Category Name", text: $newCategoryName)
-                Button("Cancel", role: .cancel) { }
+                Button("Cancel", role: .cancel) {
+                    newCategoryName = ""
+                }
                 Button("Add") {
                     if !newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty {
                         viewModel.addCustomCategory(newCategoryName.trimmingCharacters(in: .whitespaces))
@@ -304,34 +192,6 @@ struct AddEditPartView: View {
                 }
             } message: {
                 Text("Enter a name for the new category")
-            }
-            .sheet(isPresented: $showingScanner) {
-                BarcodeScannerView(scannedData: $scannedData)
-            }
-            .onChange(of: scannedData) { newData in
-                guard let data = newData else { return }
-                
-                // Auto-fill available fields
-                if let partName = data.partName {
-                    name = partName
-                }
-                if let partNum = data.partNumber {
-                    partNumber = partNum
-                }
-                if let qty = data.quantity {
-                    quantityInStock = qty
-                }
-                if let supplier = data.supplierName {
-                    supplierName = supplier
-                }
-                if let price = data.unitPrice {
-                    unitPrice = price
-                }
-                if let desc = data.description {
-                    description = desc
-                }
-                
-                print("✅ Auto-filled fields from scanned data")
             }
             .onAppear {
                 loadPartData()
@@ -371,25 +231,12 @@ struct AddEditPartView: View {
             return
         }
         
-        // Check for duplicate part name (case-insensitive)
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        let existingPart = viewModel.parts.first { part in
-            part.name.lowercased() == trimmedName.lowercased() && part.id != partToEdit?.id
-        }
-        
-        if let existing = existingPart {
-            validationMessage = "A part named '\(existing.name)' already exists in inventory. Please update the existing part or use a different name."
-            showingValidationError = true
-            return
-        }
-        
         // Parse numeric fields
         guard let quantity = Int(quantityInStock) else {
             validationMessage = "Please enter a valid quantity"
             showingValidationError = true
             return
         }
-
         
         guard let minStock = Int(minimumStockLevel) else {
             validationMessage = "Please enter a valid minimum stock level"

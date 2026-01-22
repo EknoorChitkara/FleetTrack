@@ -11,19 +11,8 @@ struct RescheduleSheet: View {
     @ObservedObject var viewModel: TaskDetailViewModel
     @Environment(\.dismiss) var dismiss
     
-    @State private var newDate: Date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+    @State private var newDate: Date = Date()
     @State private var reason: String = ""
-    @State private var showingError = false
-    @State private var errorMessage = ""
-    
-    private var minimumDate: Date {
-        Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-    }
-    
-    private var isValid: Bool {
-        !reason.trimmingCharacters(in: .whitespaces).isEmpty && 
-        reason.trimmingCharacters(in: .whitespaces).count >= 10
-    }
     
     var body: some View {
         NavigationView {
@@ -32,7 +21,7 @@ struct RescheduleSheet: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: AppTheme.spacing.lg) {
-                    Text("Reschedule this task to a new date")
+                    Text("Request to reschedule this task to a new date")
                         .font(.subheadline)
                         .foregroundColor(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
@@ -46,7 +35,7 @@ struct RescheduleSheet: View {
                         DatePicker(
                             "Select Date",
                             selection: $newDate,
-                            in: minimumDate...,
+                            in: Date()...,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                         .datePickerStyle(.compact)
@@ -56,7 +45,7 @@ struct RescheduleSheet: View {
                     }
                     
                     VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
-                        Text("Reason for Rescheduling * (minimum 10 characters)")
+                        Text("Reason for Rescheduling *")
                             .font(.caption)
                             .foregroundColor(AppTheme.textSecondary)
                         
@@ -66,19 +55,6 @@ struct RescheduleSheet: View {
                             .background(AppTheme.backgroundSecondary)
                             .cornerRadius(AppTheme.cornerRadius.small)
                             .foregroundColor(AppTheme.textPrimary)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppTheme.cornerRadius.small)
-                                    .stroke(
-                                        reason.count > 0 && reason.count < 10 ? Color.red : Color.clear,
-                                        lineWidth: 1
-                                    )
-                            )
-                        
-                        if reason.count > 0 && reason.count < 10 {
-                            Text("\(reason.count)/10 characters")
-                                .font(.caption2)
-                                .foregroundColor(.red)
-                        }
                     }
                     
                     // Info box
@@ -86,7 +62,7 @@ struct RescheduleSheet: View {
                         Image(systemName: "info.circle.fill")
                             .foregroundColor(AppTheme.accentPrimary)
                         
-                        Text("The task will be rescheduled immediately and an alert will be sent to the Fleet Manager")
+                        Text("This request will be sent to the Fleet Manager for approval")
                             .font(.caption)
                             .foregroundColor(AppTheme.textSecondary)
                     }
@@ -97,24 +73,26 @@ struct RescheduleSheet: View {
                     Spacer()
                     
                     Button(action: {
-                        Task {
-                            await viewModel.rescheduleTask(newDate: newDate, reason: reason)
-                            dismiss()
+                        if !reason.isEmpty {
+                            Task {
+                                await viewModel.requestReschedule(newDate: newDate, reason: reason)
+                                dismiss()
+                            }
                         }
                     }) {
-                        Text("Reschedule Task")
+                        Text("Submit Reschedule Request")
                             .font(.headline)
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(
-                                isValid
+                                !reason.isEmpty
                                     ? AppTheme.accentPrimary
                                     : AppTheme.textTertiary
                             )
                             .cornerRadius(AppTheme.cornerRadius.medium)
                     }
-                    .disabled(!isValid)
+                    .disabled(reason.isEmpty)
                 }
                 .padding(AppTheme.spacing.md)
             }
@@ -128,15 +106,9 @@ struct RescheduleSheet: View {
                     .foregroundColor(AppTheme.accentPrimary)
                 }
             }
-            .alert("Error", isPresented: $showingError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage)
-            }
         }
     }
 }
-
 
 struct CancelTaskSheet: View {
     @ObservedObject var viewModel: TaskDetailViewModel
@@ -145,11 +117,6 @@ struct CancelTaskSheet: View {
     @State private var reason: String = ""
     @State private var showConfirmation: Bool = false
     
-    private var isValid: Bool {
-        !reason.trimmingCharacters(in: .whitespaces).isEmpty && 
-        reason.trimmingCharacters(in: .whitespaces).count >= 10
-    }
-    
     var body: some View {
         NavigationView {
             ZStack {
@@ -157,14 +124,14 @@ struct CancelTaskSheet: View {
                     .ignoresSafeArea()
                 
                 VStack(spacing: AppTheme.spacing.lg) {
-                    Text("Cancel this maintenance task")
+                    Text("Explain why this task needs to be cancelled")
                         .font(.subheadline)
                         .foregroundColor(AppTheme.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.top)
                     
                     VStack(alignment: .leading, spacing: AppTheme.spacing.sm) {
-                        Text("Cancellation Reason * (minimum 10 characters)")
+                        Text("Cancellation Reason *")
                             .font(.caption)
                             .foregroundColor(AppTheme.textSecondary)
                         
@@ -174,19 +141,6 @@ struct CancelTaskSheet: View {
                             .background(AppTheme.backgroundSecondary)
                             .cornerRadius(AppTheme.cornerRadius.small)
                             .foregroundColor(AppTheme.textPrimary)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: AppTheme.cornerRadius.small)
-                                    .stroke(
-                                        reason.count > 0 && reason.count < 10 ? Color.red : Color.clear,
-                                        lineWidth: 1
-                                    )
-                            )
-                        
-                        if reason.count > 0 && reason.count < 10 {
-                            Text("\(reason.count)/10 characters")
-                                .font(.caption2)
-                                .foregroundColor(.red)
-                        }
                     }
                     
                     // Warning box
@@ -195,12 +149,12 @@ struct CancelTaskSheet: View {
                             .foregroundColor(AppTheme.statusWarning)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("This will cancel the task immediately")
+                            Text("This request requires approval")
                                 .font(.caption)
                                 .fontWeight(.semibold)
                                 .foregroundColor(AppTheme.textPrimary)
                             
-                            Text("The task will be moved to cancelled section and an alert will be sent to Fleet Manager")
+                            Text("Fleet Manager will review your cancellation request")
                                 .font(.caption2)
                                 .foregroundColor(AppTheme.textSecondary)
                         }
@@ -212,23 +166,23 @@ struct CancelTaskSheet: View {
                     Spacer()
                     
                     Button(action: {
-                        if isValid {
+                        if !reason.isEmpty {
                             showConfirmation = true
                         }
                     }) {
-                        Text("Cancel Task")
+                        Text("Submit Cancellation Request")
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(
-                                isValid
+                                !reason.isEmpty
                                     ? AppTheme.statusError
                                     : AppTheme.textTertiary
                             )
                             .cornerRadius(AppTheme.cornerRadius.medium)
                     }
-                    .disabled(!isValid)
+                    .disabled(reason.isEmpty)
                 }
                 .padding(AppTheme.spacing.md)
             }
@@ -243,15 +197,15 @@ struct CancelTaskSheet: View {
                 }
             }
             .alert("Confirm Cancellation", isPresented: $showConfirmation) {
-                Button("Don't Cancel", role: .cancel) { }
-                Button("Cancel Task", role: .destructive) {
+                Button("Cancel Request", role: .cancel) { }
+                Button("Submit", role: .destructive) {
                     Task {
-                        await viewModel.cancelTask(reason: reason)
+                        await viewModel.requestCancellation(reason: reason)
                         dismiss()
                     }
                 }
             } message: {
-                Text("Are you sure you want to cancel this task? This action cannot be undone.")
+                Text("Are you sure you want to submit a cancellation request for this task?")
             }
         }
     }
