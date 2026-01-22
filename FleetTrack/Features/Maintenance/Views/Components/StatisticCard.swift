@@ -2,8 +2,9 @@
 //  StatisticCard.swift
 //  FleetTrack
 //
-//  Created for Maintenance Module - Dashboard Statistics
+//  Created by Anmolpreet Singh on 09/01/26.
 //
+
 
 import SwiftUI
 
@@ -12,57 +13,61 @@ struct StatisticCard: View {
     let value: String
     let label: String
     let iconBackgroundColor: Color
-    let iconColor: Color
+    var iconColor: Color = AppTheme.accentPrimary
     
     var body: some View {
-        VStack(alignment: .center, spacing: AppTheme.spacing.sm) {
-            // Icon
+        VStack(spacing: AppTheme.spacing.md) {
+            // Icon with background
             ZStack {
                 Circle()
                     .fill(iconBackgroundColor)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 48, height: 48)
                 
                 Image(systemName: icon)
-                    .font(.system(size: 18))
+                    .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(iconColor)
             }
             
             // Value
             Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.system(size: 28, weight: .bold))
                 .foregroundColor(AppTheme.textPrimary)
             
             // Label
             Text(label)
                 .font(.caption)
                 .foregroundColor(AppTheme.textSecondary)
-                .lineLimit(2)
                 .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 120)
-        .padding(AppTheme.spacing.md)
+        .frame(height: 120) // Match TaskCountBox height
+        .padding(AppTheme.spacing.lg)
         .background(AppTheme.backgroundSecondary)
-<<<<<<< HEAD
-        .cornerRadius(AppTheme.cornerRadius.medium)
-=======
         .cornerRadius(AppTheme.cornerRadius.large)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label): \(value)")
         .accessibilityIdentifier("maintenance_stat_card_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))")
->>>>>>> d3dfd6b3ea8c3417c1942f194070d786fac23a9b
     }
 }
 
 #Preview {
-    StatisticCard(
-        icon: "chart.bar.fill",
-        value: "24",
-        label: "Completed This Month",
-        iconBackgroundColor: Color.purple.opacity(0.15),
-        iconColor: Color.purple
-    )
+    HStack {
+        StatisticCard(
+            icon: "checkmark",
+            value: "45",
+            label: "Completed This Month",
+            iconBackgroundColor: AppTheme.statusActiveBackground
+        )
+        
+        StatisticCard(
+            icon: "clock",
+            value: "2.5h",
+            label: "Avg Completion Time",
+            iconBackgroundColor: AppTheme.backgroundElevated
+        )
+    }
     .padding()
     .background(AppTheme.backgroundPrimary)
 }

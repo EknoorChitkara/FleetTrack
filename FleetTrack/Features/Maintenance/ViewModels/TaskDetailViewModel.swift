@@ -13,11 +13,9 @@ class TaskDetailViewModel: ObservableObject {
 
     @Published var task: MaintenanceTask
     @Published var assignedDriver: Driver?
-    @Published var assignedVehicle: Vehicle?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showingCompletionSheet: Bool = false
-    @Published var showingCompletionConfirmation: Bool = false
     @Published var showingFailureSheet: Bool = false
     @Published var showingRescheduleSheet: Bool = false
     @Published var showingCancelSheet: Bool = false
@@ -183,13 +181,8 @@ class TaskDetailViewModel: ObservableObject {
             guard let vehicle = try await MaintenanceService.shared.fetchVehicle(byRegistration: task.vehicleRegistrationNumber) else {
                 print("⚠️ Vehicle not found: \(task.vehicleRegistrationNumber)")
                 assignedDriver = nil
-                assignedVehicle = nil
                 return
             }
-            
-            // Store vehicle for display
-            assignedVehicle = vehicle
-            print("✅ Loaded vehicle: \(vehicle.manufacturer) \(vehicle.model) (\(vehicle.registrationNumber))")
             
             // Step 2: Get the assigned driver ID from the vehicle
             guard let driverId = vehicle.assignedDriverId else {
@@ -208,7 +201,6 @@ class TaskDetailViewModel: ObservableObject {
         } catch {
             print("❌ Error loading driver: \(error)")
             assignedDriver = nil
-            assignedVehicle = nil
         }
     }
 
@@ -240,72 +232,40 @@ class TaskDetailViewModel: ObservableObject {
 
     // MARK: - Reschedule & Cancel Requests
 
-    func rescheduleTask(newDate: Date, reason: String) async {
+    func requestReschedule(newDate: Date, reason: String) async {
         isLoading = true
         errorMessage = nil
-        
-        do {
-            // Update task due date
-            try await MaintenanceService.shared.rescheduleTask(
-                taskId: task.id,
-                newDueDate: newDate,
-                reason: reason
-            )
-            
-            task.dueDate = newDate
-            TasksViewModel.shared.updateTask(task)
-            
-            // Create alert for fleet manager
-            try await MaintenanceService.shared.createManagerAlert(
-                title: "Task Rescheduled",
-                message: "Task '\(task.description ?? "Maintenance Task")' for vehicle \(task.vehicleRegistrationNumber) has been rescheduled to \(formattedDate(newDate)). Reason: \(reason)",
-                type: .maintenance
-            )
-            
-            showingRescheduleSheet = false
-            print("✅ Task rescheduled successfully")
-        } catch {
-            errorMessage = "Failed to reschedule task: \(error.localizedDescription)"
-            print("❌ Error rescheduling task: \(error)")
-        }
+
+        try? await Task.sleep(nanoseconds: 500_000_000)
+
+        // In real app, this would create a RescheduleRequest in database
+        print("📅 Reschedule request submitted:")
+        print("  New Date: \(newDate)")
+        print("  Reason: \(reason)")
+        print("  Status: Pending Approval")
+
         isLoading = false
+        showingRescheduleSheet = false
+
+        // Show success message (in real app, would update UI)
+        errorMessage = nil
     }
 
-    func cancelTask(reason: String) async {
+    func requestCancellation(reason: String) async {
         isLoading = true
         errorMessage = nil
-        
-        do {
-            // Cancel the task
-            try await MaintenanceService.shared.cancelTask(
-                taskId: task.id,
-                reason: reason
-            )
-            
-            task.status = "Cancelled"
-            task.isLocked = true
-            TasksViewModel.shared.updateTask(task)
-            
-            // Create alert for fleet manager
-            try await MaintenanceService.shared.createManagerAlert(
-                title: "Task Cancelled",
-                message: "Task '\(task.description ?? "Maintenance Task")' for vehicle \(task.vehicleRegistrationNumber) has been cancelled. Reason: \(reason)",
-                type: .maintenance
-            )
-            
-            showingCancelSheet = false
-            print("✅ Task cancelled successfully")
-        } catch {
-            errorMessage = "Failed to cancel task: \(error.localizedDescription)"
-            print("❌ Error cancelling task: \(error)")
-        }
+
+        try? await Task.sleep(nanoseconds: 500_000_000)
+
+        // In real app, this would create a CancelRequest in database
+        print("❌ Cancellation request submitted:")
+        print("  Reason: \(reason)")
+        print("  Status: Pending Approval")
+
         isLoading = false
-    }
-    
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
+        showingCancelSheet = false
+
+        // Show success message
+        errorMessage = nil
     }
 }

@@ -414,7 +414,14 @@ struct SearchResultPartRow: View {
                         .foregroundColor(AppTheme.textPrimary)
                     
                     HStack(spacing: 8) {
-
+                        Text(part.partNumber)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                        
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.textSecondary)
+                        
                         Text(viewModel.displayName(for: part.category))
                             .font(.caption)
                             .foregroundColor(AppTheme.textSecondary)

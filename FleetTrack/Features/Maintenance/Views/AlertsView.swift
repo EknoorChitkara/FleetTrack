@@ -12,7 +12,6 @@ struct AlertsView: View {
     @StateObject private var inventoryViewModel = InventoryViewModel()
     @State private var selectedFilter: AlertFilter = .all
     @State private var partToEdit: InventoryPart?
-    @State private var selectedAlert: MaintenanceAlert?
 
     enum AlertFilter: String, CaseIterable {
         case all = "All"
@@ -70,11 +69,6 @@ struct AlertsView: View {
                         if selectedFilter == .all && !alerts.isEmpty {
                             ForEach(alerts) { alert in
                                 MaintenanceAlertCard(alert: alert)
-                                    .onTapGesture {
-                                        if alert.type == .emergency {
-                                            selectedAlert = alert
-                                        }
-                                    }
                             }
                         }
                         
@@ -122,9 +116,6 @@ struct AlertsView: View {
         .sheet(item: $partToEdit) { part in
             AddEditPartView(partToEdit: part)
                 .environmentObject(inventoryViewModel)
-        }
-        .sheet(item: $selectedAlert) { alert in
-            EmergencyAlertDetailView(alert: alert)
         }
     }
 
@@ -200,6 +191,10 @@ struct InventoryAlertCard: View {
                     Text(part.name)
                         .font(.headline)
                         .foregroundColor(AppTheme.textPrimary)
+
+                    Text(part.partNumber)
+                        .font(.caption)
+                        .foregroundColor(AppTheme.textSecondary)
 
                     HStack(spacing: 16) {
                         HStack(spacing: 4) {
