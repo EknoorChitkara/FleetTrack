@@ -10,39 +10,94 @@ struct TripRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            Circle()
-                .fill(Color.purple.opacity(0.1))
-                .frame(width: 40, height: 40)
-                .overlay(Image(systemName: "map.fill").foregroundColor(.purple))
+            // Status Icon with background
+            ZStack {
+                Circle()
+                    .fill(statusColor(trip.status).opacity(0.1))
+                    .frame(width: 48, height: 48)
+                
+                Image(systemName: statusIcon(trip.status))
+                    .foregroundColor(statusColor(trip.status))
+                    .font(.system(size: 20))
+            }
+            .padding(.leading, 4)
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(trip.startAddress ?? "Start") → \(trip.endAddress ?? "End")")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                Text(trip.purpose ?? "Trip")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Text(trip.startAddress ?? "Start")
+                        .font(.system(size: 14, weight: .bold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(.gray)
+                    Text(trip.endAddress ?? "End")
+                        .font(.system(size: 14, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .lineLimit(1)
+                
+                HStack(spacing: 8) {
+                    Label(trip.purpose ?? "Shipment", systemImage: "shippingbox.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                    
+                    if let startTime = trip.startTime {
+                        Text("•")
+                            .foregroundColor(.gray.opacity(0.5))
+                        Text(startTime.formatted(date: .abbreviated, time: .omitted))
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
+                }
             }
             
             Spacer()
             
             VStack(alignment: .trailing, spacing: 4) {
                 Text(trip.formattedDistance)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.appEmerald)
-                if let startTime = trip.startTime {
-                    Text(startTime, style: .date)
-                        .font(.system(size: 10))
-                        .foregroundColor(.gray)
-                }
+                
+                Text(trip.status.capitalized)
+                    .font(.system(size: 10, weight: .bold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(statusColor(trip.status).opacity(0.1))
+                    .foregroundColor(statusColor(trip.status))
+                    .cornerRadius(4)
             }
         }
         .padding()
-        .background(Color.appCardBackground)
-        .cornerRadius(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.appCardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                )
+        )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Trip from \(trip.startAddress ?? "Start") to \(trip.endAddress ?? "End"). Purpose: \(trip.purpose ?? "Trip"). Distance: \(trip.formattedDistance).")
+        .accessibilityLabel("Trip from \(trip.startAddress ?? "Start") to \(trip.endAddress ?? "End"). Purpose: \(trip.purpose ?? "Trip"). Status: \(trip.status). Distance: \(trip.formattedDistance).")
         .accessibilityIdentifier("fleet_trip_row_\(trip.id.uuidString.prefix(8))")
+    }
+    
+    private func statusColor(_ status: String) -> Color {
+        switch status.lowercased() {
+        case "completed": return .green
+        case "ongoing", "in progress": return .orange
+        case "scheduled": return .blue
+        case "cancelled": return .red
+        default: return .gray
+        }
+    }
+    
+    private func statusIcon(_ status: String) -> String {
+        switch status.lowercased() {
+        case "completed": return "checkmark.circle.fill"
+        case "ongoing", "in progress": return "map.fill"
+        case "scheduled": return "calendar"
+        case "cancelled": return "xmark.circle.fill"
+        default: return "questionmark.circle"
+        }
     }
 }
 
@@ -177,7 +232,7 @@ struct DriverCard: View {
                 .foregroundColor(.appEmerald)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(driver.displayName)
+                Text(driver.displayName + (driver.isActive == false ? " –" : ""))
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
                 Text(driver.licenseNumber ?? "No License")

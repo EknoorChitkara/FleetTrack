@@ -18,7 +18,10 @@ struct FleetManagerVehiclesView: View {
     
     var filteredVehicles: [FMVehicle] {
         fleetVM.vehicles.filter { vehicle in
-            let matchesSearch = searchText.isEmpty || vehicle.registrationNumber.lowercased().contains(searchText.lowercased())
+            let cleanedSearch = searchText.replacingOccurrences(of: "-", with: "").lowercased()
+            let cleanedReg = vehicle.registrationNumber.replacingOccurrences(of: "-", with: "").lowercased()
+            
+            let matchesSearch = searchText.isEmpty || cleanedReg.contains(cleanedSearch)
             let matchesFilter = selectedFilter == "All" || vehicle.status.rawValue == selectedFilter
             return matchesSearch && matchesFilter
         }
@@ -56,7 +59,32 @@ struct FleetManagerVehiclesView: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
-                    TextField("Search vehicles...", text: $searchText)
+                    TextField("Search vehicles (e.g. MH-12)", text: Binding(
+                        get: { searchText },
+                        set: { newValue in
+                            // Auto-hyphenation logic
+                            // Remove existing hyphens to re-process
+                            let clean = newValue.replacingOccurrences(of: "-", with: "").uppercased()
+                            var formatted = ""
+                            
+                            for (index, char) in clean.enumerated() {
+                                if index > 0 {
+                                    let prevIdx = clean.index(clean.startIndex, offsetBy: index - 1)
+                                    let prevChar = clean[prevIdx]
+                                    if (prevChar.isLetter && char.isNumber) || (prevChar.isNumber && char.isLetter) {
+                                        formatted.append("-")
+                                    }
+                                }
+                                formatted.append(char)
+                            }
+                            
+                            if newValue.count < searchText.count {
+                                searchText = newValue.uppercased()
+                            } else {
+                                searchText = formatted
+                            }
+                        }
+                    ))
                         .foregroundColor(.white)
                         .accessibilityIdentifier("fleet_vehicles_search")
                 }

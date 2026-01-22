@@ -195,6 +195,37 @@ struct InspectionSummaryView: View {
                 }
             }
             
+            // Future Scope: Tyre Cost Calculation
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Future Scope: Tyre Cost")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Spacer()
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.appEmerald)
+                }
+                
+                Text("Upcoming AI-powered tyre wear analysis and cost estimation based on driving patterns.")
+                    .font(.subheadline)
+                    .foregroundColor(.appSecondaryText)
+                
+                HStack {
+                    Image(systemName: "leaf.fill")
+                        .foregroundColor(.green)
+                    Text("Eco-Drive Analysis Incoming")
+                        .font(.caption)
+                        .foregroundColor(.appEmerald)
+                }
+            }
+            .padding(20)
+            .background(Color.appCardBackground)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.appEmerald.opacity(0.3), lineWidth: 1)
+            )
+            
             // Quick Actions
             VStack(alignment: .leading, spacing: 16) {
                 Text("Quick Actions")
