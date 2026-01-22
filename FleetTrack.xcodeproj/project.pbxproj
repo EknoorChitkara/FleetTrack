@@ -300,10 +300,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X36HGBF94G;
+				DEVELOPMENT_TEAM = LRUM4T5G73;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FleetTrack/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to scan barcodes and QR codes for quick part entry.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "FleetTrack monitors your trip progress and sends notifications when you reach checkpoints, even when the app is in the background. This helps ensure safe and efficient deliveries.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "FleetTrack shows your location on the map to help you select trip start and destination points.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -316,7 +317,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ios.FleetTrack.sagar;
+				PRODUCT_BUNDLE_IDENTIFIER = ios.FleetTrack.sagar.gggbg;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -338,10 +339,11 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = X36HGBF94G;
+				DEVELOPMENT_TEAM = LRUM4T5G73;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FleetTrack/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is required to scan barcodes and QR codes for quick part entry.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "FleetTrack monitors your trip progress and sends notifications when you reach checkpoints, even when the app is in the background. This helps ensure safe and efficient deliveries.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "FleetTrack shows your location on the map to help you select trip start and destination points.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -354,7 +356,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ios.FleetTrack.sagar;
+				PRODUCT_BUNDLE_IDENTIFIER = ios.FleetTrack.sagar.gggbg;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

@@ -281,6 +281,81 @@ public class MaintenanceService {
 
         print("✅ Task \(taskId) marked as failed (status: Cancelled, reason: \(reason))")
     }
+    
+    // MARK: - Reschedule & Cancel
+    
+    public func rescheduleTask(taskId: UUID, newDueDate: Date, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let dueDate: Date
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case dueDate = "due_date"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate(dueDate: newDueDate)
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        print("✅ Task \(taskId) rescheduled to \(newDueDate)")
+    }
+    
+    public func cancelTask(taskId: UUID, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let status: String = "Cancelled"
+            let isLocked: Bool = true
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case status
+                case isLocked = "is_locked"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate()
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        print("✅ Task \(taskId) cancelled")
+    }
+    
+    public func createManagerAlert(title: String, message: String, type: AlertType) async throws {
+        struct AlertInsert: Encodable {
+            let id: UUID = UUID()
+            let title: String
+            let message: String
+            let type: String
+            let isRead: Bool = false
+            let date: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case id, title, message, type
+                case isRead = "is_read"
+                case date
+            }
+        }
+        
+        let alert = AlertInsert(title: title, message: message, type: type.rawValue)
+        
+        try await client
+            .from("alerts")
+            .insert(alert)
+            .execute()
+        
+        print("✅ Alert created for fleet manager: \(title)")
+    }
+
 
     /// Add a part usage to a task
     public func addPart(taskId: UUID, part: PartUsage) async throws {
