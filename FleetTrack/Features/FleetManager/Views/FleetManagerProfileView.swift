@@ -92,6 +92,25 @@ struct FleetManagerProfileView: View {
                                     SettingRow(icon: "map.fill", title: "Trip History", color: .purple)
                                 }
                             }
+
+                            // Voice Settings
+                            ProfileSection(title: "Accessibility") {
+                                Toggle(isOn: Binding(
+                                    get: { InAppVoiceSettings.shared.isVoiceEnabled },
+                                    set: { _ in InAppVoiceManager.shared.toggleVoiceMode() }
+                                )) {
+                                    HStack {
+                                        Image(systemName: "waveform.circle.fill")
+                                            .foregroundColor(.appEmerald)
+                                            .font(.system(size: 20))
+                                        Text("Voice Narration")
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .padding()
+                                .background(Color.appCardBackground)
+                                .cornerRadius(12)
+                            }
                             
                             // Security Section
                             ProfileSection(title: "Security & Privacy") {

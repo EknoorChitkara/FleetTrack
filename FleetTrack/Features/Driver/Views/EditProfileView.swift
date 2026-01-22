@@ -104,6 +104,9 @@ struct EditProfileView: View {
                 }
             }
         }
+        .onAppear {
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
     }
     
     private func saveProfile() async {
@@ -172,5 +175,12 @@ struct EditProfileView: View {
                 self.isLoading = false
             }
         }
+    }
+}
+
+// MARK: - InAppVoiceReadable
+extension EditProfileView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        return "Edit Profile. Update your personal details."
     }
 }

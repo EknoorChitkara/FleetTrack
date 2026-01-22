@@ -36,7 +36,7 @@ class CircularGeofenceManager: NSObject, ObservableObject {
     func fetchAndMonitorGeofences() async {
         do {
             // Need a custom decoder if using JSON string dates, but "geofences" table is standard
-            let zones: [CircularGeofence] = try await supabase.database
+            let zones: [CircularGeofence] = try await supabase
                 .from("geofences")
                 .select()
                 .execute()
@@ -67,7 +67,7 @@ class CircularGeofenceManager: NSObject, ObservableObject {
     
     func saveGeofence(_ geofence: CircularGeofence) async throws {
         // 1. Save to Supabase
-        try await supabase.database
+        try await supabase
             .from("geofences")
             .insert(geofence)
             .execute()
@@ -88,7 +88,7 @@ class CircularGeofenceManager: NSObject, ObservableObject {
     
     func updateGeofence(_ geofence: CircularGeofence) async throws {
         // 1. Update in Supabase
-        try await supabase.database
+        try await supabase
             .from("geofences")
             .update(geofence)
             .eq("id", value: geofence.id.uuidString)
@@ -120,7 +120,7 @@ class CircularGeofenceManager: NSObject, ObservableObject {
         }
         
         // 2. Delete from Supabase
-        try await supabase.database
+        try await supabase
             .from("geofences")
             .delete()
             .eq("id", value: geofenceId.uuidString)
@@ -258,13 +258,13 @@ class CircularGeofenceManager: NSObject, ObservableObject {
         
         do {
             // Save Event
-            try await supabase.database
+            try await supabase
                 .from("geofence_events")
                 .insert(event)
                 .execute()
             
             // Save Alert
-            try await supabase.database
+            try await supabase
                 .from("alerts")
                 .insert(alert)
                 .execute()

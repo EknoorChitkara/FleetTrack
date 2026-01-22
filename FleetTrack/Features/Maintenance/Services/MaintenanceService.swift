@@ -29,13 +29,13 @@ public class MaintenanceService {
             .execute()
             .value
 
-        print("✅ Fetched \(tasks.count) maintenance tasks from Supabase")
+        // print("✅ Fetched \(tasks.count) maintenance tasks from Supabase")
         return tasks
     }
 
     /// Fetch maintenance summary statistics
     public func fetchMaintenanceSummary() async throws -> MaintenanceSummary {
-        print("📊 Fetching maintenance summary...")
+        // print("📊 Fetching maintenance summary...")
         
         // Fetch all completed tasks
         let tasks: [MaintenanceTask] = try await client
@@ -72,7 +72,7 @@ public class MaintenanceService {
             averageCompletionTimeHours: averageCompletionTime
         )
         
-        print("✅ Summary: \(summary.completedTasksThisMonth) completed this month, \(String(format: "%.1f", summary.averageCompletionTimeHours))h avg labor time")
+        // print("✅ Summary: \(summary.completedTasksThisMonth) completed this month, \(String(format: "%.1f", summary.averageCompletionTimeHours))h avg labor time")
         
         return summary
     }
@@ -81,14 +81,14 @@ public class MaintenanceService {
 
     /// Add a new maintenance task
     public func addMaintenanceTask(_ data: MaintenanceTaskCreationData) async throws {
-        print("🔧 ========== ADDING MAINTENANCE TASK ==========")
-        print("📋 Table: maintenance_tasks")
-        print("🚗 Vehicle Registration: \(data.vehicleRegistrationNumber)")
-        print("⚡ Priority: \(data.priority)")
-        print("🔩 Component: \(data.component.rawValue)")
-        print("📊 Status: \(data.status)")
-        print("📅 Due Date: \(data.dueDate)")
-        print("🧰 Parts Used: \(data.partsUsed.map { $0.partName }.joined(separator: ", "))")
+        // print("wrench ========== ADDING MAINTENANCE TASK ==========")
+        // print("clipboard Table: maintenance_tasks")
+        // print("car Vehicle Registration: \(data.vehicleRegistrationNumber)")
+        // print("zap Priority: \(data.priority)")
+        // print("bolt Component: \(data.component.rawValue)")
+        // print("chart_with_upwards_trend Status: \(data.status)")
+        // print("calendar Due Date: \(data.dueDate)")
+        // print("toolbox Parts Used: \(data.partsUsed.map { $0.partName }.joined(separator: ", "))")
         
         let newTask = MaintenanceTask(
             id: UUID(),
@@ -101,18 +101,18 @@ public class MaintenanceService {
             partsUsed: data.partsUsed
         )
         
-        print("🆔 Generated Task ID: \(newTask.id)")
-        print("📤 Sending to Supabase table: maintenance_tasks...")
+        // print("id Generated Task ID: \(newTask.id)")
+        // print("outbox_tray Sending to Supabase table: maintenance_tasks...")
 
         try await client
             .from("maintenance_tasks")
             .insert(newTask)
             .execute()
 
-        print("✅ Maintenance task created successfully!")
-        print("✅ Task: \(data.component.rawValue) for \(data.vehicleRegistrationNumber)")
-        print("✅ Stored in table: maintenance_tasks")
-        print("🔧 ============================================")
+        // print("check_mark_button Maintenance task created successfully!")
+        // print("check_mark_button Task: \(data.component.rawValue) for \(data.vehicleRegistrationNumber)")
+        // print("check_mark_button Stored in table: maintenance_tasks")
+        // print("wrench ============================================")
     }
 
     // MARK: - Update Operations
@@ -137,7 +137,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) status updated to: \(status)")
+        // print("check_mark_button Task \(taskId) status updated to: \(status)")
     }
 
     /// Mark a task as completed (Basic status update)
@@ -164,7 +164,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) marked as completed")
+        // print("check_mark_button Task \(taskId) marked as completed")
     }
 
     // MARK: - Delete Operations
@@ -177,7 +177,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) deleted")
+        // print("check_mark_button Task \(taskId) deleted")
     }
 
     // MARK: - Enhanced Task Management Operations
@@ -204,7 +204,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) started")
+        // print("check_mark_button Task \(taskId) started")
     }
 
     /// Pause a task (keeps status as "In Progress" in DB, uses pausedAt to track paused state)
@@ -227,7 +227,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) paused (pausedAt timestamp set)")
+        // print("check_mark_button Task \(taskId) paused (pausedAt timestamp set)")
     }
 
     /// Resume a task (clears pausedAt timestamp)
@@ -250,7 +250,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) resumed (pausedAt cleared)")
+        // print("check_mark_button Task \(taskId) resumed (pausedAt cleared)")
     }
 
     /// Mark task as failed
@@ -279,22 +279,22 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) marked as failed (status: Cancelled, reason: \(reason))")
+        // print("check_mark_button Task \(taskId) marked as failed (status: Cancelled, reason: \(reason))")
     }
 
     /// Add a part usage to a task
     public func addPart(taskId: UUID, part: PartUsage) async throws {
-        print("🔧 ========== ADDING PART TO TASK ==========")
-        print("📋 Table: maintenance_tasks")
-        print("🆔 Task ID: \(taskId)")
-        print("🔩 Part Name: \(part.partName)")
-        print("📦 Quantity: \(part.quantity)")
-        print("💰 Unit Price: ₹\(part.unitPrice)")
-        print("💵 Total Cost: ₹\(part.totalCost)")
+        // print("wrench ========== ADDING PART TO TASK ==========")
+        // print("clipboard Table: maintenance_tasks")
+        // print("id Task ID: \(taskId)")
+        // print("bolt Part Name: \(part.partName)")
+        // print("package Quantity: \(part.quantity)")
+        // print("moneybag Unit Price: ₹\(part.unitPrice)")
+        // print("dollar Total Cost: ₹\(part.totalCost)")
         
         // Fetch current parts
-        print("")
-        print("📤 Step 1/3: Fetching current parts from database...")
+        // print("")
+        // print("outbox_tray Step 1/3: Fetching current parts from database...")
         let tasks: [MaintenanceTask]
         do {
             tasks = try await client
@@ -303,7 +303,7 @@ public class MaintenanceService {
                 .eq("id", value: taskId)
                 .execute()
                 .value
-            print("✅ Successfully fetched task data")
+            // print("check_mark_button Successfully fetched task data")
         } catch {
             print("❌ Failed to fetch task: \(error)")
             throw error
@@ -317,19 +317,19 @@ public class MaintenanceService {
         }
         
         var parts = existingTask.partsUsed
-        print("📊 Current parts count: \(parts.count)")
+        // print("chart_with_upwards_trend Current parts count: \(parts.count)")
         parts.append(part)
-        print("📊 New parts count: \(parts.count)")
+        // print("chart_with_upwards_trend New parts count: \(parts.count)")
 
-        print("")
-        print("📤 Step 2/3: Updating parts_used in database...")
+        // print("")
+        // print("outbox_tray Step 2/3: Updating parts_used in database...")
         do {
             try await client
                 .from("maintenance_tasks")
                 .update(["parts_used": parts])
                 .eq("id", value: taskId)
                 .execute()
-            print("✅ Successfully updated parts_used column")
+            // print("check_mark_button Successfully updated parts_used column")
         } catch {
             print("❌ Failed to update parts: \(error)")
             throw error
@@ -337,25 +337,25 @@ public class MaintenanceService {
 
         // Step 3: Deduct from inventory if partId is available
         if let partId = part.partId {
-            print("")
-            print("📤 Step 3/3: Deducting \(part.quantity) units from inventory...")
+            // print("")
+            // print("outbox_tray Step 3/3: Deducting \(part.quantity) units from inventory...")
             do {
                 try await deductInventory(partId: partId, quantity: part.quantity)
-                print("✅ Successfully deducted from inventory")
+                // print("check_mark_button Successfully deducted from inventory")
             } catch {
                 print("⚠️ Warning: Failed to deduct from inventory: \(error)")
                 // Don't throw - part was already added to task
             }
         } else {
-            print("")
-            print("⏭️ Step 3/3: Skipping inventory deduction (custom part, no partId)")
+            // print("")
+            // print("next_track_button Step 3/3: Skipping inventory deduction (custom part, no partId)")
         }
 
-        print("")
-        print("✅ ========== PART ADDED SUCCESSFULLY ==========")
-        print("✅ Part '\(part.partName)' added to task \(taskId)")
-        print("✅ Table: maintenance_tasks, Column: parts_used")
-        print("🔧 ============================================")
+        // print("")
+        // print("check_mark_button ========== PART ADDED SUCCESSFULLY ==========")
+        // print("check_mark_button Part '\(part.partName)' added to task \(taskId)")
+        // print("check_mark_button Table: maintenance_tasks, Column: parts_used")
+        // print("wrench ============================================")
     }
     
     /// Deduct quantity from inventory
@@ -394,12 +394,12 @@ public class MaintenanceService {
             .eq("id", value: partId)
             .execute()
         
-        print("✅ Inventory updated: \(inventoryPart.name) - \(inventoryPart.quantityInStock) → \(newQuantity)")
+        // print("check_mark_button Inventory updated: \(inventoryPart.name) - \(inventoryPart.quantityInStock) → \(newQuantity)")
     }
 
     /// Remove a part usage from a task
     public func removePart(taskId: UUID, part: PartUsage) async throws {
-        print("🔧 Removing part '\(part.partName)' from task \(taskId)")
+        // print("wrench Removing part '\(part.partName)' from task \(taskId)")
         
         // Fetch current task - select all columns for proper decoding
         let tasks: [MaintenanceTask] =
@@ -419,14 +419,14 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Part removed from task \(taskId)")
+        // print("check_mark_button Part removed from task \(taskId)")
         
         // Restore inventory if partId is available
         if let partId = part.partId {
-            print("📤 Restoring \(part.quantity) units to inventory...")
+            // print("outbox_tray Restoring \(part.quantity) units to inventory...")
             do {
                 try await restoreInventory(partId: partId, quantity: part.quantity)
-                print("✅ Successfully restored to inventory")
+                // print("check_mark_button Successfully restored to inventory")
             } catch {
                 print("⚠️ Warning: Failed to restore to inventory: \(error)")
             }
@@ -468,7 +468,7 @@ public class MaintenanceService {
             .eq("id", value: partId)
             .execute()
         
-        print("✅ Inventory restored: \(inventoryPart.name) - \(inventoryPart.quantityInStock) → \(newQuantity)")
+        // print("check_mark_button Inventory restored: \(inventoryPart.name) - \(inventoryPart.quantityInStock) → \(newQuantity)")
     }
 
     /// Update repair log
@@ -501,7 +501,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Repair log updated for task \(taskId)")
+        // print("check_mark_button Repair log updated for task \(taskId)")
     }
 
     /// Complete task with repair log
@@ -540,7 +540,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) marked as completed and locked")
+        // print("check_mark_button Task \(taskId) marked as completed and locked")
     }
 
     /// Request reschedule
@@ -560,7 +560,7 @@ public class MaintenanceService {
             .insert(request)
             .execute()
 
-        print("✅ Reschedule request created for task \(taskId)")
+        // print("check_mark_button Reschedule request created for task \(taskId)")
     }
 
     /// Request cancellation
@@ -579,7 +579,7 @@ public class MaintenanceService {
             .insert(request)
             .execute()
 
-        print("✅ Cancel request created for task \(taskId)")
+        // print("check_mark_button Cancel request created for task \(taskId)")
     }
 
     /// Fetch vehicle details
@@ -628,7 +628,7 @@ public class MaintenanceService {
             .insert(entry)
             .execute()
 
-        print("✅ Change history recorded for task \(entry.taskId)")
+        // print("check_mark_button Change history recorded for task \(entry.taskId)")
     }
 
     /// Fetch change history for a task
@@ -656,7 +656,7 @@ public class MaintenanceService {
             .execute()
             .value
 
-        print("✅ Fetched \(parts.count) inventory parts from Supabase")
+        // print("check_mark_button Fetched \(parts.count) inventory parts from Supabase")
         return parts
     }
 
@@ -667,7 +667,7 @@ public class MaintenanceService {
             .insert(part)
             .execute()
 
-        print("✅ Inventory part added: \(part.name)")
+        // print("check_mark_button Inventory part added: \(part.name)")
     }
 
     /// Update an inventory part
@@ -678,7 +678,7 @@ public class MaintenanceService {
             .eq("id", value: part.id)
             .execute()
 
-        print("✅ Inventory part updated: \(part.name)")
+        // print("check_mark_button Inventory part updated: \(part.name)")
     }
 
     /// Delete an inventory part
@@ -689,7 +689,7 @@ public class MaintenanceService {
             .eq("id", value: partId)
             .execute()
 
-        print("✅ Inventory part \(partId) deleted")
+        // print("check_mark_button Inventory part \(partId) deleted")
     }
 
     // MARK: - Alerts Operations
@@ -715,7 +715,7 @@ public class MaintenanceService {
             .eq("id", value: alertId)
             .execute()
 
-        print("✅ Alert \(alertId) marked as read")
+        // print("check_mark_button Alert \(alertId) marked as read")
     }
 
     /// Delete an alert
@@ -726,6 +726,6 @@ public class MaintenanceService {
             .eq("id", value: alertId)
             .execute()
 
-        print("✅ Alert \(alertId) deleted")
+        // print("check_mark_button Alert \(alertId) deleted")
     }
 }

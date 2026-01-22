@@ -113,6 +113,16 @@ struct AlertsView: View {
                 }
             }
         }
+        .onAppear {
+            if !inventoryViewModel.isLoading {
+                InAppVoiceManager.shared.speak(voiceSummary())
+            }
+        }
+        .onChange(of: inventoryViewModel.isLoading) { loading in
+            if !loading {
+               InAppVoiceManager.shared.speak(voiceSummary())
+            }
+        }
         .sheet(item: $partToEdit) { part in
             AddEditPartView(partToEdit: part)
                 .environmentObject(inventoryViewModel)
@@ -136,6 +146,37 @@ struct AlertsView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    }
+
+// MARK: - InAppVoiceReadable Extension
+extension AlertsView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        var summary = "Maintenance Alerts. "
+        
+        // System Alerts Details
+        if !alerts.isEmpty {
+            summary += "System Alerts: "
+            for alert in alerts {
+                summary += "\(alert.type.rawValue) alert. \(alert.title). "
+            }
+        }
+        
+        // Inventory Alerts Details
+        let lowStock = inventoryViewModel.lowStockParts
+        if !lowStock.isEmpty {
+            summary += "Inventory Alerts: "
+            for part in lowStock {
+                let status = part.quantityInStock == 0 ? "Out of stock" : "Low stock"
+                summary += "\(status) warning for \(part.name). \(part.quantityInStock) remaining. "
+            }
+        }
+        
+        if alerts.isEmpty && lowStock.isEmpty {
+            summary += "All systems operational. No alerts."
+        }
+        
+        return summary
     }
 }
 

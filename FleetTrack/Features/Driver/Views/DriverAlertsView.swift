@@ -59,6 +59,19 @@ struct DriverAlertsView: View {
         }
         .onAppear {
             Task { await viewModel.loadAlerts() } // Ensure data is loaded on appear
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
+    }
+}
+
+// MARK: - InAppVoiceReadable Extension
+extension DriverAlertsView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        let count = viewModel.alerts.count
+        if count == 0 {
+            return "Driver Alerts. You have no active alerts."
+        } else {
+            return "Driver Alerts. You have \(count) active alerts."
         }
     }
 }

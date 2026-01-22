@@ -67,6 +67,18 @@ struct MaintenanceDashboardView: View {
                 await viewModel.refreshData()
             }
         }
+
+        .onAppear {
+             if !viewModel.isLoading {
+                 InAppVoiceManager.shared.speak(voiceSummary())
+             }
+        }
+        .onChange(of: viewModel.isLoading) { loading in
+            if !loading {
+                // Speak when loading finishes
+                 InAppVoiceManager.shared.speak(voiceSummary())
+            }
+        }
         .sheet(isPresented: $showingTaskHistory) {
             TaskHistoryView()
         }
@@ -222,6 +234,42 @@ struct MaintenanceDashboardView: View {
             }
             .padding(.horizontal, AppTheme.spacing.md)
         }
+    }
+}
+
+// MARK: - InAppVoiceReadable
+extension MaintenanceDashboardView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        var summary = "Maintenance Dashboard. "
+        
+        // Task Overview
+        summary += "Overview. You have \(viewModel.pendingTasksCount) pending and \(viewModel.inProgressTasksCount) in-progress tasks. "
+        
+        // Stats
+        summary += "Statistics. \(viewModel.maintenanceSummary.completedTasksThisMonth) tasks completed this month. Average completion time is \(String(format: "%.1f", viewModel.maintenanceSummary.averageCompletionTimeHours)) hours. "
+        
+        // Priority Tasks
+        if !viewModel.highPriorityMaintenanceTasks.isEmpty {
+            summary += "Recent Tasks: "
+            if let first = viewModel.highPriorityMaintenanceTasks.first {
+                let taskTitle = first.description ?? "\(first.component.rawValue) check for \(first.vehicleRegistrationNumber)"
+                summary += "Top priority: \(taskTitle). "
+            }
+        }
+        
+        // Task History (Added Detailed Enumeration based on user request)
+        let completed = viewModel.completedTasks.prefix(3)
+        if !completed.isEmpty {
+            summary += "Recent history: "
+            for task in completed {
+                let description = task.description ?? "\(task.component.rawValue) task"
+                summary += "Completed \(description) for \(task.vehicleRegistrationNumber). "
+            }
+        }
+        
+        summary += "Quick Actions: Daily Inspections. "
+        
+        return summary
     }
 }
 

@@ -183,6 +183,12 @@ struct TripMapView: View {
                  calculateDetailedRoutes(from: CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude))
              }
         }
+        .task {
+            // Voice Narration Trigger
+            // Wait slightly for routes to calculate if possible, but don't block too long
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
     }
     
     // Calculates the static "Official" path from Trip Start to Trip End
@@ -556,7 +562,7 @@ struct TripMapView: View {
     private func openMapsNavigation(to lat: Double?, lon: Double?, name: String) {
         guard let lat = lat, let lon = lon else { return }
         let coord = CLLocationCoordinate2D(latitude: lat, longitude: lon)
-        let mapItem = MKMapItem(placemark: MKPlacemark(coordinate: coord))
+        let mapItem = MKMapItem(location: CLLocation(latitude: coord.latitude, longitude: coord.longitude), address: nil)
         mapItem.name = name
         mapItem.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
     }
@@ -798,9 +804,52 @@ struct TripMapView: View {
 #Preview {
     NavigationStack {
         TripMapView(
-            trip: Trip.mockCompletedTrip,
-            driverName: "Mock Driver",
-            vehicleInfo: "Toyota Prious (MH-12-AB-1234)"
+            trip: .mockOngoingTrip,
+            driverName: "John Doe",
+            vehicleInfo: "Toyota Pris (XYZ 123)"
         )
     }
 }
+
+// MARK: - InAppVoiceReadable
+extension TripMapView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        var summary = ""
+        
+        // Status
+        if isCompleted {
+            summary += "Trip Completed. "
+            if let dist = trip.distance {
+                 summary += "Total distance \(String(format: "%.1f", dist)) kilometers. "
+            }
+            return summary
+        }
+        
+        // Current Phase
+        if isPickupPhase {
+            summary += "Navigating to Pickup. "
+            summary += "Address: \(trip.startAddress ?? "Unknown address"). "
+        } else {
+            summary += "Navigating to Delivery. "
+            summary += "Address: \(trip.endAddress ?? "Unknown address"). "
+        }
+        
+        // Stats
+        if let dist = routeDistance {
+            summary += "Distance: \(String(format: "%.1f", dist)) kilometers. "
+        }
+        
+        if let time = estimatedTime {
+            summary += "Estimated time: \(time). "
+        }
+        
+        // Alerts
+        if routeMonitor.isOffRoute {
+            summary += "Alert: You are off route. "
+        }
+        
+        return summary
+    }
+}
+
+

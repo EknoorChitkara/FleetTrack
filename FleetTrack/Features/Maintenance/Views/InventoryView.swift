@@ -96,6 +96,16 @@ struct InventoryView: View {
         .task {
             await viewModel.loadInventory()
         }
+        .onAppear {
+            if !viewModel.isLoading {
+                InAppVoiceManager.shared.speak(voiceSummary())
+            }
+        }
+        .onChange(of: viewModel.isLoading) { loading in
+            if !loading {
+                InAppVoiceManager.shared.speak(voiceSummary())
+            }
+        }
     }
     
     // MARK: - Quick Stats Section
@@ -482,4 +492,27 @@ struct SearchResultPartRow: View {
 
 #Preview {
     InventoryView()
+}
+
+// MARK: - InAppVoiceReadable
+extension InventoryView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        var summary = "Inventory Management. "
+        
+        summary += "Total Items: \(viewModel.totalItems). "
+        
+        if !viewModel.lowStockParts.isEmpty {
+            summary += "Warning: \(viewModel.lowStockParts.count) items are low on stock. "
+        }
+        
+        if !viewModel.outOfStockParts.isEmpty {
+             summary += "Alert: \(viewModel.outOfStockParts.count) items are out of stock. "
+        }
+        
+        if viewModel.lowStockParts.isEmpty && viewModel.outOfStockParts.isEmpty {
+            summary += "Stock levels are healthy. "
+        }
+        
+        return summary
+    }
 }

@@ -65,7 +65,6 @@ class LocationSearchService: NSObject, ObservableObject {
     static let shared = LocationSearchService()
     
     private let completer = MKLocalSearchCompleter()
-    private let geocoder = CLGeocoder()
     private var currentTask: Task<Void, Never>?
     
     @Published var completions: [MKLocalSearchCompletion] = []
@@ -182,13 +181,16 @@ class LocationSearchService: NSObject, ObservableObject {
         
         // Reverse geocode
         do {
-            let placemarks = try await geocoder.reverseGeocodeLocation(location)
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = "\(location.coordinate.latitude), \(location.coordinate.longitude)"
+            let search = MKLocalSearch(request: request)
+            let response = try await search.start()
             
-            guard let placemark = placemarks.first else {
+            guard let item = response.mapItems.first else {
                 return nil
             }
             
-            let address = formatAddress(from: placemark)
+            let address = formatAddress(from: item.placemark)
             
             return (coordinate: location.coordinate, address: address)
         } catch {
@@ -238,6 +240,7 @@ class LocationSearchService: NSObject, ObservableObject {
     // MARK: - Helpers
     
     private func formatAddress(from placemark: CLPlacemark) -> String {
+        
         var components: [String] = []
         
         if let name = placemark.name {

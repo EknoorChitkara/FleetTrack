@@ -92,6 +92,31 @@ struct MaintenanceProfileView: View {
                                 }
                             }
                             
+                            // Voice Settings
+                            MaintenanceProfileSection(title: "Accessibility") {
+                                Toggle(isOn: Binding(
+                                    get: { InAppVoiceSettings.shared.isVoiceEnabled },
+                                    set: { _ in InAppVoiceManager.shared.toggleVoiceMode() }
+                                )) {
+                                    HStack(spacing: 16) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.appEmerald.opacity(0.1))
+                                                .frame(width: 36, height: 36)
+                                            
+                                            Image(systemName: "waveform.circle.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(.appEmerald)
+                                        }
+                                        
+                                        Text("Voice Narration")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(AppTheme.textPrimary)
+                                    }
+                                }
+                                .padding()
+                            }
+                            
                             // Support Section
                             MaintenanceProfileSection(title: "Support") {
                                 NavigationLink(destination: MaintenanceHelpSupportView()) {

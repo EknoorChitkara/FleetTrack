@@ -151,7 +151,13 @@ struct LoginView: View {
                 VerificationView(email: otpEmail)
             }
         }
+        .onAppear {
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
     }
+    
+// MARK: - InAppVoiceReadable Extension
+
 
     private func login() async {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -258,5 +264,12 @@ struct LoginView: View {
             message = "❌ Failed to send reset link. Please try again."
         }
         isLoading = false
+    }
+}
+
+// MARK: - InAppVoiceReadable Extension
+extension LoginView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        return "Login Screen. Please enter your email and password to sign in."
     }
 }

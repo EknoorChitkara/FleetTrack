@@ -15,8 +15,11 @@ class RouteService {
     /// Fetches a route between two coordinates using MapKit
     func fetchRoute(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D) async throws -> MKRoute {
         let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: start))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: end))
+        let sourceItem = MKMapItem(location: CLLocation(latitude: start.latitude, longitude: start.longitude), address: nil)
+        request.source = sourceItem
+        
+        let destItem = MKMapItem(location: CLLocation(latitude: end.latitude, longitude: end.longitude), address: nil)
+        request.destination = destItem
         request.transportType = .automobile
         
         let directions = MKDirections(request: request)

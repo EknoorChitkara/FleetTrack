@@ -50,8 +50,8 @@ class RouteCalculationService {
         transportType: MKDirectionsTransportType = .automobile
     ) async throws -> RouteResult {
         let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: from))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: to))
+        request.source = MKMapItem(location: CLLocation(latitude: from.latitude, longitude: from.longitude), address: nil)
+        request.destination = MKMapItem(location: CLLocation(latitude: to.latitude, longitude: to.longitude), address: nil)
         request.transportType = transportType
         request.requestsAlternateRoutes = false
         
@@ -97,8 +97,8 @@ class RouteCalculationService {
         transportType: MKDirectionsTransportType = .automobile
     ) async throws -> [MKRoute] {
         let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: from))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: to))
+        request.source = MKMapItem(location: CLLocation(latitude: from.latitude, longitude: from.longitude), address: nil)
+        request.destination = MKMapItem(location: CLLocation(latitude: to.latitude, longitude: to.longitude), address: nil)
         request.transportType = transportType
         request.requestsAlternateRoutes = true
         

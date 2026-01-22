@@ -16,7 +16,7 @@ struct GetFleetSummaryIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         // 1. Check Auth & Role (Simplified for demo, usually you'd check role in User profile)
-        guard let currentSession = try? await SupabaseClientManager.shared.client.auth.session else {
+        guard let _ = try? await SupabaseClientManager.shared.client.auth.session else {
             return .result(value: "Please log in to FleetTrack.")
         }
         
