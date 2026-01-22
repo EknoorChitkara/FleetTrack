@@ -2,7 +2,6 @@
 //  ChangeHistoryEntry.swift
 //  FleetTrack
 //
-//  Created for Maintenance Module - Task Management
 //
 
 import Foundation
