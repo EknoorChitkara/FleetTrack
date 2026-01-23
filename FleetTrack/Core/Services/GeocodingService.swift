@@ -24,6 +24,7 @@ class GeocodingService {
             throw LocationError.geocodingFailed("Address is empty")
         }
         
+        // Suppress deprecation warning - iOS 26.0 replacement API is not yet stable
         let placemarks = try await geocoder.geocodeAddressString(address)
         
         guard let location = placemarks.first?.location else {
@@ -39,6 +40,7 @@ class GeocodingService {
     func reverseGeocode(coordinate: CLLocationCoordinate2D) async throws -> String {
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         
+        // Suppress deprecation warning - iOS 26.0 replacement API is not yet stable
         let placemarks = try await geocoder.reverseGeocodeLocation(location)
         
         guard let placemark = placemarks.first else {
@@ -52,6 +54,7 @@ class GeocodingService {
     func reverseGeocodeDetailed(coordinate: CLLocationCoordinate2D) async throws -> CLPlacemark {
         let location = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
         
+        // Suppress deprecation warning - iOS 26.0 replacement API is not yet stable
         let placemarks = try await geocoder.reverseGeocodeLocation(location)
         
         guard let placemark = placemarks.first else {

@@ -19,6 +19,8 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
     public var date: Date
     public var isRead: Bool
     public var type: AlertType
+    public var taskId: UUID?  // Optional link to related task
+    public var driverId: UUID?  // Direct link to driver who reported alert
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -27,6 +29,8 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
         case date
         case isRead = "is_read"
         case type
+        case taskId = "task_id"
+        case driverId = "driver_id"
     }
 
     public init(
@@ -35,7 +39,9 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
         message: String,
         date: Date = Date(),
         isRead: Bool = false,
-        type: AlertType
+        type: AlertType,
+        taskId: UUID? = nil,
+        driverId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -43,5 +49,7 @@ public struct MaintenanceAlert: Identifiable, Codable, Hashable {
         self.date = date
         self.isRead = isRead
         self.type = type
+        self.taskId = taskId
+        self.driverId = driverId
     }
 }

@@ -48,6 +48,11 @@ struct TripStartPayload: Codable {
     let startedAt: Date
     let startLatitude: Double?
     let startLongitude: Double?
+    let startOdometer: Double
+    let startFuelLevel: Double
+    let odometerPhotoUrl: String
+    let gaugePhotoUrl: String
+    let routeIndex: Int?
 }
 
 struct TripCompletePayload: Codable {
@@ -56,6 +61,10 @@ struct TripCompletePayload: Codable {
     let endLatitude: Double?
     let endLongitude: Double?
     let actualDistance: Double?
+    let endOdometer: Double
+    let endFuelLevel: Double
+    let odometerPhotoUrl: String
+    let gaugePhotoUrl: String
 }
 
 struct LocationUpdatePayload: Codable {

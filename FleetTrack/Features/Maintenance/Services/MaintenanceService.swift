@@ -165,6 +165,14 @@ public class MaintenanceService {
             .execute()
 
         print("✅ Task \(taskId) marked as completed")
+        
+        // Update vehicle status if all tasks completed
+        let tasks = try await fetchMaintenanceTasks()
+        if let task = tasks.first(where: { $0.id == taskId }) {
+            try await updateVehicleStatusAfterTaskCompletion(
+                vehicleRegistration: task.vehicleRegistrationNumber
+            )
+        }
     }
 
     // MARK: - Delete Operations
@@ -541,6 +549,14 @@ public class MaintenanceService {
             .execute()
 
         print("✅ Task \(taskId) marked as completed and locked")
+        
+        // Update vehicle status if all tasks completed
+        let tasks = try await fetchMaintenanceTasks()
+        if let task = tasks.first(where: { $0.id == taskId }) {
+            try await updateVehicleStatusAfterTaskCompletion(
+                vehicleRegistration: task.vehicleRegistrationNumber
+            )
+        }
     }
 
     /// Request reschedule
@@ -727,5 +743,163 @@ public class MaintenanceService {
             .execute()
 
         print("✅ Alert \(alertId) deleted")
+    }
+    
+    // MARK: - Task Reschedule & Cancel (Direct Action)
+    
+    /// Reschedule a task (direct action)
+    public func rescheduleTask(taskId: UUID, newDate: Date, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let dueDate: Date
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case dueDate = "due_date"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate(dueDate: newDate)
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        // Create manager alert
+        try await createManagerAlert(
+            title: "Task Rescheduled",
+            message: "Task has been rescheduled to \(formattedDate(newDate)). Reason: \(reason)",
+            taskId: taskId
+        )
+        
+        print("✅ Task \(taskId) rescheduled to \(newDate)")
+    }
+    
+    /// Cancel a task (direct action)
+    public func cancelTask(taskId: UUID, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let status: String = "Cancelled"
+            let isLocked: Bool = true
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case status
+                case isLocked = "is_locked"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate()
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        // Create manager alert
+        try await createManagerAlert(
+            title: "Task Cancelled",
+            message: "Task has been cancelled. Reason: \(reason)",
+            taskId: taskId
+        )
+        
+        print("✅ Task \(taskId) cancelled")
+    }
+    
+    /// Create a manager alert
+    private func createManagerAlert(title: String, message: String, taskId: UUID) async throws {
+        struct AlertInsert: Encodable {
+            let title: String
+            let message: String
+            let taskId: UUID
+            let type: String = "info"
+            let createdAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case title
+                case message
+                case taskId = "task_id"
+                case type
+                case createdAt = "created_at"
+            }
+        }
+        
+        let alert = AlertInsert(title: title, message: message, taskId: taskId)
+        
+        try await client
+            .from("maintenance_alerts")
+            .insert(alert)
+            .execute()
+        
+        print("✅ Manager alert created: \(title)")
+    }
+    
+    /// Format date for display
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    
+    // MARK: - Vehicle Status Management
+    
+    /// Check if all tasks for a vehicle are completed and update vehicle status
+    private func updateVehicleStatusAfterTaskCompletion(vehicleRegistration: String) async throws {
+        // 1. Fetch all tasks for this vehicle
+        let tasks = try await fetchMaintenanceTasks()
+        let vehicleTasks = tasks.filter { $0.vehicleRegistrationNumber == vehicleRegistration }
+        
+        // 2. Check if all tasks are completed or cancelled
+        let allCompleted = vehicleTasks.allSatisfy { 
+            $0.status == "Completed" || $0.status == "Cancelled" 
+        }
+        
+        // 3. Update vehicle status to Active if all tasks are done
+        if allCompleted && !vehicleTasks.isEmpty {
+            try await updateVehicleStatus(registration: vehicleRegistration, status: "Active")
+            print("✅ Vehicle \(vehicleRegistration) status updated to Active (all tasks completed)")
+        } else {
+            print("ℹ️ Vehicle \(vehicleRegistration) still has pending tasks")
+        }
+    }
+    
+    /// Update vehicle status in database
+    public func updateVehicleStatus(registration: String, status: String) async throws {
+        struct VehicleStatusUpdate: Encodable {
+            let status: String
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case status
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = VehicleStatusUpdate(status: status)
+        
+        try await client
+            .from("vehicles")
+            .update(update)
+            .eq("registration_number", value: registration)
+            .execute()
+        
+        print("✅ Vehicle \(registration) status updated to \(status)")
+    }
+    
+    /// Fetch driver by ID for alerts
+    func fetchDriverForAlert(driverId: UUID) async throws -> Driver? {
+        let driver: Driver? = try await client
+            .from("drivers")
+            .select()
+            .eq("id", value: driverId)
+            .single()
+            .execute()
+            .value
+        
+        return driver
     }
 }

@@ -51,6 +51,7 @@ struct FMVehicle: Identifiable, Codable {
     var maintenanceDescription: String?
     var maintenanceLogs: [MaintenanceLog]?
     var tankCapacity: Double?
+    var standardFuelEfficiency: Double?
     var createdAt: Date
     
     enum CodingKeys: String, CodingKey {
@@ -74,6 +75,7 @@ struct FMVehicle: Identifiable, Codable {
         case maintenanceDescription = "maintenance_description"
         case maintenanceLogs = "maintenance_logs"
         case tankCapacity = "tank_capacity"
+        case standardFuelEfficiency = "standard_fuel_efficiency"
         case createdAt = "created_at"
     }
     
@@ -98,6 +100,7 @@ struct FMVehicle: Identifiable, Codable {
         maintenanceDescription: String? = nil,
         maintenanceLogs: [MaintenanceLog]? = nil,
         tankCapacity: Double? = nil,
+        standardFuelEfficiency: Double? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -120,6 +123,7 @@ struct FMVehicle: Identifiable, Codable {
         self.maintenanceDescription = maintenanceDescription
         self.maintenanceLogs = maintenanceLogs
         self.tankCapacity = tankCapacity
+        self.standardFuelEfficiency = standardFuelEfficiency
         self.createdAt = createdAt
     }
 }
