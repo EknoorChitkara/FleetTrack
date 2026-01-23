@@ -305,32 +305,108 @@ class MaintenanceAlertDetailViewModel: ObservableObject {
     @Published var isLoading = false
     
     func loadAlertDetails(alert: MaintenanceAlert) async {
+        print("🔍 [DEBUG] Starting loadAlertDetails for alert: \(alert.id)")
+        print("🔍 [DEBUG] Alert title: \(alert.title)")
+        print("🔍 [DEBUG] Alert type: \(alert.type.rawValue)")
+        print("🔍 [DEBUG] Alert driverId: \(alert.driverId?.uuidString ?? "nil")")
+        print("🔍 [DEBUG] Alert taskId: \(alert.taskId?.uuidString ?? "nil")")
+        
         isLoading = true
         
-        // Load task if taskId is available
+        // 1. Try to fetch driver directly from alert
+        if let driverId = alert.driverId {
+            print("🔍 [DEBUG] Attempting to fetch driver directly with ID: \(driverId)")
+            do {
+                driver = try await MaintenanceService.shared.fetchDriverForAlert(driverId: driverId)
+                if let driver = driver {
+                    print("✅ [SUCCESS] Loaded driver from alert: \(driver.fullName)")
+                    print("✅ [SUCCESS] Driver email: \(driver.email)")
+                    print("✅ [SUCCESS] Driver phone: \(driver.phoneNumber ?? "nil")")
+                } else {
+                    print("⚠️ [WARNING] fetchDriverForAlert returned nil")
+                }
+            } catch {
+                print("❌ [ERROR] Failed to load driver from alert: \(error)")
+                print("❌ [ERROR] Error details: \(error.localizedDescription)")
+            }
+        } else {
+            print("ℹ️ [INFO] No driverId in alert, will try fallback methods")
+        }
+        
+        // 2. Load task if taskId is available
         if let taskId = alert.taskId {
+            print("🔍 [DEBUG] Attempting to fetch task with ID: \(taskId)")
             do {
                 // Fetch all tasks and find the matching one
                 let allTasks = try await MaintenanceService.shared.fetchMaintenanceTasks()
+                print("🔍 [DEBUG] Fetched \(allTasks.count) total tasks")
+                
                 task = allTasks.first { $0.id == taskId }
                 
-                // Load driver if task has assigned driver
-                if let driverId = task?.assignedDriverId {
-                    driver = try await MaintenanceService.shared.fetchDriver(byId: driverId)
-                } else if let vehicleReg = task?.vehicleRegistrationNumber {
-                    // Try to get driver from vehicle
-                    if let vehicle = try await MaintenanceService.shared.fetchVehicle(byRegistration: vehicleReg) {
-                        if let driverId = vehicle.assignedDriverId {
-                            driver = try await MaintenanceService.shared.fetchDriver(byId: driverId)
+                if let task = task {
+                    print("✅ [SUCCESS] Found task: \(task.component.rawValue)")
+                    print("🔍 [DEBUG] Task assignedDriverId: \(task.assignedDriverId?.uuidString ?? "nil")")
+                    print("🔍 [DEBUG] Task vehicleRegistrationNumber: \(task.vehicleRegistrationNumber)")
+                } else {
+                    print("⚠️ [WARNING] Task not found in fetched tasks")
+                }
+                
+                // 3. Fallback: Try to get driver from task/vehicle if not found directly
+                if driver == nil {
+                    print("🔍 [DEBUG] Driver not found yet, trying fallback methods")
+                    
+                    if let driverId = task?.assignedDriverId {
+                        print("🔍 [DEBUG] Attempting to fetch driver from task with ID: \(driverId)")
+                        driver = try await MaintenanceService.shared.fetchDriver(byId: driverId)
+                        if let driver = driver {
+                            print("✅ [SUCCESS] Loaded driver from task: \(driver.fullName)")
+                        } else {
+                            print("⚠️ [WARNING] fetchDriver(byId:) returned nil")
                         }
+                    } else if let vehicleReg = task?.vehicleRegistrationNumber {
+                        print("🔍 [DEBUG] No driver on task, trying vehicle: \(vehicleReg)")
+                        // Try to get driver from vehicle
+                        if let vehicle = try await MaintenanceService.shared.fetchVehicle(byRegistration: vehicleReg) {
+                            print("✅ [SUCCESS] Found vehicle: \(vehicle.manufacturer) \(vehicle.model)")
+                            print("🔍 [DEBUG] Vehicle assignedDriverId: \(vehicle.assignedDriverId?.uuidString ?? "nil")")
+                            
+                            if let driverId = vehicle.assignedDriverId {
+                                print("🔍 [DEBUG] Attempting to fetch driver from vehicle with ID: \(driverId)")
+                                driver = try await MaintenanceService.shared.fetchDriver(byId: driverId)
+                                if let driver = driver {
+                                    print("✅ [SUCCESS] Loaded driver from vehicle: \(driver.fullName)")
+                                } else {
+                                    print("⚠️ [WARNING] fetchDriver(byId:) from vehicle returned nil")
+                                }
+                            } else {
+                                print("ℹ️ [INFO] Vehicle has no assigned driver")
+                            }
+                        } else {
+                            print("⚠️ [WARNING] Vehicle not found: \(vehicleReg)")
+                        }
+                    } else {
+                        print("ℹ️ [INFO] Task has no assignedDriverId or vehicleRegistrationNumber")
                     }
+                } else {
+                    print("ℹ️ [INFO] Driver already loaded, skipping fallback")
                 }
             } catch {
-                print("❌ Error loading alert details: \(error)")
+                print("❌ [ERROR] Error loading alert details: \(error)")
+                print("❌ [ERROR] Error details: \(error.localizedDescription)")
             }
+        } else {
+            print("ℹ️ [INFO] No taskId in alert")
+        }
+        
+        // Final status
+        if driver != nil {
+            print("✅ [FINAL] Driver loaded successfully: \(driver!.fullName)")
+        } else {
+            print("❌ [FINAL] No driver found after all attempts")
         }
         
         isLoading = false
+        print("🔍 [DEBUG] Finished loadAlertDetails, isLoading = false")
     }
 }
 
