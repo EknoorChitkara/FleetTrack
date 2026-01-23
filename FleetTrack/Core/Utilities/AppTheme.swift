@@ -38,14 +38,14 @@ public struct AppTheme {
     /// Inverse text (for use on accent colored surfaces): #000000
     public static let textInverse = Color(hexCode: "#000000")
 
-    // MARK: - Primary Accent Color (Neon Green)
+    // MARK: - Primary Accent Color (Emerald Green)
 
-    /// Base neon green accent: #00E676
+    /// Base emerald green accent: #50C878
     /// Reserved strictly for: Active states, Selected items, Primary CTAs, Active/running statuses
-    public static let accentPrimary = Color(hexCode: "#00E676")
+    public static let accentPrimary = Color(hexCode: "#50C878")
 
-    /// Hover / emphasis neon green: #1AFF7C
-    public static let accentHover = Color(hexCode: "#1AFF7C")
+    /// Hover / emphasis emerald green: #5FD68A
+    public static let accentHover = Color(hexCode: "#5FD68A")
 
     // MARK: - Status Color System
 
