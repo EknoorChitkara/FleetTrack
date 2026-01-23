@@ -5,6 +5,7 @@
 
 import SwiftUI
 import Supabase
+import UIKit
 struct VerificationView: View {
     let email: String
     @ObservedObject private var sessionManager = SessionManager.shared
@@ -32,17 +33,21 @@ struct VerificationView: View {
                     Text("2FA Verification")
                         .font(.system(size: 30, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
+                        .accessibilityAddTraits(.isHeader)
                     
                     Text("Enter the 8-digit code sent to\n\(email)")
                         .font(.subheadline)
                         .foregroundColor(.appSecondaryText)
                         .multilineTextAlignment(.center)
+                        .accessibilityLabel("Enter the 8-digit code sent to \(email)")
                 }
                 
                 HStack(spacing: 6) {
                     ForEach(0..<8, id: \.self) { index in
                         OTPInputBox(text: $otpCode[index], isFocused: focusedIndex == index)
                             .focused($focusedIndex, equals: index)
+                            .accessibilityLabel("Digit \(index + 1)")
+                            .accessibilityValue(otpCode[index].isEmpty ? "Empty" : otpCode[index])
                             .onChange(of: otpCode[index]) { newValue in
                                 if newValue.count > 1 {
                                     otpCode[index] = String(newValue.prefix(1))
@@ -74,12 +79,18 @@ struct VerificationView: View {
                 }
                 .padding(.horizontal)
                 .disabled(isLoading || otpCode.contains(""))
+                .accessibilityLabel("Verify Code Button")
+                .accessibilityIdentifier("verification_submit_button")
+                .accessibilityHint(otpCode.contains("") ? "Enter the 8-digit code to enable verification" : "Double tap to verify code")
                 
                 Button("Resend Code") {
                     Task { try? await supabase.auth.signInWithOTP(email: email) }
                 }
                 .font(.subheadline)
                 .foregroundColor(.appEmerald)
+                .accessibilityLabel("Resend Code Button")
+                .accessibilityIdentifier("verification_resend_button")
+                .accessibilityHint("Double tap to send a new code to your email")
                 
                 if !message.isEmpty {
                     Text(message)
@@ -91,7 +102,10 @@ struct VerificationView: View {
                 Spacer()
             }
         }
-        .onAppear { focusedIndex = 0 }
+        .onAppear { 
+            focusedIndex = 0 
+            UIAccessibility.post(notification: .announcement, argument: "Verification code sent to \(email). Please enter the 8-digit code.")
+        }
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -201,6 +215,7 @@ struct OTPInputBox: View {
             .background(Color.appCardBackground)
             .foregroundColor(.white)
             .cornerRadius(8)
+            .accessibilityIdentifier("verification_otp_field")
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(isFocused ? Color.appEmerald : Color.appSecondaryText.opacity(0.3), lineWidth: 2)

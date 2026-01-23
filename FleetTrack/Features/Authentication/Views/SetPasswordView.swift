@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Supabase
+import UIKit
 
 struct SetPasswordView: View {
     @Environment(\.dismiss) var dismiss
@@ -52,6 +53,8 @@ struct SetPasswordView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.appSecondaryText.opacity(0.3), lineWidth: 1)
                         )
+                        .accessibilityLabel("New Password")
+                        .accessibilityIdentifier("setpassword_new_field")
                     
                     SecureField("Confirm Password", text: $confirmPassword)
                         .padding()
@@ -62,6 +65,8 @@ struct SetPasswordView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Color.appSecondaryText.opacity(0.3), lineWidth: 1)
                         )
+                        .accessibilityLabel("Confirm New Password")
+                        .accessibilityIdentifier("setpassword_confirm_field")
                 }
                 .padding(.horizontal)
                 
@@ -94,6 +99,9 @@ struct SetPasswordView: View {
                 }
                 .padding(.horizontal)
                 .disabled(!isFormValid || isLoading)
+                .accessibilityLabel("Set Password Button")
+                .accessibilityIdentifier("setpassword_submit_button")
+                .accessibilityHint(isFormValid ? "Double tap to set your new password" : "Password must be at least 8 characters and match confirm password")
                 
                 // Message
                 if !message.isEmpty {
@@ -126,6 +134,7 @@ struct SetPasswordView: View {
                 showSuccess = true
                 message = "✅ Password set successfully! You can now log in."
                 isLoading = false
+                UIAccessibility.post(notification: .announcement, argument: "Password set successfully. Redirecting to login.")
             }
             
             // Dismiss after a delay
@@ -138,12 +147,12 @@ struct SetPasswordView: View {
                 // Hide the set password view
                 AppState.shared.showSetPassword = false
             }
-            
         } catch {
             print("❌ Error setting password: \(error)")
             await MainActor.run {
                 message = "Failed to set password: \(error.localizedDescription)"
                 isLoading = false
+                UIAccessibility.post(notification: .announcement, argument: "Failed to set password: \(error.localizedDescription)")
             }
         }
     }
@@ -162,9 +171,11 @@ struct ValidationRow: View {
                 .font(.system(size: 14))
             
             Text(text)
-                .font(.caption)
                 .foregroundColor(isValid ? .green : .gray)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(text): \(isValid ? "Requirement met" : "Requirement not met")")
+        .accessibilityIdentifier("setpassword_validation_\(text.replacingOccurrences(of: " ", with: "_").lowercased())")
     }
 }
 

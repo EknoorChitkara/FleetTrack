@@ -35,33 +35,45 @@ public class MaintenanceService {
 
     /// Fetch maintenance summary statistics
     public func fetchMaintenanceSummary() async throws -> MaintenanceSummary {
-        // Query the maintenance_summary view
-        struct SummaryResponse: Codable {
-            let completedTasksThisMonth: Int?
-            let averageCompletionTimeHours: Double?
-
-            enum CodingKeys: String, CodingKey {
-                case completedTasksThisMonth = "completed_tasks_this_month"
-                case averageCompletionTimeHours = "average_completion_time_hours"
-            }
-        }
-
-        let response: [SummaryResponse] =
-            try await client
-            .from("maintenance_summary")
+        print("📊 Fetching maintenance summary...")
+        
+        // Fetch all completed tasks
+        let tasks: [MaintenanceTask] = try await client
+            .from("maintenance_tasks")
             .select()
+            .eq("status", value: "Completed")
             .execute()
             .value
-
-        // Extract first row (view returns single row)
-        let summaryData = response.first
-
+        
+        // Get current month's date range
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
+        
+        // Filter tasks completed this month
+        let completedThisMonth = tasks.filter { task in
+            guard let completedDate = task.completedDate else { return false }
+            return completedDate >= startOfMonth
+        }
+        
+        // Calculate average completion time from labor hours
+        let tasksWithLaborHours = completedThisMonth.filter { $0.laborHours != nil && $0.laborHours! > 0 }
+        let averageCompletionTime: Double
+        
+        if !tasksWithLaborHours.isEmpty {
+            let totalLaborHours = tasksWithLaborHours.reduce(0.0) { $0 + ($1.laborHours ?? 0.0) }
+            averageCompletionTime = totalLaborHours / Double(tasksWithLaborHours.count)
+        } else {
+            averageCompletionTime = 0.0
+        }
+        
         let summary = MaintenanceSummary(
-            completedTasksThisMonth: summaryData?.completedTasksThisMonth ?? 0,
-            averageCompletionTimeHours: summaryData?.averageCompletionTimeHours ?? 0.0
+            completedTasksThisMonth: completedThisMonth.count,
+            averageCompletionTimeHours: averageCompletionTime
         )
-
-        print("✅ Fetched maintenance summary: \(summary.completedTasksThisMonth) completed tasks")
+        
+        print("✅ Summary: \(summary.completedTasksThisMonth) completed this month, \(String(format: "%.1f", summary.averageCompletionTimeHours))h avg labor time")
+        
         return summary
     }
 
@@ -195,15 +207,13 @@ public class MaintenanceService {
         print("✅ Task \(taskId) started")
     }
 
-    /// Pause a task
+    /// Pause a task (keeps status as "In Progress" in DB, uses pausedAt to track paused state)
     public func pauseTask(taskId: UUID) async throws {
         struct TaskUpdate: Encodable {
-            let status: String = "Paused"
             let pausedAt: Date = Date()
             let updatedAt: Date = Date()
 
             enum CodingKeys: String, CodingKey {
-                case status
                 case pausedAt = "paused_at"
                 case updatedAt = "updated_at"
             }
@@ -217,17 +227,17 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) paused")
+        print("✅ Task \(taskId) paused (pausedAt timestamp set)")
     }
 
-    /// Resume a task
+    /// Resume a task (clears pausedAt timestamp)
     public func resumeTask(taskId: UUID) async throws {
         struct TaskUpdate: Encodable {
-            let status: String = "In Progress"
+            let pausedAt: Date? = nil
             let updatedAt: Date = Date()
 
             enum CodingKeys: String, CodingKey {
-                case status
+                case pausedAt = "paused_at"
                 case updatedAt = "updated_at"
             }
         }
@@ -240,13 +250,13 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) resumed")
+        print("✅ Task \(taskId) resumed (pausedAt cleared)")
     }
 
     /// Mark task as failed
     public func failTask(taskId: UUID, reason: String) async throws {
         struct TaskUpdate: Encodable {
-            let status: String = "Failed"
+            let status: String = "Cancelled"  // Use Cancelled status, track failure via failedReason
             let failedReason: String
             let completedDate: Date = Date()
             let isLocked: Bool = true
@@ -269,7 +279,7 @@ public class MaintenanceService {
             .eq("id", value: taskId)
             .execute()
 
-        print("✅ Task \(taskId) marked as failed")
+        print("✅ Task \(taskId) marked as failed (status: Cancelled, reason: \(reason))")
     }
 
     /// Add a part usage to a task
@@ -284,7 +294,7 @@ public class MaintenanceService {
         
         // Fetch current parts
         print("")
-        print("📤 Step 1/2: Fetching current parts from database...")
+        print("📤 Step 1/3: Fetching current parts from database...")
         let tasks: [MaintenanceTask]
         do {
             tasks = try await client
@@ -312,7 +322,7 @@ public class MaintenanceService {
         print("📊 New parts count: \(parts.count)")
 
         print("")
-        print("📤 Step 2/2: Updating parts_used in database...")
+        print("📤 Step 2/3: Updating parts_used in database...")
         do {
             try await client
                 .from("maintenance_tasks")
@@ -325,20 +335,77 @@ public class MaintenanceService {
             throw error
         }
 
+        // Step 3: Deduct from inventory if partId is available
+        if let partId = part.partId {
+            print("")
+            print("📤 Step 3/3: Deducting \(part.quantity) units from inventory...")
+            do {
+                try await deductInventory(partId: partId, quantity: part.quantity)
+                print("✅ Successfully deducted from inventory")
+            } catch {
+                print("⚠️ Warning: Failed to deduct from inventory: \(error)")
+                // Don't throw - part was already added to task
+            }
+        } else {
+            print("")
+            print("⏭️ Step 3/3: Skipping inventory deduction (custom part, no partId)")
+        }
+
         print("")
         print("✅ ========== PART ADDED SUCCESSFULLY ==========")
         print("✅ Part '\(part.partName)' added to task \(taskId)")
         print("✅ Table: maintenance_tasks, Column: parts_used")
         print("🔧 ============================================")
     }
+    
+    /// Deduct quantity from inventory
+    private func deductInventory(partId: UUID, quantity: Int) async throws {
+        // Fetch current inventory part
+        let inventoryParts: [InventoryPart] = try await client
+            .from("parts")
+            .select()
+            .eq("id", value: partId)
+            .execute()
+            .value
+        
+        guard let inventoryPart = inventoryParts.first else {
+            throw NSError(domain: "MaintenanceService", code: 404, userInfo: [
+                NSLocalizedDescriptionKey: "Inventory part not found"
+            ])
+        }
+        
+        let newQuantity = max(0, inventoryPart.quantityInStock - quantity)
+        
+        struct QuantityUpdate: Encodable {
+            let quantityInStock: Int
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case quantityInStock = "quantity_in_stock"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = QuantityUpdate(quantityInStock: newQuantity)
+        
+        try await client
+            .from("parts")
+            .update(update)
+            .eq("id", value: partId)
+            .execute()
+        
+        print("✅ Inventory updated: \(inventoryPart.name) - \(inventoryPart.quantityInStock) → \(newQuantity)")
+    }
 
     /// Remove a part usage from a task
     public func removePart(taskId: UUID, part: PartUsage) async throws {
-        // Fetch current parts
+        print("🔧 Removing part '\(part.partName)' from task \(taskId)")
+        
+        // Fetch current task - select all columns for proper decoding
         let tasks: [MaintenanceTask] =
             try await client
             .from("maintenance_tasks")
-            .select("parts_used")
+            .select()  // Select all columns
             .eq("id", value: taskId)
             .execute()
             .value
@@ -353,6 +420,55 @@ public class MaintenanceService {
             .execute()
 
         print("✅ Part removed from task \(taskId)")
+        
+        // Restore inventory if partId is available
+        if let partId = part.partId {
+            print("📤 Restoring \(part.quantity) units to inventory...")
+            do {
+                try await restoreInventory(partId: partId, quantity: part.quantity)
+                print("✅ Successfully restored to inventory")
+            } catch {
+                print("⚠️ Warning: Failed to restore to inventory: \(error)")
+            }
+        }
+    }
+    
+    /// Restore quantity to inventory
+    private func restoreInventory(partId: UUID, quantity: Int) async throws {
+        let inventoryParts: [InventoryPart] = try await client
+            .from("parts")
+            .select()
+            .eq("id", value: partId)
+            .execute()
+            .value
+        
+        guard let inventoryPart = inventoryParts.first else {
+            throw NSError(domain: "MaintenanceService", code: 404, userInfo: [
+                NSLocalizedDescriptionKey: "Inventory part not found"
+            ])
+        }
+        
+        let newQuantity = inventoryPart.quantityInStock + quantity
+        
+        struct QuantityUpdate: Encodable {
+            let quantityInStock: Int
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case quantityInStock = "quantity_in_stock"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = QuantityUpdate(quantityInStock: newQuantity)
+        
+        try await client
+            .from("parts")
+            .update(update)
+            .eq("id", value: partId)
+            .execute()
+        
+        print("✅ Inventory restored: \(inventoryPart.name) - \(inventoryPart.quantityInStock) → \(newQuantity)")
     }
 
     /// Update repair log
@@ -611,5 +727,105 @@ public class MaintenanceService {
             .execute()
 
         print("✅ Alert \(alertId) deleted")
+    }
+    
+    // MARK: - Task Reschedule & Cancel (Direct Action)
+    
+    /// Reschedule a task (direct action)
+    public func rescheduleTask(taskId: UUID, newDate: Date, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let dueDate: Date
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case dueDate = "due_date"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate(dueDate: newDate)
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        // Create manager alert
+        try await createManagerAlert(
+            title: "Task Rescheduled",
+            message: "Task has been rescheduled to \(formattedDate(newDate)). Reason: \(reason)",
+            taskId: taskId
+        )
+        
+        print("✅ Task \(taskId) rescheduled to \(newDate)")
+    }
+    
+    /// Cancel a task (direct action)
+    public func cancelTask(taskId: UUID, reason: String) async throws {
+        struct TaskUpdate: Encodable {
+            let status: String = "Cancelled"
+            let isLocked: Bool = true
+            let updatedAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case status
+                case isLocked = "is_locked"
+                case updatedAt = "updated_at"
+            }
+        }
+        
+        let update = TaskUpdate()
+        
+        try await client
+            .from("maintenance_tasks")
+            .update(update)
+            .eq("id", value: taskId)
+            .execute()
+        
+        // Create manager alert
+        try await createManagerAlert(
+            title: "Task Cancelled",
+            message: "Task has been cancelled. Reason: \(reason)",
+            taskId: taskId
+        )
+        
+        print("✅ Task \(taskId) cancelled")
+    }
+    
+    /// Create a manager alert
+    private func createManagerAlert(title: String, message: String, taskId: UUID) async throws {
+        struct AlertInsert: Encodable {
+            let title: String
+            let message: String
+            let taskId: UUID
+            let type: String = "info"
+            let createdAt: Date = Date()
+            
+            enum CodingKeys: String, CodingKey {
+                case title
+                case message
+                case taskId = "task_id"
+                case type
+                case createdAt = "created_at"
+            }
+        }
+        
+        let alert = AlertInsert(title: title, message: message, taskId: taskId)
+        
+        try await client
+            .from("maintenance_alerts")
+            .insert(alert)
+            .execute()
+        
+        print("✅ Manager alert created: \(title)")
+    }
+    
+    /// Format date for display
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
 }

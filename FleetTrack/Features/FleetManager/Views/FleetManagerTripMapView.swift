@@ -116,6 +116,7 @@ struct RetractableDetailSheet: View {
                             Text(startTime.formatted(date: .abbreviated, time: .omitted))
                                 .font(.system(size: 13))
                                 .foregroundColor(.appSecondaryText)
+                                .accessibilityLabel("Date: \(startTime.formatted(date: .abbreviated, time: .omitted))")
                         }
                     }
                     
@@ -154,6 +155,7 @@ struct RetractableDetailSheet: View {
                     }
                 }
         )
+        .accessibilityIdentifier("trip_detail_retractable_sheet")
     }
     
     // MARK: - Driver Info Section
@@ -190,6 +192,9 @@ struct RetractableDetailSheet: View {
                     .font(.system(size: 13))
                     .foregroundColor(.appSecondaryText)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Driver: \(viewModel.driverName), Delivery Partner")
+            .accessibilityIdentifier("fleet_trip_driver_info")
             
             Spacer()
             
@@ -207,6 +212,8 @@ struct RetractableDetailSheet: View {
                     )
             }
             .disabled(viewModel.driverPhone == nil)
+            .accessibilityLabel("Call Driver")
+            .accessibilityIdentifier("fleet_trip_call_driver_button")
         }
     }
     
@@ -266,9 +273,11 @@ struct RetractableDetailSheet: View {
             // Package Illustration
             Image(systemName: "shippingbox.fill")
                 .font(.system(size: 60))
-                .foregroundColor(Color(hex: "CD9C6B"))
+                .foregroundColor(Color(hexCode: "CD9C6B"))
                 .opacity(0.8)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Route: Pickup at \(trip.startAddress ?? "Unknown"), Deliver to \(trip.endAddress ?? "Unknown")")
     }
     
     // MARK: - Live Tracking Button
@@ -292,9 +301,10 @@ struct RetractableDetailSheet: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "F9D854"))
+                    .fill(Color(hexCode: "F9D854"))
             )
         }
         .padding(.top, 8)
+        .accessibilityIdentifier("fleet_trip_live_tracking_button")
     }
 }

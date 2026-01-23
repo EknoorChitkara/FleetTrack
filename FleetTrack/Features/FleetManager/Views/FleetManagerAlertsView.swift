@@ -9,18 +9,10 @@ import SwiftUI
 import Supabase
 
 struct FleetManagerAlertsView: View {
-    @State private var selectedSegment = 0
     @State private var alerts: [GeofenceAlert] = []
     @State private var isLoading = false
     @State private var selectedAlert: GeofenceAlert?
     
-    var filteredAlerts: [GeofenceAlert] {
-        if selectedSegment == 1 {
-            return alerts.filter { !$0.isRead }
-        }
-        return alerts
-    }
-
     var body: some View {
         ZStack {
             Color.appBackground.ignoresSafeArea()
@@ -36,9 +28,10 @@ struct FleetManagerAlertsView: View {
                         Text("\(alerts.filter({ !$0.isRead }).count)")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
-                            .padding(8)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
                             .background(Color.red)
-                            .clipShape(Circle())
+                            .clipShape(Capsule())
                     }
                     
                     Spacer()
@@ -51,24 +44,14 @@ struct FleetManagerAlertsView: View {
                             Image(systemName: "arrow.clockwise")
                                 .foregroundColor(.appEmerald)
                         }
+                        .accessibilityLabel("Refresh Alerts")
+                        .accessibilityIdentifier("fleet_alerts_refresh_button")
                     }
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
                 
-                // Segment Control
-                HStack(spacing: 12) {
-                    AlertSegmentButton(title: "All (\(alerts.count))", isSelected: selectedSegment == 0) {
-                        selectedSegment = 0
-                    }
-                    
-                    AlertSegmentButton(title: "Unread (\(alerts.filter({ !$0.isRead }).count))", isSelected: selectedSegment == 1) {
-                        selectedSegment = 1
-                    }
-                }
-                .padding(.horizontal)
-                
-                if filteredAlerts.isEmpty {
+                if alerts.isEmpty {
                     Spacer()
                     // Empty State
                     VStack(spacing: 16) {
@@ -84,7 +67,7 @@ struct FleetManagerAlertsView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 16) {
-                            ForEach(filteredAlerts) { alert in
+                            ForEach(alerts) { alert in
                                 AlertRowView(alert: alert)
                                     .onTapGesture {
                                         selectedAlert = alert
@@ -92,6 +75,7 @@ struct FleetManagerAlertsView: View {
                             }
                         }
                         .padding(.horizontal)
+                        .accessibilityIdentifier("fleet_alerts_list")
                     }
                 }
             }
@@ -190,24 +174,10 @@ struct AlertRowView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
-    }
-}
-
-struct AlertSegmentButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 16, weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(isSelected ? Color.appEmerald : Color(white: 0.2))
-                .foregroundColor(isSelected ? .black : .white)
-                .cornerRadius(8)
-        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(alert.isRead ? "Read" : "Unread") Alert. \(alert.title): \(alert.message). \(timeString)")
+        .accessibilityHint(alert.isRead ? "Double tap to view details" : "Double tap to view and mark as read")
+        .accessibilityIdentifier("fleet_alert_row_\(alert.id.uuidString.prefix(8))")
     }
 }
     

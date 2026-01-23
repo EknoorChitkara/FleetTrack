@@ -8,8 +8,30 @@ import SwiftUI
 
 struct RootView: View {
     @ObservedObject private var sessionManager = SessionManager.shared
+    @State private var showSplash = true
 
     var body: some View {
+        ZStack {
+            if showSplash {
+                splashView
+                    .transition(.opacity)
+            } else {
+                mainContent
+                    .transition(.opacity)
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear {
+            // Dismiss splash screen after 2 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                withAnimation {
+                    showSplash = false
+                }
+            }
+        }
+    }
+    
+    private var mainContent: some View {
         ZStack {
             if sessionManager.isLoading {
                 loadingView
@@ -30,7 +52,24 @@ struct RootView: View {
                 LoginView()
             }
         }
-        .preferredColorScheme(.dark)
+    }
+    
+    private var splashView: some View {
+        ZStack {
+            Color.appBackground.ignoresSafeArea()
+            VStack(spacing: 24) {
+                Image(systemName: "truck.box.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 100, height: 100)
+                    .foregroundColor(.appEmerald)
+                    .shadow(color: .appEmerald.opacity(0.5), radius: 20)
+                
+                Text("FleetTrack")
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+            }
+        }
     }
 
     private var loadingView: some View {
@@ -46,6 +85,8 @@ struct RootView: View {
                     .tint(.appEmerald)
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Loading FleetTrack configuration")
     }
 
     private var logoutButton: some ToolbarContent {

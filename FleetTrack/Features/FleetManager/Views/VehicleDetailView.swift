@@ -10,11 +10,12 @@ import SwiftUI
 struct VehicleDetailView: View {
     let vehicle: FMVehicle
     @Environment(\.presentationMode) var presentationMode
-    @State private var showInspection = false
     @State private var showServiceSelection = false
     @State private var showHistory = false
     @State private var selectedServices: Set<String> = []
     @State private var serviceDescription: String = ""
+    @State private var showRetireAlert = false
+    @State private var showAssignmentSuccess = false
     
     private var currentVehicle: FMVehicle {
         fleetVM.vehicles.first(where: { $0.id == vehicle.id }) ?? vehicle
@@ -37,24 +38,22 @@ struct VehicleDetailView: View {
                             .background(Color.white.opacity(0.1))
                             .clipShape(Circle())
                     }
+                    .accessibilityLabel("Back")
+                    .accessibilityIdentifier("vehicle_detail_back_button")
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text(currentVehicle.registrationNumber)
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
-                        HStack(spacing: 6) {
-                            Text(currentVehicle.model)
-                            Circle().frame(width: 4, height: 4)
-                            HStack(spacing: 4) {
-                                Circle().frame(width: 8, height: 8).foregroundColor(.green)
-                                Text(currentVehicle.status.rawValue)
-                            }
-                        }
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        Text(currentVehicle.model)
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
                     .padding(.leading, 8)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Vehicle \(currentVehicle.registrationNumber), \(currentVehicle.model), Status \(currentVehicle.status.rawValue)")
+                    .accessibilityIdentifier("vehicle_header_info")
                     
                     Spacer()
                 }
@@ -70,32 +69,53 @@ struct VehicleDetailView: View {
                                 .foregroundColor(.white)
                             
                             HStack(spacing: 16) {
-                                QuickActionBtn(title: "Inspection", icon: "doc.text.fill", color: .blue) {
-                                    showInspection = true
-                                }
-                                
                                 Menu {
-                                    Button(action: {
-                                        fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: nil)
-                                        presentationMode.wrappedValue.dismiss()
-                                    }) {
-                                        Label("Unassign", systemImage: "person.fill.xmark")
+                                    // Show unassign option only if vehicle has an assigned driver
+                                    if currentVehicle.assignedDriverId != nil {
+                                        Button(action: {
+                                            fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: nil)
+                                        }) {
+                                            Label("Unassign Driver", systemImage: "person.fill.xmark")
+                                        }
+                                        
+                                        if !fleetVM.unassignedDrivers.isEmpty {
+                                            Divider()
+                                        }
                                     }
                                     
-                                    Divider()
-                                    
+                                    // Show available drivers
                                     ForEach(fleetVM.unassignedDrivers) { driver in
                                         Button(action: {
                                             fleetVM.reassignDriver(vehicleId: vehicle.id, driverId: driver.id)
-                                            presentationMode.wrappedValue.dismiss()
+                                            // Frontend confirmation simulation
+                                            showAssignmentSuccess = true
                                         }) {
-                                            Text(driver.displayName)
+                                            Label(driver.displayName, systemImage: "person.fill")
                                         }
                                     }
                                 } label: {
-                                    QuickActionBtn(title: "Assign", icon: "person.badge.plus.fill", color: .green) {}
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "person.badge.plus.fill")
+                                            .font(.title3)
+                                            .foregroundColor(.white)
+                                            .padding(16)
+                                            .background(Color.green.opacity(0.2))
+                                            .cornerRadius(12)
+                                        
+                                        Text("Assign")
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.white)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.white.opacity(0.05))
+                                    .cornerRadius(16)
                                 }
-                                .disabled(fleetVM.unassignedDrivers.isEmpty && vehicle.assignedDriverId == nil)
+                                .disabled(fleetVM.unassignedDrivers.isEmpty && currentVehicle.assignedDriverId == nil)
+                                .accessibilityLabel("Assign Driver")
+                                .accessibilityHint("Double tap to assign or unassign a driver to this vehicle")
+                                .accessibilityIdentifier("vehicle_assign_button")
                                 
                                 QuickActionBtn(title: "Service", icon: "wrench.and.screwdriver.fill", color: .orange) {
                                     selectedServices = Set(vehicle.maintenanceServices ?? [])
@@ -105,6 +125,10 @@ struct VehicleDetailView: View {
                                 
                                 QuickActionBtn(title: "History", icon: "clock.arrow.circlepath", color: .purple) {
                                     showHistory = true
+                                }
+                                
+                                QuickActionBtn(title: "Retire", icon: "archivebox.fill", color: .red) {
+                                    showRetireAlert = true
                                 }
                             }
                         }
@@ -118,14 +142,23 @@ struct VehicleDetailView: View {
                             VStack(spacing: 0) {
                                 InfoRow(icon: "car.fill", label: "Model", value: currentVehicle.model)
                                 Divider().background(Color.gray.opacity(0.2))
+                                InfoRow(icon: "building.2.fill", label: "Manufacturer", value: currentVehicle.manufacturer)
+                                Divider().background(Color.gray.opacity(0.2))
                                 InfoRow(icon: "number", label: "License Plate", value: currentVehicle.registrationNumber)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(currentVehicle.mileage))
+                                InfoRow(icon: "fuelpump.fill", label: "Fuel Type", value: currentVehicle.fuelType.rawValue)
                                 Divider().background(Color.gray.opacity(0.2))
-                                InfoRow(icon: "shield.fill", label: "Insurance", value: currentVehicle.insuranceStatus ?? "Pending")
+                                InfoRow(icon: "scalemass.fill", label: "Capacity", value: currentVehicle.capacity)
+                                Divider().background(Color.gray.opacity(0.2))
+                                InfoRow(icon: "calendar", label: "Registration Date", value: currentVehicle.registrationDate.formatted(date: .abbreviated, time: .omitted))
+                                Divider().background(Color.gray.opacity(0.2))
+                                InfoRow(icon: "speedometer", label: "Mileage", value: formatMileage(currentVehicle.mileage))
                             }
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Vehicle Information")
+                            .accessibilityIdentifier("vehicle_info_section")
                             
                             Text("Current Status")
                                 .font(.headline)
@@ -170,6 +203,9 @@ struct VehicleDetailView: View {
                             .padding()
                             .background(Color.appCardBackground)
                             .cornerRadius(12)
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Current Status")
+                            .accessibilityIdentifier("vehicle_status_section")
                         }
                     }
                     .padding()
@@ -177,9 +213,6 @@ struct VehicleDetailView: View {
             }
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showInspection) {
-            VehicleInspectionView(vehicle: currentVehicle)
-        }
         .sheet(isPresented: $showServiceSelection) {
             ServiceSelectionView(vehicle: currentVehicle, selectedServices: $selectedServices, description: $serviceDescription) {
                 fleetVM.markForService(vehicleId: currentVehicle.id, serviceTypes: Array(selectedServices), description: serviceDescription)
@@ -191,6 +224,20 @@ struct VehicleDetailView: View {
         .sheet(isPresented: $showHistory) {
             MaintenanceHistoryView(vehicle: currentVehicle)
         }
+        .alert("Retire Vehicle", isPresented: $showRetireAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Retire", role: .destructive) {
+                fleetVM.retireVehicle(byId: vehicle.id)
+                presentationMode.wrappedValue.dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to retire this vehicle? This will unassign any active driver and move the vehicle to the retired archive.")
+        }
+        .alert("Success", isPresented: $showAssignmentSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Driver assigned successfully to vehicle \(vehicle.registrationNumber).")
+        }
     }
     
     private func formatMileage(_ mileage: Double?) -> String {
@@ -199,6 +246,15 @@ struct VehicleDetailView: View {
     }
     
     @EnvironmentObject var fleetVM: FleetViewModel
+    
+    private func statusColor(_ status: VehicleStatus) -> Color {
+        switch status {
+        case .active: return .green
+        //case .inactive: return .red
+        case .inMaintenance: return .yellow
+        case .retired: return .gray
+        }
+    }
 }
 
 struct QuickActionBtn: View {
@@ -227,6 +283,9 @@ struct QuickActionBtn: View {
             .background(Color.white.opacity(0.05))
             .cornerRadius(16)
         }
+        .accessibilityLabel(title)
+        .accessibilityHint("Double tap to perform \(title) action")
+        .accessibilityIdentifier("quick_action_\(title.lowercased())")
     }
 }
 
@@ -251,6 +310,9 @@ struct InfoRow: View {
                 .foregroundColor(.white)
         }
         .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityIdentifier("info_row_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 
@@ -276,6 +338,8 @@ struct ServiceSelectionView: View {
                         presentationMode.wrappedValue.dismiss()
                     }
                     .foregroundColor(.gray)
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("service_selection_cancel_button")
                     
                     Spacer()
                     
@@ -298,6 +362,8 @@ struct ServiceSelectionView: View {
                         .foregroundColor(selectedServices.isEmpty ? .gray : .appEmerald)
                         .fontWeight(.bold)
                         .disabled(selectedServices.isEmpty)
+                        .accessibilityLabel("Save")
+                        .accessibilityIdentifier("service_selection_save_button")
                     }
                 }
                 .padding()
@@ -364,6 +430,10 @@ struct ServiceSelectionView: View {
                                             .stroke(selectedServices.contains(service) ? Color.appEmerald.opacity(0.3) : Color.white.opacity(0.05), lineWidth: 1)
                                     )
                                 }
+                                .accessibilityLabel(service)
+                                .accessibilityAddTraits(selectedServices.contains(service) ? [.isSelected] : [])
+                                .accessibilityIdentifier("service_option_\(service.lowercased().replacingOccurrences(of: " ", with: "_"))")
+                            }
                             }
                         }
                         .padding(.horizontal)
@@ -374,4 +444,4 @@ struct ServiceSelectionView: View {
             }
         }
     }
-}
+

@@ -13,18 +13,19 @@ struct StatisticCard: View {
     let value: String
     let label: String
     let iconBackgroundColor: Color
+    var iconColor: Color = AppTheme.accentPrimary
     
     var body: some View {
         VStack(spacing: AppTheme.spacing.md) {
             // Icon with background
             ZStack {
                 Circle()
-                    .fill(AppTheme.accentPrimary.opacity(0.15))
+                    .fill(iconBackgroundColor)
                     .frame(width: 48, height: 48)
                 
                 Image(systemName: icon)
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(AppTheme.accentPrimary)
+                    .foregroundColor(iconColor)
             }
             
             // Value
@@ -45,6 +46,9 @@ struct StatisticCard: View {
         .padding(AppTheme.spacing.lg)
         .background(AppTheme.backgroundSecondary)
         .cornerRadius(AppTheme.cornerRadius.large)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+        .accessibilityIdentifier("maintenance_stat_card_\(label.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 

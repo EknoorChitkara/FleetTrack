@@ -12,20 +12,18 @@ struct MaintenanceDashboardView: View {
     @ObservedObject var viewModel: MaintenanceDashboardViewModel
     @Binding var selectedTab: Int
     
+    
     var body: some View {
-        ZStack {
-            // Background
-            AppTheme.backgroundPrimary
-                .ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                // Background
+                AppTheme.backgroundPrimary
+                    .ignoresSafeArea()
             
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.spacing.lg) {
                     // Header
                     headerView
-                    
-                    // Quick Actions
-                    quickActionsSection
-                        .padding(.horizontal, AppTheme.spacing.md)
                     
                     // Today's Tasks Card
                     TodaysTasksCard(
@@ -37,17 +35,19 @@ struct MaintenanceDashboardView: View {
                     // Statistics Row
                     HStack(spacing: AppTheme.spacing.md) {
                         StatisticCard(
-                            icon: "checkmark",
+                            icon: "chart.bar.fill",
                             value: "\(viewModel.maintenanceSummary.completedTasksThisMonth)",
                             label: "Completed This Month",
-                            iconBackgroundColor: AppTheme.statusActiveBackground
+                            iconBackgroundColor: Color.purple.opacity(0.15),
+                            iconColor: Color.purple
                         )
                         
                         StatisticCard(
-                            icon: "clock",
+                            icon: "timer",
                             value: String(format: "%.1fh", viewModel.maintenanceSummary.averageCompletionTimeHours),
                             label: "Avg Completion Time",
-                            iconBackgroundColor: AppTheme.backgroundElevated
+                            iconBackgroundColor: Color.orange.opacity(0.15),
+                            iconColor: Color.orange
                         )
                     }
                     .padding(.horizontal, AppTheme.spacing.md)
@@ -57,6 +57,11 @@ struct MaintenanceDashboardView: View {
                     
                     // Task History Section
                     taskHistorySection
+                    
+                    // Quick Actions (moved to bottom)
+                    quickActionsSection
+                        .padding(.horizontal, AppTheme.spacing.md)
+                        .padding(.bottom, 80) // Extra padding to clear tab bar
                 }
                 .padding(.vertical, AppTheme.spacing.md)
             }
@@ -65,13 +70,24 @@ struct MaintenanceDashboardView: View {
             }
         }
         .sheet(isPresented: $showingTaskHistory) {
-            TaskHistoryView(completedTasks: viewModel.completedTasks)
+            TaskHistoryView()
+                .presentationDragIndicator(.visible)
+                .interactiveDismissDisabled(false)
+                .onDisappear {
+                    // Ensure we stay on Dashboard tab when sheet dismisses
+                    if selectedTab != 0 {
+                        withAnimation(.none) {
+                            selectedTab = 0
+                        }
+                    }
+                }
         }
         .sheet(isPresented: $showProfile) {
             MaintenanceProfileView(user: user)
         }
         .sheet(isPresented: $showingInspections) {
             MaintenanceInspectionView()
+        }
         }
     }
     
@@ -84,12 +100,13 @@ struct MaintenanceDashboardView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Maintenance Dashboard")
-                    .font(.title2)
+                Text("Maintenance")
+                    .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
-                Text("Welcome back, \(viewModel.currentUser.name)!")
+                Text("Management Dashboard")
                     .font(.subheadline)
                     .foregroundColor(AppTheme.textSecondary)
             }
@@ -110,9 +127,12 @@ struct MaintenanceDashboardView: View {
                         .foregroundColor(.black)
                 }
             }
-            .accessibilityLabel("Profile")
+            .accessibilityLabel("Maintenance Profile")
+            .accessibilityHint("Double tap to view profile details")
+            .accessibilityIdentifier("maintenance_profile_button")
         }
         .padding(.horizontal, AppTheme.spacing.md)
+        .accessibilityIdentifier("maintenance_dashboard_header")
     }
     
     // MARK: - Quick Actions
@@ -136,7 +156,11 @@ struct MaintenanceDashboardView: View {
                 .cornerRadius(10)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityElement(children: .combine)
             .accessibilityLabel("Perform Daily Inspections")
+            .accessibilityHint("Double tap to start inspection workflow")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("maintenance_action_inspections")
         }
     }
     
@@ -146,9 +170,10 @@ struct MaintenanceDashboardView: View {
         VStack(alignment: .leading, spacing: AppTheme.spacing.md) {
             // Section Header
             HStack {
-                Text("Priority Tasks")
+                Text("Recent Tasks")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -160,13 +185,19 @@ struct MaintenanceDashboardView: View {
                         .font(.subheadline)
                         .foregroundColor(AppTheme.accentPrimary)
                 }
+                .accessibilityLabel("View All Priority Tasks")
+                .accessibilityIdentifier("maintenance_view_all_tasks")
             }
             .padding(.horizontal, AppTheme.spacing.md)
+            .accessibilityIdentifier("maintenance_recent_tasks_header")
             
             // Task List
             VStack(spacing: AppTheme.spacing.sm) {
                 ForEach(viewModel.highPriorityMaintenanceTasks) { task in
-                    PriorityTaskRow(task: task)
+                    NavigationLink(destination: TaskDetailView(task: task)) {
+                        PriorityTaskRow(task: task)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, AppTheme.spacing.md)
@@ -182,6 +213,7 @@ struct MaintenanceDashboardView: View {
                 Text("Recent History")
                     .font(.headline)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Spacer()
                 
@@ -192,13 +224,19 @@ struct MaintenanceDashboardView: View {
                         .font(.subheadline)
                         .foregroundColor(AppTheme.accentPrimary)
                 }
+                .accessibilityLabel("View Task History")
+                .accessibilityIdentifier("maintenance_view_all_history")
             }
             .padding(.horizontal, AppTheme.spacing.md)
+            .accessibilityIdentifier("maintenance_recent_history_header")
             
             // History List (show first 3)
             VStack(spacing: AppTheme.spacing.sm) {
                 ForEach(Array(viewModel.completedTasks.prefix(3))) { task in
-                    CompletedTaskRow(task: task)
+                    NavigationLink(destination: TaskDetailView(task: task)) {
+                        CompletedTaskRow(task: task)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, AppTheme.spacing.md)

@@ -6,6 +6,7 @@
 //
 
 import Supabase
+import UIKit
 import SwiftUI
 
 struct LoginView: View {
@@ -13,10 +14,16 @@ struct LoginView: View {
 
     @State private var email = ""
     @State private var password = ""
+    @State private var isPasswordVisible = false
     @State private var message = ""
     @State private var isLoading = false
     @State private var show2FAView = false
     @State private var otpEmail = ""
+
+    private var isFormValid: Bool {
+        !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
+        password.count >= 8
+    }
 
     var body: some View {
         NavigationStack {
@@ -27,6 +34,7 @@ struct LoginView: View {
                     .font(.system(size: 80))
                     .foregroundColor(.appEmerald)
                     .shadow(color: .appEmerald.opacity(0.3), radius: 10)
+                    .accessibilityLabel("FleetTrack Logo    hemant bhumika gungun dhruv ")
 
                 VStack(spacing: 8) {
                     Text("FleetTrack")
@@ -52,16 +60,43 @@ struct LoginView: View {
                         )
                         .textContentType(.emailAddress)
                         .autocorrectionDisabled()
+                        .accessibilityLabel("Email Address")
+                        .accessibilityIdentifier("login_email_field")
                         .textInputAutocapitalization(.never)
+                        .onChange(of: email) { newValue in
+                            if newValue.count > 50 {
+                                email = String(newValue.prefix(50))
+                            }
+                        }
 
-                    SecureField("Password", text: $password)
-                        .padding()
-                        .background(Color.appCardBackground)
-                        .cornerRadius(12)
-                        .foregroundColor(.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12).stroke(
-                                Color.appSecondaryText.opacity(0.3), lineWidth: 1))
+                    HStack {
+                        if isPasswordVisible {
+                            TextField("Password", text: $password)
+                                .accessibilityLabel("Password")
+                                .accessibilityIdentifier("login_password_field")
+                        } else {
+                            SecureField("Password", text: $password)
+                                .accessibilityLabel("Password")
+                                .accessibilityIdentifier("login_password_field")
+                        }
+
+                        Button(action: {
+                            isPasswordVisible.toggle()
+                        }) {
+                            Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                                .foregroundColor(.appSecondaryText)
+                        }
+                        .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+                        .accessibilityRemoveTraits(.isButton)
+                        .accessibilityAddTraits(.isButton)
+                    }
+                    .padding()
+                    .background(Color.appCardBackground)
+                    .cornerRadius(12)
+                    .foregroundColor(.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12).stroke(
+                            Color.appSecondaryText.opacity(0.3), lineWidth: 1))
                 }
                 .padding(.horizontal)
 
@@ -79,16 +114,21 @@ struct LoginView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(
-                        LinearGradient(
+                        isFormValid 
+                        ? LinearGradient(
                             gradient: Gradient(colors: [.appEmerald, .appEmerald.opacity(0.8)]),
                             startPoint: .top, endPoint: .bottom)
+                        : LinearGradient(
+                            gradient: Gradient(colors: [.gray.opacity(0.5), .gray.opacity(0.3)]),
+                            startPoint: .top, endPoint: .bottom)
                     )
-                    .foregroundColor(.white)
+                    .foregroundColor(isFormValid ? .white : .white.opacity(0.5))
                     .cornerRadius(12)
-                    .shadow(color: .appEmerald.opacity(0.4), radius: 8, x: 0, y: 4)
+                    .shadow(color: isFormValid ? .appEmerald.opacity(0.4) : Color.clear, radius: 8, x: 0, y: 4)
                 }
+                .accessibilityHint(isFormValid ? "Double tap to sign in" : "Enter email and password to enable sign in")
                 .padding(.horizontal)
-                .disabled(isLoading)
+                .disabled(isLoading || !isFormValid)
 
                 Button("Forgot Password?") {
                     Task { await forgotPassword() }
@@ -117,6 +157,7 @@ struct LoginView: View {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedEmail.isEmpty, !password.isEmpty else {
             message = "❌ Please enter email and password"
+            UIAccessibility.post(notification: .announcement, argument: "Error: Please enter email and password")
             return
         }
 
@@ -151,9 +192,38 @@ struct LoginView: View {
         } catch {
             await MainActor.run {
                 print("❌ Login error: \(error)")
-                message = "❌ Invalid email or password"
-                isLoading = false
+                Task {
+                    let userExists = await checkUserExists(email: trimmedEmail)
+                    let isFormatValid = ValidationHelpers.isValidEmail(trimmedEmail)
+                    
+                    await MainActor.run {
+                        if !isFormatValid {
+                            message = "❌ incorrect email"
+                        } else if !userExists {
+                            message = "❌ both password and email are incorrect"
+                        } else {
+                            message = "❌ password incorrect"
+                        }
+                        UIAccessibility.post(notification: .announcement, argument: message)
+                        isLoading = false
+                    }
+                }
             }
+        }
+    }
+    
+    private func checkUserExists(email: String) async -> Bool {
+        do {
+            let count: Int = try await supabase
+                .from("users")
+                .select("*", head: true, count: .exact)
+                .eq("email", value: email)
+                .execute()
+                .count ?? 0
+            return count > 0
+        } catch {
+            print("❌ Error checking user existence: \(error)")
+            return false
         }
     }
     

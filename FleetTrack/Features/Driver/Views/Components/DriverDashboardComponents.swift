@@ -10,6 +10,8 @@ struct DriverStatCard: View {
     let value: String
     let unit: String
     
+    @ScaledMetric var valueFontSize: CGFloat = 32
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
@@ -18,7 +20,7 @@ struct DriverStatCard: View {
             
             HStack(alignment: .bottom, spacing: 4) {
                 Text(value)
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.system(size: valueFontSize, weight: .bold))
                     .foregroundColor(.appEmerald)
                 
                 if !unit.isEmpty {
@@ -37,6 +39,8 @@ struct DriverStatCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value) \(unit)")
     }
 }
 
@@ -71,6 +75,9 @@ struct MetricRow: View {
             }
             .frame(height: 4)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
+        .accessibilityValue("\(Int(progress * 100)) percent")
     }
 }
 
@@ -82,6 +89,7 @@ struct AssignedVehicleCard: View {
             Text("Assigned Vehicle")
                 .font(.headline)
                 .foregroundColor(.white)
+                .accessibilityAddTraits(.isHeader)
             
             if let vehicle = vehicle {
                 HStack(spacing: 16) {
@@ -91,6 +99,7 @@ struct AssignedVehicleCard: View {
                         .frame(width: 60, height: 60)
                         .background(Color.appEmerald.opacity(0.1))
                         .cornerRadius(12)
+                        .accessibilityHidden(true)
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("\(vehicle.manufacturer) \(vehicle.model)")
@@ -114,6 +123,9 @@ struct AssignedVehicleCard: View {
                             .cornerRadius(4)
                     }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Vehicle: \(vehicle.manufacturer) \(vehicle.model), License Plate: \(vehicle.registrationNumber), Status: \(vehicle.status.rawValue)")
+                .accessibilityIdentifier("driver_assigned_vehicle_card")
             } else {
                 Text("No vehicle assigned")
                     .font(.subheadline)
@@ -129,6 +141,7 @@ struct AssignedVehicleCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.white.opacity(0.05), lineWidth: 1)
         )
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -144,6 +157,7 @@ struct RecentTripRow: View {
                     Image(systemName: "arrow.up.right.circle.fill")
                         .foregroundColor(.appEmerald)
                 )
+                .accessibilityHidden(true)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(trip.endAddress ?? "Unknown Destination")
@@ -171,6 +185,9 @@ struct RecentTripRow: View {
             }
         }
         .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Trip to \(trip.endAddress ?? "Unknown"), on \(trip.startTime?.formatted(date: .abbreviated, time: .shortened) ?? "unknown date"). Distance: \(trip.formattedDistance ?? "0 km"). Status: \(trip.status?.rawValue ?? "Unknown").")
+        .accessibilityIdentifier("driver_recent_trip_row")
     }
 }
 
@@ -195,11 +212,11 @@ struct DriverCustomTabBar: View {
                 selectedTab = 2
             }
         }
-        .padding(.horizontal, 32)
+        .padding(.horizontal, 24)
         .padding(.vertical, 12)
         .background(Color.appCardBackground.opacity(0.95))
         .clipShape(Capsule())
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 16)
         .padding(.bottom, 8)
         .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10)
     }
@@ -225,6 +242,10 @@ struct DriverTabBarItem: View {
             .background(isSelected ? Color.appEmerald.opacity(0.1) : Color.clear)
             .clipShape(Capsule())
         }
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityHint(isSelected ? "Current tab" : "Double tap to switch to \(title)")
+        .accessibilityIdentifier("driver_tab_\(title.lowercased())")
     }
 }
 
@@ -279,6 +300,10 @@ struct AnimatedRingView: View {
                 animatedProgress = progress
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue("\(value) \(subValue ?? "")")
+        .accessibilityIdentifier("driver_metric_ring_\(title.replacingOccurrences(of: " ", with: "_").lowercased())")
     }
 }
 
@@ -300,7 +325,7 @@ struct PerformanceMetricsChart: View {
                     value: "\(Int(onTimeRate))%",
                     subValue: nil,
                     progress: onTimeRate / 100.0,
-                    color: Color(hex: "#0b7333") // Bright Mint Green
+                    color: Color(hexCode: "#0b7333") // Bright Mint Green
                 )
                 
                 Spacer()
@@ -311,7 +336,7 @@ struct PerformanceMetricsChart: View {
                     value: String(format: "%.1f", avgSpeed),
                     subValue: "km/h",
                     progress: min(avgSpeed / 100.0, 1.0), // Normalizing assuming 100km/h is max for progress bar
-                    color: Color(hex: "00B8D9") // Bright Cyan
+                    color: Color(hexCode: "00B8D9") // Bright Cyan
                 )
                 
                 Spacer()
@@ -322,7 +347,7 @@ struct PerformanceMetricsChart: View {
                     value: "\(Int(avgTripDist))",
                     subValue: "km",
                     progress: min(avgTripDist / 500.0, 1.0), // Normalizing assuming 500km is 'full'
-                    color: Color(hex: "FFAB00") // Amber/Orange
+                    color: Color(hexCode: "FFAB00") // Amber/Orange
                 )
             }
             .padding(.horizontal, 8)
@@ -476,6 +501,7 @@ struct ScheduledTripCard: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(Color.appEmerald.opacity(0.3), lineWidth: 1)
         )
+        .accessibilityIdentifier("driver_scheduled_trip_card")
     }
 }
 
@@ -567,6 +593,7 @@ struct ActiveTripCard: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(Color.orange.opacity(0.5), lineWidth: 1)
         )
+        .accessibilityIdentifier("driver_active_trip_card")
     }
 }
 

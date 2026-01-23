@@ -65,6 +65,8 @@ struct AuthLoginView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(.green)
+                .accessibilityLabel("Create Test Admin")
+                .accessibilityIdentifier("auth_placeholder_create_admin_button")
                 
                 Button("Login as Admin") {
                     Task {
@@ -77,6 +79,8 @@ struct AuthLoginView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
+                .accessibilityLabel("Login as Admin")
+                .accessibilityIdentifier("auth_placeholder_login_admin_button")
             }
             .padding()
             

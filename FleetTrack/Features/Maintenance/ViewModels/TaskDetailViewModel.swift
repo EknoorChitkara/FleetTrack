@@ -12,6 +12,8 @@ import Foundation
 class TaskDetailViewModel: ObservableObject {
 
     @Published var task: MaintenanceTask
+    @Published var assignedDriver: Driver?
+    @Published var assignedVehicle: Vehicle?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var showingCompletionSheet: Bool = false
@@ -50,9 +52,17 @@ class TaskDetailViewModel: ObservableObject {
 
         do {
             try await MaintenanceService.shared.pauseTask(taskId: task.id)
-            task.status = "Paused"
+            // Keep status as "In Progress" for database compatibility
+            // But set pausedAt to indicate paused state
             task.pausedAt = Date()
+            task.updatedAt = Date()
+            
+            // Update shared task list
             TasksViewModel.shared.updateTask(task)
+            
+            // Force UI refresh
+            objectWillChange.send()
+            
             print("✅ Task paused via Service")
         } catch {
             errorMessage = "Failed to pause task: \(error.localizedDescription)"
@@ -67,7 +77,7 @@ class TaskDetailViewModel: ObservableObject {
 
         do {
             try await MaintenanceService.shared.resumeTask(taskId: task.id)
-            task.status = "In Progress"
+            // Status remains "In Progress"
             task.pausedAt = nil
             TasksViewModel.shared.updateTask(task)
             print("✅ Task resumed via Service")
@@ -96,6 +106,10 @@ class TaskDetailViewModel: ObservableObject {
             task.laborHours = laborHours
             TasksViewModel.shared.updateTask(task)
             showingCompletionSheet = false
+            
+            // Notify dashboard to refresh
+            NotificationCenter.default.post(name: NSNotification.Name("TaskCompleted"), object: nil)
+            
             print("✅ Task completed via Service")
         } catch {
             errorMessage = "Failed to complete task: \(error.localizedDescription)"
@@ -158,6 +172,40 @@ class TaskDetailViewModel: ObservableObject {
             print("❌ Error removing part: \(error)")
         }
         isLoading = false
+    }
+    
+    // MARK: - Driver Loading
+    
+    func loadAssignedDriver() async {
+        do {
+            // Step 1: Fetch the vehicle using registration number
+            guard let vehicle = try await MaintenanceService.shared.fetchVehicle(byRegistration: task.vehicleRegistrationNumber) else {
+                print("⚠️ Vehicle not found: \(task.vehicleRegistrationNumber)")
+                assignedDriver = nil
+                return
+            }
+            
+            // Save vehicle to published property
+            assignedVehicle = vehicle
+            
+            // Step 2: Get the assigned driver ID from the vehicle
+            guard let driverId = vehicle.assignedDriverId else {
+                print("ℹ️ No driver assigned to vehicle: \(task.vehicleRegistrationNumber)")
+                assignedDriver = nil
+                return
+            }
+            
+            // Step 3: Fetch the driver details
+            assignedDriver = try await MaintenanceService.shared.fetchDriver(byId: driverId)
+            if let driver = assignedDriver {
+                print("✅ Loaded driver: \(driver.fullName) for vehicle \(task.vehicleRegistrationNumber)")
+                print("   📞 Phone: \(driver.phoneNumber ?? "nil")")
+                print("   📧 Email: \(driver.email)")
+            }
+        } catch {
+            print("❌ Error loading driver: \(error)")
+            assignedDriver = nil
+        }
     }
 
     // MARK: - Repair Log Updates
@@ -223,5 +271,58 @@ class TaskDetailViewModel: ObservableObject {
 
         // Show success message
         errorMessage = nil
+    }
+    
+    // MARK: - Direct Reschedule & Cancel Actions
+    
+    func rescheduleTask(newDate: Date, reason: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Update task due date
+            try await MaintenanceService.shared.rescheduleTask(taskId: task.id, newDate: newDate, reason: reason)
+            
+            // Update local task
+            task.dueDate = newDate
+            TasksViewModel.shared.updateTask(task)
+            
+            print("✅ Task rescheduled successfully")
+            print("  New Date: \(newDate)")
+            print("  Reason: \(reason)")
+            print("  Alert sent to fleet manager")
+        } catch {
+            errorMessage = "Failed to reschedule task: \(error.localizedDescription)"
+            print("❌ Error rescheduling task: \(error)")
+        }
+        
+        isLoading = false
+        showingRescheduleSheet = false
+    }
+
+    func cancelTask(reason: String) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Cancel task and lock it
+            try await MaintenanceService.shared.cancelTask(taskId: task.id, reason: reason)
+            
+            // Update local task
+            task.status = "Cancelled"
+            task.isLocked = true
+            TasksViewModel.shared.updateTask(task)
+            
+            print("✅ Task cancelled successfully")
+            print("  Reason: \(reason)")
+            print("  Task locked")
+            print("  Alert sent to fleet manager")
+        } catch {
+            errorMessage = "Failed to cancel task: \(error.localizedDescription)"
+            print("❌ Error cancelling task: \(error)")
+        }
+        
+        isLoading = false
+        showingCancelSheet = false
     }
 }

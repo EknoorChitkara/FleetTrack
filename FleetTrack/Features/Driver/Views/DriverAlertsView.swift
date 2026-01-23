@@ -12,7 +12,7 @@ struct DriverAlertsView: View {
     
     var body: some View {
         ZStack {
-            Color(hex: "111111").ignoresSafeArea() // Deep black/grey background
+            Color(hexCode: "111111").ignoresSafeArea() // Deep black/grey background
             
             VStack(spacing: 0) {
                 // Header
@@ -33,23 +33,6 @@ struct DriverAlertsView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-                .padding(.bottom, 20)
-                
-                // Segments / Tabs
-                HStack(spacing: 12) {
-                    TabButton(
-                        title: "All (\(viewModel.emergencyCount))",
-                        isSelected: viewModel.selectedTab == .all,
-                        action: { viewModel.selectedTab = .all }
-                    )
-                    
-                    TabButton(
-                        title: "Unread (\(viewModel.maintenanceCount))",
-                        isSelected: viewModel.selectedTab == .unread,
-                        action: { viewModel.selectedTab = .unread }
-                    )
-                }
-                .padding(.horizontal, 20)
                 .padding(.bottom, 24)
                 
                 // Content
@@ -58,14 +41,14 @@ struct DriverAlertsView: View {
                     ProgressView()
                         .tint(.green)
                     Spacer()
-                } else if viewModel.currentTabAlerts.isEmpty {
+                } else if viewModel.alerts.isEmpty {
                     Spacer()
                     EmptyStateView()
                     Spacer()
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(viewModel.currentTabAlerts) { alert in
+                            ForEach(viewModel.alerts) { alert in
                                 AlertCell(alert: alert)
                             }
                         }
@@ -96,7 +79,7 @@ struct TabButton: View {
                 .frame(height: 44)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(isSelected ? Color(hex: "2E8B57") : Color(hex: "2C2C2E")) // Green or Dark Grey
+                        .fill(isSelected ? Color(hexCode: "2E8B57") : Color(hexCode: "2C2C2E")) // Green or Dark Grey
                 )
         }
     }
@@ -124,7 +107,7 @@ struct AlertCell: View {
             // Icon based on type
             ZStack {
                 Circle()
-                    .fill(Color(hex: "2C2C2E"))
+                    .fill(Color(hexCode: "2C2C2E"))
                     .frame(width: 44, height: 44)
                 
                 Image(systemName: alert.type == .emergency ? "exclamationmark.triangle.fill" : "wrench.and.screwdriver.fill")
@@ -153,8 +136,10 @@ struct AlertCell: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(hex: "1C1C1E")) // Slightly lighter card bg
+                .fill(Color(hexCode: "1C1C1E")) // Slightly lighter card bg
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabelString)
     }
     
     private func timeAgo(from date: Date) -> String {
@@ -162,6 +147,13 @@ struct AlertCell: View {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
      }
+}
+
+extension AlertCell {
+    var accessibilityLabelString: String {
+        let typeString = alert.type == .emergency ? "Emergency" : "Maintenance"
+        return "\(typeString) Alert: \(alert.title), \(alert.message). \(timeAgo(from: alert.date))"
+    }
 }
 
 // Helper for Hex Color if not present in codebase extensions

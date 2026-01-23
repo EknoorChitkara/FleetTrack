@@ -10,6 +10,7 @@ import Supabase
 import Combine
 import AppIntents
 import SwiftData
+import UIKit
 
 // Global app state for deep link handling
 class AppState: ObservableObject {
@@ -19,6 +20,7 @@ class AppState: ObservableObject {
     @Published var showError = false
     @Published var errorMessage = ""
     @Published var deepLinkURL: URL?
+    @Published var navigateToTripStart = false
 }
 
 @main
@@ -86,6 +88,7 @@ struct FleetTrackApp: App {
         // Check for errors in the deep link first
         if urlString.contains("error=") {
             print("❌ Deep link contains error")
+            UIAccessibility.post(notification: .announcement, argument: "Error in link. Please check the screen for details.")
             
             if urlString.contains("otp_expired") || urlString.contains("invalid") {
                 // If it's expired immediately, it was likely scanned by the email provider
@@ -181,6 +184,7 @@ struct FleetTrackApp: App {
                     await MainActor.run {
                         appState.deepLinkURL = url
                         appState.showResetPassword = true
+                        UIAccessibility.post(notification: .screenChanged, argument: "Reset Password screen active")
                     }
                 } catch {
                     print("❌ Failed to establish session from reset link: \(error)")
@@ -230,6 +234,18 @@ struct FleetTrackApp: App {
                     }
                 }
             }
+        } else if urlString.contains("trip/start") {
+            print("🚀 Trip start deep link received")
+            Task { @MainActor in
+                appState.navigateToTripStart = true
+                UIAccessibility.post(notification: .announcement, argument: "Trip started. Navigating to trip view.")
+            }
+        } else if urlString.contains("trip/end") {
+            print("🏁 Trip end deep link received")
+            // Handle trip end navigation
+        } else if urlString.contains("maintenance/resolve") {
+            print("🔧 Maintenance deep link received")
+            // Handle maintenance navigation
         } else {
             print("❓ Unknown deep link type: \(urlString)")
         }

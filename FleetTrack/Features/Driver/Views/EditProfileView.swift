@@ -34,11 +34,17 @@ struct EditProfileView: View {
                     Section(header: Text("Personal Information").foregroundColor(AppTheme.textSecondary)) {
                         TextField("Name", text: $name)
                             .foregroundColor(AppTheme.textPrimary)
+                            .accessibilityLabel("Full Name")
+                            .accessibilityIdentifier("edit_profile_name_field")
                         TextField("Phone Number", text: $phoneNumber)
                             .foregroundColor(AppTheme.textPrimary)
                             .keyboardType(.phonePad)
+                            .accessibilityLabel("Phone Number")
+                            .accessibilityIdentifier("edit_profile_phone_field")
                         TextField("Address", text: $address)
                             .foregroundColor(AppTheme.textPrimary)
+                            .accessibilityLabel("Home Address")
+                            .accessibilityIdentifier("edit_profile_address_field")
                     }
                     .listRowBackground(AppTheme.backgroundSecondary)
                     
@@ -55,6 +61,8 @@ struct EditProfileView: View {
                             Text("\(driver.yearsOfExperience ?? 0) years")
                                 .foregroundColor(AppTheme.textSecondary)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Experience: \(driver.yearsOfExperience ?? 0) years")
                     }
                     .listRowBackground(AppTheme.backgroundSecondary)
                 }
@@ -74,6 +82,7 @@ struct EditProfileView: View {
                         isPresented = false
                     }
                     .foregroundColor(AppTheme.accentPrimary)
+                    .accessibilityIdentifier("edit_profile_cancel_button")
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -84,6 +93,7 @@ struct EditProfileView: View {
                     }
                     .foregroundColor(AppTheme.accentPrimary)
                     .disabled(name.isEmpty || isLoading)
+                    .accessibilityIdentifier("edit_profile_save_button")
                 }
             }
             .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -152,6 +162,7 @@ struct EditProfileView: View {
             await MainActor.run {
                 self.user = updatedUser
                 self.driver = updatedDriver
+                SessionManager.shared.updateCurrentUserLocally(updatedUser)
                 self.isLoading = false
                 self.isPresented = false
             }

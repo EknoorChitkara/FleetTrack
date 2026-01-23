@@ -20,14 +20,10 @@ class VehicleInspectionViewModel: ObservableObject {
     @Published var historyRecords: [InspectionHistoryRecord] = []
     @Published var vehicle: Vehicle?
     
-    // Booking Form
-    @Published var selectedServiceType: ServiceType = .routineMaintenance
-    @Published var preferredDate: Date = Date()
-    @Published var notes: String = ""
-    
     // Alert State
     @Published var showingConfirmation: Bool = false
     @Published var confirmationMessage: String = ""
+    @Published var isSubmitted: Bool = false
     
     // MARK: - Initialization
     
@@ -131,6 +127,10 @@ class VehicleInspectionViewModel: ObservableObject {
             
             confirmationMessage = "Inspection submitted successfully! (\(itemsChecked)/\(checklistItems.count) items checked)"
             showingConfirmation = true
+            isSubmitted = true
+            
+            // Refresh history to show the new record
+            await fetchHistory()
             
         } catch {
             print("❌ Error submitting inspection: \(error)")
@@ -139,73 +139,10 @@ class VehicleInspectionViewModel: ObservableObject {
         }
     }
     
-    func submitServiceRequest() {
-        Task {
-            guard let vehicle = vehicle else {
-                confirmationMessage = "No vehicle assigned"
-                showingConfirmation = true
-                return
-            }
-            
-            guard let session = try? await supabase.auth.session else {
-                confirmationMessage = "Session expired. Please log in again."
-                showingConfirmation = true
-                return
-            }
-            
-            do {
-                // Fetch driver ID
-                let drivers: [FMDriver] = try await supabase
-                    .from("drivers")
-                    .select()
-                    .eq("user_id", value: session.user.id)
-                    .execute()
-                    .value
-                
-                guard let driver = drivers.first else {
-                    confirmationMessage = "Driver profile not found"
-                    showingConfirmation = true
-                    return
-                }
-                
-                let requestData: [String: AnyEncodable] = [
-                    "vehicle_id": AnyEncodable(vehicle.id),
-                    "driver_id": AnyEncodable(driver.id),
-                    "service_type": AnyEncodable(selectedServiceType.rawValue),
-                    "preferred_date": AnyEncodable(ISO8601DateFormatter().string(from: preferredDate)),
-                    "notes": AnyEncodable(notes),
-                    "status": AnyEncodable("Pending"),
-                    "request_date": AnyEncodable(ISO8601DateFormatter().string(from: Date()))
-                ]
-                
-                try await supabase
-                    .from("service_requests")
-                    .insert(requestData)
-                    .execute()
-                
-                print("✅ Service request submitted: \(selectedServiceType.rawValue)")
-                
-                // Show success
-                await MainActor.run {
-                    confirmationMessage = "Service request for \(selectedServiceType.rawValue) submitted!"
-                    showingConfirmation = true
-                    
-                    // Reset form
-                    notes = ""
-                    selectedServiceType = .routineMaintenance
-                }
-                
-            } catch {
-                print("❌ Failed to submit service request: \(error)")
-                await MainActor.run {
-                    confirmationMessage = "Failed to submit request. Please try again."
-                    showingConfirmation = true
-                }
-            }
-        }
-    }
-    
     func markItemAsChecked(_ id: UUID) {
+        // Prevent changes after submission
+        guard !isSubmitted else { return }
+        
         if let index = checklistItems.firstIndex(where: { $0.id == id }) {
             checklistItems[index].isChecked.toggle()
         }

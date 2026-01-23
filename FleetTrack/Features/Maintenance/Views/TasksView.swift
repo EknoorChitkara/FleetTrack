@@ -59,6 +59,7 @@ struct TasksView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(AppTheme.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
                 
                 if !viewModel.filteredTasks.isEmpty {
                     Text("\(viewModel.filteredTasks.count) task\(viewModel.filteredTasks.count == 1 ? "" : "s")")
@@ -105,6 +106,9 @@ struct TasksView: View {
                 .background(AppTheme.backgroundSecondary)
                 .cornerRadius(AppTheme.cornerRadius.medium)
             }
+            .accessibilityLabel("Filter tasks\(viewModel.activeFilterCount > 0 ? ", \(viewModel.activeFilterCount) active" : "")")
+            .accessibilityHint("Shows options to filter by status, priority, and component")
+            .accessibilityIdentifier("maintenance_tasks_filter_button")
             
             // Sort Button
             Button(action: {
@@ -124,6 +128,9 @@ struct TasksView: View {
                 .background(AppTheme.backgroundSecondary)
                 .cornerRadius(AppTheme.cornerRadius.medium)
             }
+            .accessibilityLabel("Sort tasks: \(viewModel.sortOption.rawValue)")
+            .accessibilityHint("Shows options to sort by date, priority, or ID")
+            .accessibilityIdentifier("maintenance_tasks_sort_button")
             
             Spacer()
             
@@ -137,6 +144,8 @@ struct TasksView: View {
                         .fontWeight(.semibold)
                         .foregroundColor(AppTheme.accentPrimary)
                 }
+                .accessibilityLabel("Clear all filters")
+                .accessibilityIdentifier("maintenance_tasks_clear_filters")
             }
         }
         .padding(.horizontal, AppTheme.spacing.md)
@@ -210,12 +219,16 @@ struct TasksView: View {
                 Text(title)
                     .font(.headline)
                     .foregroundColor(color)
+                    .accessibilityAddTraits(.isHeader)
                 
                 Text("(\(count))")
                     .font(.subheadline)
                     .foregroundColor(AppTheme.textTertiary)
             }
             .padding(.horizontal, AppTheme.spacing.xs)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(title) section, \(count) tasks")
+            .accessibilityIdentifier("maintenance_tasks_section_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
             
             // Task Items
             ForEach(tasks) { task in

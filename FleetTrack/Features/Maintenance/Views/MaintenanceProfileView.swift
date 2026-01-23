@@ -24,6 +24,7 @@ struct MaintenanceProfileView: View {
                             Text("Profile")
                                 .font(.system(size: 34, weight: .bold))
                                 .foregroundColor(AppTheme.textPrimary)
+                                .accessibilityAddTraits(.isHeader)
                             Spacer()
                             Button(action: {
                                 presentationMode.wrappedValue.dismiss()
@@ -32,6 +33,8 @@ struct MaintenanceProfileView: View {
                                     .font(.system(size: 30))
                                     .foregroundColor(AppTheme.textSecondary)
                             }
+                            .accessibilityLabel("Close")
+                            .accessibilityIdentifier("maintenance_profile_close_button")
                         }
                         .padding(.horizontal)
                         .padding(.top, 20)
@@ -58,6 +61,9 @@ struct MaintenanceProfileView: View {
                                     .font(.subheadline)
                                     .foregroundColor(AppTheme.textSecondary)
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("User: \(user.name), Email: \(user.email)")
+                            .accessibilityIdentifier("maintenance_profile_user_info")
                             
                             Button(action: {
                                 showEditProfile = true
@@ -70,6 +76,8 @@ struct MaintenanceProfileView: View {
                                     .background(AppTheme.accentPrimary)
                                     .cornerRadius(20)
                             }
+                            .accessibilityLabel("Edit Profile")
+                            .accessibilityIdentifier("maintenance_profile_edit_button")
                         }
                         
                         // Settings Sections
@@ -80,7 +88,7 @@ struct MaintenanceProfileView: View {
                                     MaintenanceSettingRow(icon: "lock.fill", title: "Change Password", color: .orange)
                                 }
                                 NavigationLink(destination: MaintenancePrivacyView()) {
-                                    MaintenanceSettingRow(icon: "shield.fill", title: "Privacy Policy", color: .green)
+                                    MaintenanceSettingRow(icon: "shield.fill", title: "Privacy Policy", color: Color(hexCode: "2D7D46"))
                                 }
                             }
                             
@@ -116,6 +124,8 @@ struct MaintenanceProfileView: View {
                         }
                         .padding(.horizontal)
                         .padding(.bottom, 40)
+                        .accessibilityLabel("Logout")
+                        .accessibilityIdentifier("maintenance_profile_logout_button")
                     }
                 }
             }
@@ -142,6 +152,7 @@ struct MaintenanceProfileSection<Content: View>: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundColor(AppTheme.textSecondary)
                 .padding(.leading, 8)
+                .accessibilityAddTraits(.isHeader)
             
             VStack(spacing: 0) {
                 content
@@ -184,6 +195,10 @@ struct MaintenanceSettingRow: View {
                 .foregroundColor(AppTheme.textSecondary)
         }
         .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityHint("Go to \(title)")
+        .accessibilityIdentifier("maintenance_setting_row_\(title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
 

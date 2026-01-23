@@ -15,7 +15,7 @@ import Foundation
 struct DevelopmentConfig {
     /// Set to `true` to skip login and go directly to the dashboard
     /// Set to `false` to restore normal login flow
-    static let bypassLogin = true
+    static let bypassLogin = false
     
     /// The role to use when bypassing login
     /// Options: .fleetManager, .driver, .maintenancePersonnel

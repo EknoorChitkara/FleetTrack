@@ -82,6 +82,8 @@ struct LocationSearchView: View {
                         .foregroundColor(.white)
                         .frame(width: 40, height: 40)
                 }
+                .accessibilityLabel("Back")
+                .accessibilityIdentifier("location_search_back_button")
                 
                 // Search bar
                 HStack(spacing: 12) {
@@ -101,6 +103,8 @@ struct LocationSearchView: View {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.appSecondaryText)
                         }
+                        .accessibilityLabel("Clear search")
+                        .accessibilityIdentifier("location_search_clear_button")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -140,10 +144,11 @@ struct LocationSearchView: View {
                     .foregroundColor(.appSecondaryText)
             }
             .padding()
-            .background(Color.appCardBackground)
-            .background(.ultraThinMaterial)
             .cornerRadius(12)
         }
+        .accessibilityLabel("Use Current Location")
+        .accessibilityHint("Uses your current device location as the search result")
+        .accessibilityIdentifier("location_search_current_location_button")
     }
     
     // MARK: - Recent Searches
@@ -166,6 +171,8 @@ struct LocationSearchView: View {
                             .font(.system(size: 13))
                             .foregroundColor(.appEmerald)
                     }
+                    .accessibilityLabel("Clear recent searches")
+                    .accessibilityIdentifier("location_search_clear_recents_button")
                 }
             }
             
@@ -195,7 +202,7 @@ struct LocationSearchView: View {
                     .textCase(.uppercase)
                 
                 ForEach(viewModel.searchResults) { result in
-                    let pinColor = searchType == .pickup ? Color.green : Color(hex: "F9D854")
+                    let pinColor = searchType == .pickup ? Color.green : Color(hexCode: "F9D854")
                     locationRow(result: result, icon: "mappin.circle.fill", iconColor: pinColor)
                 }
             }
@@ -208,35 +215,51 @@ struct LocationSearchView: View {
         Button(action: {
             viewModel.selectResult(result)
         }) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 24))
-                    .foregroundColor(iconColor)
-                    .frame(width: 32)
+            HStack(spacing: 16) {
+                // Dropdown-style icon container
+                ZStack {
+                    Circle()
+                        .fill(Color.appCardBackground.opacity(0.8))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(iconColor)
+                }
                 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(result.title)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundColor(.white)
                         .lineLimit(1)
                     
                     Text(result.subtitle)
-                        .font(.system(size: 14))
-                        .foregroundColor(.appSecondaryText)
-                        .lineLimit(2)
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
                 }
                 
                 Spacer()
                 
-                Image(systemName: "chevron.right")
+                Image(systemName: "arrow.up.left")
                     .font(.system(size: 12))
-                    .foregroundColor(.appSecondaryText)
+                    .foregroundColor(.gray.opacity(0.5))
             }
-            .padding()
-            .background(Color.appCardBackground)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.appCardBackground.opacity(0.5)) // Slightly different bg
             .background(.ultraThinMaterial)
-            .cornerRadius(12)
+            .cornerRadius(0) // Rectangular list style preferred for dropdowns
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.gray.opacity(0.1)),
+                alignment: .bottom
+            )
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(result.title), \(result.subtitle)")
+        .accessibilityHint("Double tap to select this location")
+        .accessibilityIdentifier("location_search_result_\(result.id.uuidString.prefix(8))")
     }
     
     // MARK: - Loading Skeleton

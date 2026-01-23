@@ -98,7 +98,7 @@ struct MaintenanceTabView: View {
                 .fill(.ultraThinMaterial)
                 .overlay(
                     Capsule()
-                        .fill(Color(hex: "#2A2A2A").opacity(0.6))
+                        .fill(Color(hexCode: "#2A2A2A").opacity(0.6))
                 )
         )
         .shadow(color: .black.opacity(0.4), radius: 15, y: 8)
@@ -130,11 +130,15 @@ struct MaintenanceTabBarItem: View {
             .frame(height: 52)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color(hex: "#2A2A2C") : Color.clear)
+                    .fill(isSelected ? Color(hexCode: "#2A2A2C") : Color.clear)
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title) tab")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : [.isButton])
+        .accessibilityIdentifier("maintenance_tab_\(title.lowercased())")
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }

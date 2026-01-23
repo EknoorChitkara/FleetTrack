@@ -51,5 +51,6 @@ struct DashboardActionCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityIdentifier("dashboard_action_card_\(action.title.lowercased().replacingOccurrences(of: " ", with: "_"))")
     }
 }
