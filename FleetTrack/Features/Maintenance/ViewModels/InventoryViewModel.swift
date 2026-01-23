@@ -166,6 +166,8 @@ class InventoryViewModel: ObservableObject {
             isLoading = true
             do {
                 try await MaintenanceService.shared.addInventoryPart(part)
+                // Small delay to avoid cancelling ongoing requests
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
                 await loadInventory()
             } catch {
                 self.errorMessage = "Failed to add part: \(error.localizedDescription)"
@@ -180,6 +182,8 @@ class InventoryViewModel: ObservableObject {
             isLoading = true
             do {
                 try await MaintenanceService.shared.updateInventoryPart(part)
+                // Small delay to avoid cancelling ongoing requests
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
                 await loadInventory()
             } catch {
                 self.errorMessage = "Failed to update part: \(error.localizedDescription)"

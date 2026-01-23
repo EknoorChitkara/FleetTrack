@@ -278,7 +278,7 @@ public struct MaintenanceTask: Identifiable, Codable, Hashable, Equatable {
     }
 
     public var totalCost: Double {
-        totalPartsCost + (laborHours ?? 0) * 500.0  // Assuming ₹500/hour labor rate
+        totalPartsCost + (laborHours ?? 0) * 250.0  // ₹250/hour labor rate
     }
 }
 
