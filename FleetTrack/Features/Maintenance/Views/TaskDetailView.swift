@@ -403,57 +403,6 @@ struct TaskDetailView: View {
                         .cornerRadius(AppTheme.cornerRadius.small)
                     }
                 }
-                
-                VStack(spacing: 8) {
-                    Divider()
-                        .background(AppTheme.dividerPrimary)
-                    
-                    if !viewModel.task.partsUsed.isEmpty {
-                        HStack {
-                            Text("Total Parts Cost")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(AppTheme.textPrimary)
-                            
-                            Spacer()
-                            
-                            Text("₹\(Int(viewModel.task.partsUsed.reduce(0) { $0 + $1.totalCost }))")
-                                .font(.headline)
-                                .foregroundColor(AppTheme.accentPrimary)
-                        }
-                    }
-                    
-                    if let laborHours = viewModel.task.laborHours {
-                        HStack {
-                            Text("Labor Cost (\(String(format: "%.1f", laborHours)) hrs @ ₹250/hr)")
-                                .font(.caption)
-                                .foregroundColor(AppTheme.textSecondary)
-                            
-                            Spacer()
-                            
-                            Text("₹\(Int(laborHours * 250))")
-                                .font(.subheadline)
-                                .foregroundColor(AppTheme.textSecondary)
-                        }
-                        
-                        Divider()
-                            .background(AppTheme.dividerPrimary)
-                        
-                        HStack {
-                            Text("Grand Total")
-                                .font(.headline)
-                                .foregroundColor(AppTheme.textPrimary)
-                            
-                            Spacer()
-                            
-                            Text("₹\(Int(viewModel.task.totalCost))")
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(AppTheme.accentPrimary)
-                        }
-                    }
-                }
-                .padding(.top, 8)
             }
             
             // Cost Summary - Show if there are parts OR labor hours
