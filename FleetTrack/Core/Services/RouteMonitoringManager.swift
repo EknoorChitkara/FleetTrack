@@ -94,7 +94,7 @@ class RouteMonitoringManager: NSObject, ObservableObject {
     
     private func saveGeofenceRoute(_ route: GeofenceRoute) async throws {
         // Upsert ensures we don't fail if the route was already saved (e.g. app restart)
-        try await supabase.database
+        try await supabase
             .from("geofence_routes")
             .upsert(route)
             .execute()
@@ -102,7 +102,7 @@ class RouteMonitoringManager: NSObject, ObservableObject {
     
     private func recordViolation(_ violation: GeofenceViolation) async {
         do {
-            try await supabase.database
+            try await supabase
                 .from("geofence_violations")
                 .insert(violation)
                 .execute()
@@ -123,7 +123,7 @@ class RouteMonitoringManager: NSObject, ObservableObject {
     
     private func recordAlert(_ alert: GeofenceAlert) async {
          do {
-             try await supabase.database
+             try await supabase
                  .from("alerts")
                  .insert(alert)
                  .execute()

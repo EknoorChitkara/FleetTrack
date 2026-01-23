@@ -53,6 +53,9 @@ struct MaintenanceTabView: View {
             customTabBar
         }
         .edgesIgnoringSafeArea(.bottom)
+        .onAppear {
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
     }
     
     // MARK: - Custom Tab Bar
@@ -106,6 +109,14 @@ struct MaintenanceTabView: View {
         .padding(.bottom, 12)
     }
 }
+
+// MARK: - InAppVoiceReadable
+extension MaintenanceTabView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        return "" // Delegated to individual views
+    }
+}
+
 
 // MARK: - Tab Bar Item Component
 

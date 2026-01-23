@@ -117,10 +117,42 @@ struct DriverTripsView: View {
             .navigationDestination(for: Trip.self) { trip in
                 TripMapView(trip: trip)
             }
+            .navigationDestination(for: Trip.self) { trip in
+                TripMapView(trip: trip)
+            }
         }
         .task {
             await loadTrips()
+            // Speak after loading
+            if !isLoading {
+               InAppVoiceManager.shared.speak(voiceSummary())
+            }
         }
+        .onChange(of: selectedFilter) { _ in
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
+    }
+
+    // MARK: - InAppVoiceReadable
+    func voiceSummary() -> String {
+        if isLoading { return "Loading trips..." }
+        
+        let count = filteredTrips.count
+        var summary = "\(selectedFilter.rawValue) Trips. You have \(count) \(selectedFilter.rawValue.lowercased()) trips. "
+        
+        if count == 0 {
+            return summary + "No trips found."
+        }
+        
+        // Read first few trips details
+        if let first = filteredTrips.first {
+            summary += "First trip: from \(first.startAddress ?? "Unknown") to \(first.endAddress ?? "Unknown"). "
+            if let time = first.startTime {
+                 summary += "Scheduled for \(time.formatted(date: .abbreviated, time: .shortened)). "
+            }
+        }
+        
+        return summary
     }
     
     // MARK: - Load Trips

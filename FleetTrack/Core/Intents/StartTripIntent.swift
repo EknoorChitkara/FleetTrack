@@ -35,7 +35,7 @@ struct StartTripIntent: AppIntent {
                 try await tripService.startTrip(tripId: nextTrip.id)
                 HapticManager.shared.triggerSuccess()
                 
-                return .result(value: "Trip to \(nextTrip.endAddress) started successfully. Drive safely!")
+                return .result(value: "Trip to \(nextTrip.endAddress ?? "destination") started successfully. Drive safely!")
             } else {
                 return .result(value: "You have no scheduled trips at the moment.")
             }

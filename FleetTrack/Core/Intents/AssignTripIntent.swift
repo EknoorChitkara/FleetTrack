@@ -48,7 +48,7 @@ struct AssignTripIntent: AppIntent {
             
             HapticManager.shared.triggerSuccess()
             
-            return .result(value: "Vehicle \(vehicle.registrationNumber) has been assigned to \(driver.displayName ?? driverName).")
+            return .result(value: "Vehicle \(vehicle.registrationNumber) has been assigned to \(driver.displayName).")
         } catch {
             HapticManager.shared.triggerError()
             return .result(value: "Error assigning trip: \(error.localizedDescription)")

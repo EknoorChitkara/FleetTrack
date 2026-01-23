@@ -118,7 +118,7 @@ class AuthViewModel: ObservableObject {
     
     /// Verify 2FA code (SMS only for now)
     func verifyTwoFactorCode(_ code: String, rememberMe: Bool = false) async {
-        guard let user = currentLoginUser else {
+        guard currentLoginUser != nil else {
             handleError(AuthError.userNotFound)
             return
         }

@@ -95,6 +95,26 @@ struct ProfileView: View {
                                     SettingRow(icon: "shield.fill", title: "Privacy Policy", color: .green)
                                 }
                             }
+
+                            // Voice Settings
+                            ProfileSection(title: "Accessibility") {
+                                Toggle(isOn: Binding(
+                                    get: { InAppVoiceSettings.shared.isVoiceEnabled },
+                                    set: { _ in InAppVoiceManager.shared.toggleVoiceMode() }
+                                )) {
+                                    HStack {
+                                        Image(systemName: "waveform.circle.fill")
+                                            .foregroundColor(.appEmerald)
+                                            .font(.system(size: 20))
+                                        Text("Voice Narration")
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .padding()
+                                .background(Color.appCardBackground)
+                                .cornerRadius(12)
+                            }
+
                             
                             // Support Section
                             ProfileSection(title: "Support") {
@@ -148,7 +168,17 @@ struct ProfileView: View {
                 EditProfileView(user: $user, driver: $driver, isPresented: $isShowingEditProfile)
                     .preferredColorScheme(.dark)
             }
+        .onAppear {
+            InAppVoiceManager.shared.speak(voiceSummary())
         }
+    }
+    }
+}
+
+// MARK: - InAppVoiceReadable Extension
+extension ProfileView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        return "Profile Settings. Manage your account, security, and support options."
     }
 }
 

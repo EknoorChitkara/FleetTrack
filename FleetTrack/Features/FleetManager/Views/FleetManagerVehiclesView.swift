@@ -138,6 +138,39 @@ struct FleetManagerVehiclesView: View {
         .sheet(isPresented: $showAddVehicle) {
             AddVehicleView().environmentObject(fleetVM)
         }
+        .onAppear {
+            // Slight delay to ensure VM data might be ready or to not conflict with tab switch
+             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                 InAppVoiceManager.shared.speak(voiceSummary())
+             }
+        }
+        .onChange(of: selectedFilter) { _ in
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
+    }
+}
+
+// MARK: - InAppVoiceReadable
+extension FleetManagerVehiclesView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        let count = filteredVehicles.count
+        var summary = "Vehicles List. Filter: \(selectedFilter). "
+        
+        if count == 0 {
+            summary += "No vehicles found in this category. "
+        } else {
+            summary += "Showing \(count) vehicles. "
+            
+            // Brief stats of the filtered view
+            let active = filteredVehicles.filter { $0.status == .active }.count
+            if active > 0 { summary += "\(active) Active. " }
+            
+            let maintenance = filteredVehicles.filter { $0.status == .inMaintenance }.count
+             if maintenance > 0 { summary += "\(maintenance) in maintenance. " }
+        }
+        
+        summary += "Double tap a vehicle to view details."
+        return summary
     }
 }
 

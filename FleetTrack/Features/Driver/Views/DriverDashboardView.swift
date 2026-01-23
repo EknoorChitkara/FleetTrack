@@ -48,9 +48,20 @@ struct DriverDashboardView: View {
         .navigationBarHidden(true)
         .task {
             await viewModel.loadDashboardData(user: localUser)
+            // Trigger voice narration after data load
+            // Using a slight delay or checking if data is ready would be ideal, 
+            // but for now we speak what we have or wait for the refreshable/task to complete.
+            // Since `voiceSummary` relies on viewModel data, we should call it after data is loaded.
+            try? await Task.sleep(nanoseconds: 500_000_000) // Wait for data
+            InAppVoiceManager.shared.speak(voiceSummary())
         }
         .onChange(of: selectedTab) { newValue in
             if newValue == 0 {
+                // Speak summary when returning to dashboard
+                // We speak immediately with current data, then the reload will happen silently or we can wait.
+                // Better to speak immediately so user knows they are on Dashboard.
+                InAppVoiceManager.shared.speak(voiceSummary())
+                
                 Task {
                     await viewModel.loadDashboardData(user: localUser)
                 }
@@ -244,6 +255,70 @@ struct DriverDashboardView: View {
         }
     }
 }
+
+// MARK: - InAppVoiceReadable
+extension DriverDashboardView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        switch selectedTab {
+        case 0:
+            var summary = "Driver Dashboard. "
+            
+            // Welcome
+            summary += "Welcome, \(localUser.name). "
+            
+            // Trip Status
+            if let ongoing = viewModel.ongoingTrip {
+                summary += "Active Trip found. Navigation to \(ongoing.endAddress ?? "Destination"). "
+            } else if let upcoming = viewModel.upcomingTrip {
+                summary += "Upcoming Trip scheduled for \(upcoming.startTime?.formatted(date: .omitted, time: .shortened) ?? "soon"). "
+            } else {
+                summary += "No active trips right now. "
+            }
+            
+            // Quick Stats
+            summary += "Statistics. "
+            summary += "\(viewModel.completedTripsCount) Trips Completed. "
+            summary += "\(Int(viewModel.totalDistance)) kilometers Total Distance. "
+            
+            // Performance
+            let rate = Int((viewModel.driver?.onTimeDeliveryRate ?? 0) * 100)
+            summary += "Performance. \(rate)% On Time Delivery Rate. "
+            summary += "Average Speed \(Int(viewModel.avgSpeed)) km/h. "
+            
+            // Vehicle
+            if let vehicle = viewModel.assignedVehicle {
+                summary += "Assigned Vehicle. \(vehicle.manufacturer) \(vehicle.model). License Plate \(vehicle.registrationNumber). "
+            } else {
+                summary += "No vehicle assigned currently. "
+            }
+            
+            // Actions
+            summary += "Quick Actions available: Vehicle Inspection, Report Issue. "
+             
+            // Recent Trips
+            if !viewModel.recentTrips.isEmpty {
+                 summary += "Recent Trips: "
+                 for (index, trip) in viewModel.recentTrips.prefix(3).enumerated() {
+                     summary += "Trip \(index + 1) to \(trip.endAddress ?? "Unknown"). "
+                 }
+            } else {
+                summary += "No recent trips history. "
+            }
+
+            return summary
+            
+        case 1:
+            return "" // Handled by DriverTripsView
+            
+        case 2:
+            return "Driver Alerts. Check for system notifications and vehicle issues."
+            
+        default:
+            return "Driver Dashboard."
+        }
+    }
+}
+
 
 // MARK: - Preview
 #Preview {

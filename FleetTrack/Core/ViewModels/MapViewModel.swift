@@ -14,8 +14,11 @@ import Combine
 class MapViewModel: NSObject, ObservableObject {
     // MARK: - Published Properties
     
-    /// Current map region
+    /// Current map region (Legacy support)
     @Published var region: MKCoordinateRegion
+    
+    /// Modern map position (iOS 17+)
+    @Published var position: MapCameraPosition
     
     /// Current user location
     @Published var currentLocation: CLLocation?
@@ -35,10 +38,12 @@ class MapViewModel: NSObject, ObservableObject {
     
     override init() {
         // Default region (will be updated to user's location)
-        self.region = MKCoordinateRegion(
+        let initialRegion = MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 19.0760, longitude: 72.8777), // Mumbai
             span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
         )
+        self.region = initialRegion
+        self.position = .region(initialRegion)
         
         super.init()
         
@@ -100,10 +105,12 @@ class MapViewModel: NSObject, ObservableObject {
                 
                 // Center map on user location
                 withAnimation {
-                    region = MKCoordinateRegion(
+                    let newRegion = MKCoordinateRegion(
                         center: location.coordinate,
                         span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
                     )
+                    region = newRegion
+                    position = .region(newRegion)
                 }
                 
                 isLoadingLocation = false
@@ -123,10 +130,12 @@ class MapViewModel: NSObject, ObservableObject {
         }
         
         withAnimation {
-            region = MKCoordinateRegion(
+            let newRegion = MKCoordinateRegion(
                 center: location.coordinate,
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
             )
+            region = newRegion
+            position = .region(newRegion)
         }
     }
     

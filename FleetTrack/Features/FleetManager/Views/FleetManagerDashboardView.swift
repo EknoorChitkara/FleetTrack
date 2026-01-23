@@ -81,8 +81,69 @@ struct FleetManagerDashboardView: View {
                 AddMaintenanceStaffView().environmentObject(fleetVM)
             }
         }
+        .onAppear {
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
+        .onChange(of: selectedTab) { _ in
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
+        .onChange(of: fleetVM.isLoading) { isLoading in
+            if !isLoading {
+                Task {
+                    // Speak summary once data is loaded
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    InAppVoiceManager.shared.speak(voiceSummary())
+                }
+            }
+        }
     }
 }
+
+// MARK: - InAppVoiceReadable
+extension FleetManagerDashboardView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        switch selectedTab {
+        case .dashboard:
+            var summary = "Fleet Manager Dashboard. "
+            
+            // Stats
+            // Note: Since we don't have direct access to the stats view model properties here (they are in FleetHomeView),
+            // we should ideally expose them or access them via fleetVM if available.
+            // Assuming fleetVM has some of these or we just give a general overview if data isn't directly reachable in this wrapper.
+            // However, looking at the code, FleetManagerHomeView has the stats. 
+            // Let's check if FleetViewModel has summary data.
+            // If not, we'll provide a high-level overview of what's on screen.
+            
+            summary += "Overview. "
+            // Compute stats directly from fleetVM arrays
+            if !fleetVM.isLoading {
+                let totalVehicles = fleetVM.vehicles.count
+                let activeDrivers = fleetVM.drivers.filter { $0.status == .onTrip || $0.status == .available }.count
+                let inMaintenance = fleetVM.vehicles.filter { $0.status == .inMaintenance }.count
+                let ongoingTrips = fleetVM.trips.count // Matches HomeView visual logic
+                
+                summary += "\(totalVehicles) Total Vehicles. "
+                summary += "\(activeDrivers) Active Drivers. "
+                summary += "\(inMaintenance) In Maintenance. "
+                summary += "\(ongoingTrips) Ongoing Trips. "
+            } else {
+                 summary += "Loading statistics. "
+            }
+            
+            summary += "Quick Actions: Create Trip, Add Vehicle, Add Driver, Add Maintenance. "
+            summary += "Quick Links: View Geofencing, View Analytics. "
+            
+            return summary
+        case .vehicles:
+            return "" // Handled by FleetManagerVehiclesView
+        case .trips:
+            return "" // Handled by AllTripsView
+        case .alerts:
+            return "Fleet Alerts. Review system notifications and issues."
+        }
+    }
+}
+
 
 struct CustomTabBar: View {
     @Binding var selectedTab: FleetManagerDashboardView.Tab

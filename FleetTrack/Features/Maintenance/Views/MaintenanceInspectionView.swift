@@ -154,7 +154,7 @@ class MaintenanceInspectionViewModel: ObservableObject {
                 self.isLoading = false
             }
         } catch {
-            print("❌ Failed to fetch inspections: \(error)")
+            // print("❌ Failed to fetch inspections: \(error)")
             await MainActor.run { isLoading = false }
         }
     }

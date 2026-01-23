@@ -204,14 +204,15 @@ struct MapPinSelectionView: View {
         isGeocodingLocation = true
         
         Task {
-            let geocoder = CLGeocoder()
-            let location = CLLocation(latitude: center.latitude, longitude: center.longitude)
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = "\(center.latitude), \(center.longitude)"
+            let search = MKLocalSearch(request: request)
             
             do {
-                let placemarks = try await geocoder.reverseGeocodeLocation(location)
+                let response = try await search.start()
                 
-                if let placemark = placemarks.first {
-                    let address = formatAddress(from: placemark)
+                if let item = response.mapItems.first {
+                    let address = item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "Unknown location"
                     await MainActor.run {
                         displayAddress = address
                         isGeocodingLocation = false
@@ -226,24 +227,6 @@ struct MapPinSelectionView: View {
         }
     }
     
-    private func formatAddress(from placemark: CLPlacemark) -> String {
-        var components: [String] = []
-        
-        if let name = placemark.name {
-            components.append(name)
-        }
-        if let thoroughfare = placemark.thoroughfare {
-            components.append(thoroughfare)
-        }
-        if let locality = placemark.locality {
-            components.append(locality)
-        }
-        if let administrativeArea = placemark.administrativeArea {
-            components.append(administrativeArea)
-        }
-        
-        return components.isEmpty ? "Unknown location" : components.joined(separator: ", ")
-    }
     
     private func confirmLocation() {
         selectedLocation = mapRegion.center

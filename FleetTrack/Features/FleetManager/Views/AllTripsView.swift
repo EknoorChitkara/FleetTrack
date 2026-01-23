@@ -109,9 +109,41 @@ struct AllTripsView: View {
                 }
             }
         }
+
+        .onAppear {
+             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                 InAppVoiceManager.shared.speak(voiceSummary())
+             }
+        }
+        .onChange(of: selectedSegment) { oldValue, newValue in
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
         .sheet(isPresented: $showPlanTrip) {
             PlanTripView().environmentObject(fleetVM)
         }
+    }
+}
+
+// MARK: - InAppVoiceReadable
+extension AllTripsView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        let segmentName = selectedSegment == 0 ? "Current" : "Past"
+        let count = displayedTrips.count
+        
+        var summary = "\(segmentName) Trips List. "
+        
+        if count == 0 {
+             summary += "No \(segmentName.lowercased()) trips found."
+        } else {
+            summary += "Showing \(count) trips. "
+            if selectedSegment == 0 {
+                summary += "Includes scheduled and ongoing trips. "
+            } else {
+                summary += "Includes completed and cancelled trips. "
+            }
+        }
+        
+        return summary
     }
 }
 

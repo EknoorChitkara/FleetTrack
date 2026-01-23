@@ -48,6 +48,16 @@ struct TasksView: View {
         .task {
             await viewModel.loadTasks()
         }
+        .onAppear {
+            if !viewModel.isLoading {
+                InAppVoiceManager.shared.speak(voiceSummary())
+            }
+        }
+        .onChange(of: viewModel.isLoading) { loading in
+            if !loading {
+                InAppVoiceManager.shared.speak(voiceSummary())
+            }
+        }
     }
     
     // MARK: - Header View
@@ -325,6 +335,40 @@ struct TasksView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - InAppVoiceReadable
+extension TasksView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        if viewModel.isLoading { return "Loading tasks..." }
+        
+        var summary = "Maintenance Tasks. "
+        
+        if viewModel.pendingTasks.isEmpty && viewModel.inProgressTasks.isEmpty {
+            summary += "No active tasks. "
+        } else {
+            summary += "You have \(viewModel.pendingTasks.count) pending and \(viewModel.inProgressTasks.count) in-progress tasks. "
+        }
+        
+        // Read top priority task if exists
+        if let topTask = viewModel.pendingTasks.first(where: { $0.priority == .high }) {
+            let taskTitle = topTask.description ?? "\(topTask.component.rawValue) check for \(topTask.vehicleRegistrationNumber)"
+            summary += "High priority task: \(taskTitle). "
+        }
+        
+        // Completed Tasks (Added based on user request)
+        let completed = viewModel.completedTasks
+        if !completed.isEmpty {
+            summary += "Completed Tasks: "
+            // Read up to 5 completed tasks to avoid too much verbosity, or all if reasonable
+            for task in completed.prefix(5) {
+                let description = task.description ?? "\(task.component.rawValue) task"
+                summary += "Completed \(description) for \(task.vehicleRegistrationNumber). "
+            }
+        }
+        
+        return summary
     }
 }
 

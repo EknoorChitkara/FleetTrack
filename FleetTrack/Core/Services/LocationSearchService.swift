@@ -65,7 +65,6 @@ class LocationSearchService: NSObject, ObservableObject {
     static let shared = LocationSearchService()
     
     private let completer = MKLocalSearchCompleter()
-    private let geocoder = CLGeocoder()
     private var currentTask: Task<Void, Never>?
     
     @Published var completions: [MKLocalSearchCompletion] = []
@@ -149,8 +148,8 @@ class LocationSearchService: NSObject, ObservableObject {
                 return nil
             }
             
-            let coordinate = item.placemark.coordinate
-            let fullAddress = formatAddress(from: item.placemark)
+            let coordinate = item.location.coordinate
+            let fullAddress = item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "Unknown Address"
             
             return LocationSearchResult(
                 title: completion.title,
@@ -182,13 +181,16 @@ class LocationSearchService: NSObject, ObservableObject {
         
         // Reverse geocode
         do {
-            let placemarks = try await geocoder.reverseGeocodeLocation(location)
+            let request = MKLocalSearch.Request()
+            request.naturalLanguageQuery = "\(location.coordinate.latitude), \(location.coordinate.longitude)"
+            let search = MKLocalSearch(request: request)
+            let response = try await search.start()
             
-            guard let placemark = placemarks.first else {
+            guard let item = response.mapItems.first else {
                 return nil
             }
             
-            let address = formatAddress(from: placemark)
+            let address = item.addressRepresentations?.fullAddress(includingRegion: true, singleLine: true) ?? "Unknown Address"
             
             return (coordinate: location.coordinate, address: address)
         } catch {
@@ -236,25 +238,6 @@ class LocationSearchService: NSObject, ObservableObject {
     }
     
     // MARK: - Helpers
-    
-    private func formatAddress(from placemark: CLPlacemark) -> String {
-        var components: [String] = []
-        
-        if let name = placemark.name {
-            components.append(name)
-        }
-        if let thoroughfare = placemark.thoroughfare {
-            components.append(thoroughfare)
-        }
-        if let locality = placemark.locality {
-            components.append(locality)
-        }
-        if let administrativeArea = placemark.administrativeArea {
-            components.append(administrativeArea)
-        }
-        
-        return components.joined(separator: ", ")
-    }
     
     private func distance(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
         let fromLocation = CLLocation(latitude: from.latitude, longitude: from.longitude)

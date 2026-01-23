@@ -86,6 +86,9 @@ struct FleetManagerAlertsView: View {
         .sheet(item: $selectedAlert) { alert in
             AlertDetailView(alert: alert)
         }
+        .onAppear {
+            InAppVoiceManager.shared.speak(voiceSummary())
+        }
     }
     
     // MARK: - API
@@ -108,6 +111,31 @@ struct FleetManagerAlertsView: View {
             print("❌ Failed to alerts: \(error)")
             await MainActor.run { self.isLoading = false }
         }
+    }
+}
+
+// MARK: - InAppVoiceReadable Extension
+extension FleetManagerAlertsView: InAppVoiceReadable {
+    func voiceSummary() -> String {
+        let unreadCount = alerts.filter({ !$0.isRead }).count
+        var summary = "Fleet Alerts. "
+        
+        if unreadCount > 0 {
+            summary += "You have \(unreadCount) unread alerts. "
+            
+            // Read first few unread alerts
+            let unread = alerts.filter({ !$0.isRead }).prefix(3)
+            for (index, alert) in unread.enumerated() {
+                summary += "Alert \(index + 1): \(alert.title). \(alert.message). "
+            }
+        } else {
+             summary += "No new alerts. "
+             // Read most recent old alert
+             if let recent = alerts.first {
+                 summary += "Most recent: \(recent.title). "
+             }
+        }
+        return summary
     }
 }
 
