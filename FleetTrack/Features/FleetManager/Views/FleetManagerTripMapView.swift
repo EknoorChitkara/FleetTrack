@@ -89,6 +89,12 @@ struct RetractableDetailSheet: View {
     let maxHeight: CGFloat
     
     @State private var dragOffset: CGFloat = 0
+    @State private var selectedTab: TripDetailTab = .route
+    
+    enum TripDetailTab: String, CaseIterable {
+        case route = "Route"
+        case details = "Trip Details"
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -99,37 +105,37 @@ struct RetractableDetailSheet: View {
                 .padding(.top, 8)
                 .padding(.bottom, 12)
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
-                    // Driver Info Section
-                    driverInfoSection
-                    
-                    // Trip ID and Date
-                    HStack {
-                        Text("#\(trip.id.uuidString.prefix(8).uppercased())")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.appEmeraldLight)
-                        
-                        Spacer()
-                        
-                        if let startTime = trip.startTime {
-                            Text(startTime.formatted(date: .abbreviated, time: .omitted))
-                                .font(.system(size: 13))
-                                .foregroundColor(.appSecondaryText)
-                                .accessibilityLabel("Date: \(startTime.formatted(date: .abbreviated, time: .omitted))")
+            // Tab Selector
+            HStack(spacing: 0) {
+                ForEach(TripDetailTab.allCases, id: \.self) { tab in
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedTab = tab
+                        }
+                    }) {
+                        VStack(spacing: 8) {
+                            Text(tab.rawValue)
+                                .font(.system(size: 14, weight: selectedTab == tab ? .bold : .medium))
+                                .foregroundColor(selectedTab == tab ? .appEmeraldLight : .appSecondaryText)
+                            
+                            Rectangle()
+                                .fill(selectedTab == tab ? Color.appEmeraldLight : Color.clear)
+                                .frame(height: 2)
                         }
                     }
-                    
-                    // Locations
-                    locationsSection
-                    
-                    // Live Tracking Button (if ongoing)
-                    if viewModel.isLive {
-                        liveTrackingButton
-                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 30)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 8)
+            
+            // Tab Content
+            ScrollView(showsIndicators: false) {
+                if selectedTab == .route {
+                    routeTabContent
+                } else {
+                    tripDetailsTabContent
+                }
             }
         }
         .frame(height: height + dragOffset)
@@ -156,6 +162,70 @@ struct RetractableDetailSheet: View {
                 }
         )
         .accessibilityIdentifier("trip_detail_retractable_sheet")
+    }
+    
+    // MARK: - Route Tab Content
+    
+    private var routeTabContent: some View {
+        VStack(spacing: 20) {
+            // Driver Info Section
+            driverInfoSection
+            
+            // Trip ID and Date
+            HStack {
+                Text("#\(trip.id.uuidString.prefix(8).uppercased())")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.appEmeraldLight)
+                
+                Spacer()
+                
+                if let startTime = trip.startTime {
+                    Text(startTime.formatted(date: .abbreviated, time: .omitted))
+                        .font(.system(size: 13))
+                        .foregroundColor(.appSecondaryText)
+                        .accessibilityLabel("Date: \(startTime.formatted(date: .abbreviated, time: .omitted))")
+                }
+            }
+            
+            // Locations
+            locationsSection
+            
+            // Live Tracking Button (if ongoing)
+            if viewModel.isLive {
+                liveTrackingButton
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 30)
+    }
+    
+    // MARK: - Trip Details Tab Content
+    
+    private var tripDetailsTabContent: some View {
+        VStack(spacing: 16) {
+            if trip.startOdometer != nil || trip.startFuelLevel != nil {
+                FuelTripSummaryView(trip: trip, vehicle: viewModel.vehicle)
+                    .padding(.horizontal, 4)
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "gauge.medium")
+                        .font(.system(size: 48))
+                        .foregroundColor(.appSecondaryText)
+                    
+                    Text("No Trip Data Yet")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    Text("Trip details will appear once the driver starts the trip and logs odometer & fuel readings.")
+                        .font(.subheadline)
+                        .foregroundColor(.appSecondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                .padding(.vertical, 40)
+            }
+        }
+        .padding(.bottom, 30)
     }
     
     // MARK: - Driver Info Section

@@ -282,6 +282,7 @@ struct MaintenanceAlertDetailView: View {
         switch status {
         case "Completed":
             return .green
+            return Color(hexCode: "2D7D46")
         case "In Progress":
             return .blue
         case "Pending":
